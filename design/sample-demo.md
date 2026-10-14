@@ -6,6 +6,7 @@ stage: 國小
 grade: 3
 term: 下
 subject: 自然
+direction: 橫排
 unit: 夜空的觀察
 page: [40, 47]
 ---

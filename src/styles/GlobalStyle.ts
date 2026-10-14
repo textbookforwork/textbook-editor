@@ -233,15 +233,45 @@ export const GlobalStyle = createGlobalStyle`
     }
   }
 
-  /* 直排：點點線畫在字的左側（block-end 在直排就是左邊），跟底線同一側——標了的字不畫底線，不會疊在一起 */
-  [data-vertical] .ds-rich ruby[data-note],
+  /*
+   * 直排的注音字：字是一個橫的小盒子，注音欄原本並排在字的右邊、一起佔寬度，
+   * 盒子又是靠右對齊，結果字被往左推、離開整欄的中線；行高沿用整段的 1.9 倍，前後也各多空半個字。
+   * 直排時改成：盒子只有字本身（行高 1、對齊基線，跟一般字落在同一條中線），
+   * 注音欄浮在字的右邊、伸進欄與欄之間的空隙，不佔位置。
+   */
+  [data-vertical] .ds-rich:not([data-horizontal]) ruby,
+  .ds-rich[data-vertical] ruby {
+    position: relative;
+    line-height: 1;
+    vertical-align: baseline;
+  }
+  [data-vertical] .ds-rich:not([data-horizontal]) ruby > rt,
+  .ds-rich[data-vertical] ruby > rt {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  /*
+   * 直排：點點線畫在字的左側（block-end 在直排就是左邊），跟底線同一側——標了的字不畫底線，不會疊在一起。
+   * 注音字的點點線另外畫一條，不佔位置（佔了會把字推離中線），位置對齊一般字的邊框：
+   * 一般字的邊框在字型框外緣，比字面寬出約 0.225 字，再加上邊框本身 2px。
+   */
+  [data-vertical] .ds-rich:not([data-horizontal]) ruby[data-note],
   .ds-rich[data-vertical] ruby[data-note] {
     border: none;
+    background: none;
+  }
+  [data-vertical] .ds-rich:not([data-horizontal]) ruby[data-note]::before,
+  .ds-rich[data-vertical] ruby[data-note]::before {
+    content: '';
+    position: absolute;
+    left: calc(-0.225em - 2px);
+    top: 0;
+    bottom: 0;
+    width: 2px;
     background-image: linear-gradient(to bottom, ${(p) => p.theme.text.tertiary} 50%, transparent 0);
     background-size: 2px 4px;
-    background-repeat: repeat-y;
-    /* 點線在字的左側，跟沒注音的字對齊在同一條線上（注音欄在右邊，不受影響） */
-    background-position: 0 0;
   }
   [data-vertical] .ds-rich [data-u],
   .ds-rich[data-vertical] [data-u] {

@@ -222,11 +222,14 @@ export function Bubble({ block, item, anchor, onClose, onJump, onEdit, items, on
             <Icon name="pencil" size={16} />
           </Ghost>
         )}
-        <Ghost onClick={onClose} aria-label="關閉">
-          <Icon name="x" size={16} label="關閉" />
-        </Ghost>
+        {/* 直排的泡泡不放叉叉：點外面就關（已經有這個行為），省下右上角那一欄 */}
+        {!vertical && (
+          <Ghost onClick={onClose} aria-label="關閉">
+            <Icon name="x" size={16} label="關閉" />
+          </Ghost>
+        )}
       </Head>
-      <Body $top={!item.title.trim()} $vertical={vertical}>
+      <Body $top={!item.title.trim() && (!vertical || !!onEdit)} $vertical={vertical}>
         {missing ? (
           <Missing>{missing}</Missing>
         ) : (
@@ -344,7 +347,8 @@ const Shell = styled.div<{ $wide?: boolean; $vertical?: boolean }>`
   ${(p) =>
     p.$vertical &&
     `& > div { inline-size: auto; min-inline-size: 160px; max-inline-size: min(360px, calc(100vh - 24px)); }
-     & > header { margin-right: 40px; padding-top: 16px; padding-bottom: 16px; padding-left: 0; }
+     & > header { padding-top: 16px; padding-bottom: 16px; padding-left: 0; }
+     & > header:has(> button) { margin-right: 40px; }
      & > header > button:last-of-type { position: absolute; top: 8px; right: 8px; }`}
   ${(p) => {
     const vp = p.$vertical ? '100vh' : '100vw';

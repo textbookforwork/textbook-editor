@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import demoMd from '../design/sample-demo.md?raw';
+import firstMd from '../design/sample-wuliu.md?raw';
 import { applyImport, parseMarkdown } from './model/markdown';
 import { emptyDoc } from './model/document';
 import { PAGE_SIZE } from './model/pageSize';
@@ -48,8 +48,8 @@ const sampleFiles = import.meta.glob<string>('../design/sample-*.md', {
   eager: true,
 });
 const SAMPLE_LABELS: [file: string, label: string][] = [
-  ['sample-demo', '自然（範例）'],
   ['sample-wuliu', '國文（範例・直排）'],
+  ['sample-demo', '自然（範例・橫排）'],
 ];
 const SAMPLES: Record<string, string> = Object.fromEntries(
   SAMPLE_LABELS.flatMap(([f, label]) => {
@@ -58,7 +58,7 @@ const SAMPLES: Record<string, string> = Object.fromEntries(
   })
 );
 
-// 開啟時載入「星星的世界」，跟從匯入對話框選「自然（範例）」走同一條路。
+// 開啟時載入國文範例〈五柳先生傳〉（直排），跟從匯入對話框選「國文（範例・直排）」走同一條路。
 // seedStars 掛的補充不在 md 裡，是為了讓人一開啟就看得到 Pop-up——
 // 交接後不要這一段的話，把 seedStars 拿掉即可。
 // 上次儲存過（儲存鈕或自動存）就接著上次的；沒有才載入範例。
@@ -66,7 +66,7 @@ const firstDoc = (): Doc =>
   loadDoc() ??
   applyImport(
     emptyDoc(),
-    seedStars(withSampleMedia(parseMarkdown(demoMd, { autoPageBreak: true })))
+    seedStars(withSampleMedia(parseMarkdown(firstMd, { autoPageBreak: true })))
   );
 
 export function App() {
