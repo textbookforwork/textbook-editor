@@ -21,8 +21,6 @@ const IMAGES: [string, string][] = [
   ['star-chart', '星圖'],
   ['star-trails', '星軌'],
   ['orion-lines', '獵戶座連線'],
-  ['U4-L1-alishan', '阿里山'],
-  ['U4-L1-train', '火車'],
 ];
 
 export function seedSampleLibrary() {

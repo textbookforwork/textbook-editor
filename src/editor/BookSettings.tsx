@@ -106,7 +106,7 @@ export function BookSettings({ doc, onPatch, onMeta, onClose, onImport }: Props)
             <Input
               value={meta.publisher ?? ''}
               onChange={(e) => onMeta({ publisher: e.target.value })}
-              placeholder="例：康軒"
+              placeholder="出版社名稱"
             />
           </Label>
           <Label as="div">

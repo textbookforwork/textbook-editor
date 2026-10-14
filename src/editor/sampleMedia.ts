@@ -5,7 +5,7 @@ import type { Block, Row } from '../model/types';
 /**
  * 內建範例的圖片。
  *
- * md 裡的圖只有路徑（`img/U4-L1-hsinchu.jpg`），沒有檔案，所以匯入後
+ * md 裡的圖只有路徑（`img/summer-triangle.png`），沒有檔案，所以匯入後
  * 只看得到空格子。範例教材附上一組開放授權的照片（design/media/，
  * 出處與授權見同目錄的 credits.json），路徑對得上就直接顯示。
  *

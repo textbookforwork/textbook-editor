@@ -39,11 +39,8 @@ import { ParagraphProvider } from './components/ParagraphContext';
 /**
  * 內建範例，讓人不必先準備檔案就能看見結果。
  *
- * 「自然（範例）」與「國文（範例）」是自製的（國文只有〈五柳先生傳〉的正文，古文沒有著作權），可以公開。
- * 另外可以放出版社的真實課文——它們的價值在於證明系統扛得住真的複雜度
- * （21 張圖、30 條注釋、直排題組），但不能隨程式碼對外散布。
- *
- * 範例是「有檔案才出現」：公開版只要不放那兩個 md，這裡與測試都會自動略過，程式一行都不用改。
+ * 「自然（範例）」與「國文（範例）」都是自製的（國文只有〈五柳先生傳〉的正文，古文沒有著作權），可以公開。
+ * 範例是「有檔案才出現」：design/ 底下少了哪一份，選單就少那一項，程式不用改。
  */
 const sampleFiles = import.meta.glob<string>('../design/sample-*.md', {
   query: '?raw',
@@ -53,8 +50,6 @@ const sampleFiles = import.meta.glob<string>('../design/sample-*.md', {
 const SAMPLE_LABELS: [file: string, label: string][] = [
   ['sample-demo', '自然（範例）'],
   ['sample-wuliu', '國文（範例・直排）'],
-  ['sample-shehui', '社會 U4-L1'],
-  ['sample-guowen', '國文 L07'],
 ];
 const SAMPLES: Record<string, string> = Object.fromEntries(
   SAMPLE_LABELS.flatMap(([f, label]) => {

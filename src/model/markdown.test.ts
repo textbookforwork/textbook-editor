@@ -15,9 +15,9 @@ beforeEach(resetIds);
 
 describe('frontmatter', () => {
   const src = `---
-id: U4-L1
+id: L01
 title: 日治時期的建設帶來什麼影響？
-publisher: 康軒
+publisher: 示範出版社
 stage: 國小                  # 國小 / 國中
 grade: 5
 direction: 橫排              # 直排 / 橫排
@@ -31,7 +31,7 @@ page: [90, 97]
   it('讀出書目資料，並忽略註解', () => {
     const r = parse(src);
     expect(r.title).toBe('日治時期的建設帶來什麼影響？');
-    expect(r.meta.publisher).toBe('康軒');
+    expect(r.meta.publisher).toBe('示範出版社');
     expect(r.meta.stage).toBe('國小');
     expect(r.meta.printPageRange).toEqual([90, 97]);
   });
@@ -225,120 +225,6 @@ describe('自製範例：13 種構造各用一次', () => {
   it('題目的選項是結構化的', () => {
     const q = all.find((b) => b.type === 'question');
     expect(q && q.type === 'question' && q.options.map((o) => o.key)).toEqual(['A', 'B', 'C', 'D']);
-  });
-});
-
-/**
- * 出版社的真實課文只存在於私人版本裡。
- *
- * 出版社的教材不能隨程式碼對外散布。拿掉之後這裡自動略過，
- * 其餘測試照常跑——所以同一份程式碼可以有「含真實教材」與「可對外」
- * 兩種發行版，不需要維護兩套測試。
- *
- * 真實教材的價值在於它證明解析器扛得住真的複雜度（21 張圖、30 條注釋、
- * 直排、題組），那是自製範例做不到的，所以有檔案時一定要跑。
- */
-const hasReal = (f: string) => existsSync(f);
-/**
- * 檔案不在時回傳空字串而不是丟例外。
- *
- * vitest 即使整個 describe 被略過，仍然會執行它的內容來建立測試樹——
- * 所以這裡的讀取一定會跑到，不能讓它爆掉。裡面的測試本來就不會執行。
- */
-const readReal = (f: string) => (existsSync(f) ? readFileSync(f, 'utf8') : '');
-
-describe.skipIf(!hasReal('design/sample-shehui.md'))('拿真的社會課本檢驗', () => {
-  const r = parseMarkdown(readReal('design/sample-shehui.md'), { autoPageBreak: true });
-
-  it('每一種構造都有對應的區塊，沒有東西掉進內文', () => {
-    const count = (t: Block['type']) => blocks(r).filter((b) => b.type === t).length;
-    expect(count('image')).toBe(21);
-    expect(count('dialogue')).toBe(7);
-    expect(count('table')).toBe(3);
-    expect(count('reference')).toBe(3);
-    expect(count('web')).toBe(1);
-    expect(r.unrecognized).toEqual([]);
-  });
-
-  it('七個紙本頁碼全部收成錨點', () => {
-    expect(r.rows.filter((x) => x.printPage).map((x) => x.printPage)).toEqual([91, 92, 93, 94, 95, 96, 97]);
-  });
-
-  it('課名只有一個，區塊五個', () => {
-    const roles = blocks(r).filter((b) => b.type === 'text').map((b) => (b as TextBlock).role);
-    expect(roles.filter((x) => x === 'lessonTitle')).toHaveLength(1);
-    expect(roles.filter((x) => x === 'sectionTitle')).toHaveLength(5);
-  });
-
-  it('四個重點詞被標成 keyword', () => {
-    const kw = blocks(r)
-      .filter((b) => b.type === 'text')
-      .flatMap((b) => (b as TextBlock).spans)
-      .filter((s) => s.keyword);
-    expect(plainOf(kw)).toContain('嘉南大圳');
-    expect(plainOf(kw)).toContain('總督府');
-  });
-
-  it('二十一張圖的替代文字全部保住', () => {
-    const imgs = blocks(r).filter((b) => b.type === 'image') as ImageBlock[];
-    expect(imgs.every((i) => i.alt.length > 0)).toBe(true);
-  });
-});
-
-describe.skipIf(!hasReal('design/sample-guowen.md'))('國文：直排、題目、模組', () => {
-  const r = parseMarkdown(readReal('design/sample-guowen.md'), { autoPageBreak: true });
-  const blocks = r.rows.flatMap((row) => row.columns.flatMap((c) => c.blocks));
-
-  it('frontmatter 的直排會設定到書寫方向', () => {
-    expect(r.settings.writingMode).toBe('vertical');
-  });
-
-  it('注釋全數收進文件層', () => {
-    expect(r.footnotes).toHaveLength(30);
-    expect(r.footnotes[0]).toMatchObject({ id: '1', term: '何許' });
-  });
-
-  it('紙本頁碼是錨點，不造成換頁', () => {
-    const anchors = r.rows.filter((row) => row.printPage != null);
-    expect(anchors.map((row) => row.printPage)).toEqual([
-      113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
-    ]);
-    // 有錨點的列不一定是某頁的第一列——分頁由內容長度決定
-    expect(anchors.some((row) => !row.breakBefore)).toBe(true);
-  });
-
-  it('題目是結構化的，題型標籤與選項分開存', () => {
-    const qs = blocks.filter((b) => b.type === 'question');
-    expect(qs).toHaveLength(5);
-    expect(qs[0]).toMatchObject({
-      number: '1',
-      questionType: '快篩訊息',
-      multiple: true,
-    });
-    expect(qs[0].type === 'question' && qs[0].options.map((o) => o.key)).toEqual([
-      'A', 'B', 'C', 'D', 'E',
-    ]);
-    expect(qs[1]).toMatchObject({ questionType: '瞄準文心', multiple: false });
-  });
-
-  it('模組保留種類與參數，交給模組自己解讀', () => {
-    const mods = blocks.filter((b) => b.type === 'module');
-    expect(mods).toHaveLength(1);
-    expect(mods[0]).toMatchObject({
-      title: '朝代時間軸',
-      moduleKind: 'timeline/dynasty',
-      params: { 標示: '魏晉南北朝' },
-    });
-  });
-
-  it('沒有任何構造被吞掉', () => {
-    expect(r.unrecognized).toEqual([]);
-  });
-
-  it('@排版[橫排] 套用到緊接的說明段落，沒有跳過的指令', () => {
-    const horiz = blocks.filter((b) => b.type === 'text' && b.writingMode === 'horizontal');
-    expect(horiz).toHaveLength(2);
-    expect(r.skipped).toEqual([]);
   });
 });
 
