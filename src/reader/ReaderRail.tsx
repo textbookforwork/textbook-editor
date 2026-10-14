@@ -70,30 +70,30 @@ export function ReaderRail({
       {/* 左上角是回首頁（書櫃），不是回編輯——回編輯是下面那顆「返回編輯」，給老師用的 */}
       <HomeButton subject={subject} large />
 
+      {/* 上下箭頭夾著頁碼，看得出是翻頁，不另放「頁數」標籤 */}
       <PageGroup title={`第 ${pageNumber} 頁，共 ${pageCount} 頁`}>
-        <PageLabel>頁數</PageLabel>
-        <PageNumber aria-live="polite">{pageNumber}</PageNumber>
-        {onPrevPage && onNextPage && (
-          <StepRow>
-            <PageStepBtn
-              type="button"
-              onClick={onPrevPage}
-              disabled={pageNumber <= 1}
-              aria-label="上一頁"
-              title="上一頁"
-            >
-              <Icon name="chevron-up" size={16} />
-            </PageStepBtn>
-            <PageStepBtn
-              type="button"
-              onClick={onNextPage}
-              disabled={pageNumber >= pageCount}
-              aria-label="下一頁"
-              title="下一頁"
-            >
-              <Icon name="chevron-down" size={16} />
-            </PageStepBtn>
-          </StepRow>
+        {onPrevPage && (
+          <PageStepBtn
+            type="button"
+            onClick={onPrevPage}
+            disabled={pageNumber <= 1}
+            aria-label="上一頁"
+            title="上一頁"
+          >
+            <Icon name="chevron-up" size={16} />
+          </PageStepBtn>
+        )}
+        <PageNumber aria-live="polite" aria-label={`第 ${pageNumber} 頁`}>{pageNumber}</PageNumber>
+        {onNextPage && (
+          <PageStepBtn
+            type="button"
+            onClick={onNextPage}
+            disabled={pageNumber >= pageCount}
+            aria-label="下一頁"
+            title="下一頁"
+          >
+            <Icon name="chevron-down" size={16} />
+          </PageStepBtn>
         )}
       </PageGroup>
 
@@ -187,38 +187,20 @@ const Rail = styled.nav`
   scrollbar-width: none;
 `
 
+/** 一顆 56 寬的膠囊：上箭頭、頁碼、下箭頭，箭頭橫跨整欄寬，矮但好按。 */
 const PageGroup = styled.div`
   inline-size: 56px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  align-items: stretch;
   margin-block: 4px;
-  padding: 10px 0;
-  border-radius: ${(p) => p.theme.radius.control};
+  padding: 4px;
+  border-radius: ${(p) => p.theme.radius.tile};
   background: ${(p) => p.theme.surface.sunken};
 `;
 
-/** 上一頁、下一頁：一整排兩顆白底小鈕，各佔一半 */
-/** 上一頁、下一頁：兩顆白色圓鈕，直的排 */
-const StepRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-`;
-
-const PageLabel = styled.span`
-  font-size: var(--ds-typography-label-size);
-  font-weight: 500;
-  color: ${(p) => p.theme.text.secondary};
-`
-
 const PageNumber = styled.output`
-  inline-size: 40px;
   padding: 4px 0;
-  border-radius: ${(p) => p.theme.radius.control};
-  background: ${(p) => p.theme.surface.raised};
   font-family: ${(p) => p.theme.typography.fontDisplay};
   font-size: 14px;
   line-height: 1.2;
@@ -228,19 +210,18 @@ const PageNumber = styled.output`
 `
 
 const PageStepBtn = styled.button`
-  inline-size: 28px;
-  block-size: 28px;
+  block-size: 24px;
   display: grid;
   place-items: center;
   padding: 0;
   border: none;
-  border-radius: 999px;
-  background: ${(p) => p.theme.surface.raised};
+  border-radius: ${(p) => p.theme.radius.control};
+  background: transparent;
   color: ${(p) => p.theme.icon.default};
   cursor: pointer;
   transition: background 0.12s;
 
-  &:hover:not(:disabled) { background: ${(p) => p.theme.surface.page}; }
+  &:hover:not(:disabled) { background: ${(p) => p.theme.surface.raised}; }
   &:disabled {
     color: ${(p) => p.theme.icon.disabled};
     cursor: default;

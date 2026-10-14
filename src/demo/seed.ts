@@ -1,6 +1,6 @@
 import { makeText, textOf } from '../model/document';
 import type { ImportResult } from '../model/markdown';
-import type { Block, PopupItem } from '../model/types';
+import type { Block, PopupItem, TextBlock } from '../model/types';
 
 /**
  * 示範用的種子。
@@ -205,8 +205,8 @@ function seedGuowen(result: ImportResult): ImportResult {
     { id: 'gw-pop-3', kind: 'audio', title: '第二段朗讀', assetId: 'sample-audio-narration' },
     { id: 'gw-pop-4', kind: 'audio', title: '第二段慢速朗讀', assetId: 'sample-audio-vega' },
   ]);
-  // 網頁：多個（縮圖卡）
-  put('之。造飲', [
+  // 網頁：多個（縮圖卡）。掛在閱讀小叮嚀：課文段落的補充改由段落的「補」按鈕打開，這裡示範一般元件
+  put('閱讀時', [
     { id: 'gw-pop-5', kind: 'web', title: '維基百科：陶淵明', url: 'https://zh.wikipedia.org/zh-tw/陶淵明', embeddable: true },
     { id: 'gw-pop-6', kind: 'web', title: '教育部重編國語辭典', url: 'https://dict.revised.moe.edu.tw/', embeddable: false },
   ]);
@@ -226,12 +226,48 @@ function seedGuowen(result: ImportResult): ImportResult {
   // 聲音：一個
   put('陶淵明，一名', [{ id: 'gw-pop-9', kind: 'audio', title: '作者介紹朗讀', assetId: 'sample-audio-narration' }]);
 
-  if (plan.size === 0) return result;
+  // 課文三段標成段落（第二段被 @頁[115] 切成兩塊，後半接續上一段）。
+  // 說明內容取自同一課的題解、課文賞析、語文小視窗與問題討論，不另外編
+  const paras = new Map<string, Pick<TextBlock, 'paragraph' | 'paraNotes'>>();
+  const mark = (head: string, v: Pick<TextBlock, 'paragraph' | 'paraNotes'>) => {
+    const b = find(head);
+    if (b) paras.set(b.id, v);
+  };
+  mark('先生不知何許人也', {
+    paragraph: 'start',
+    paraNotes: {
+      zhi: '介紹五柳先生的名號由來。',
+      wen: '本文實為陶淵明的自傳，但為何以五柳先生傳為篇名，而不用陶淵明傳，其用意可能為何？',
+    },
+  });
+  mark('閑靜少言', {
+    paragraph: 'start',
+    paraNotes: {
+      zhi: '只擷取幾項具體的生活言行：好讀書卻「不求甚解」、性嗜酒卻「不吝情去留」、面對貧窮卻「晏如也」，勾勒出五柳先生安貧樂道、任真自得的性格。',
+      ju: '「曾不吝情去留」的「去留」是偏義複詞，只取「去」的意思。',
+      wen: '本文先說五柳先生讀書「不求甚解」，接著又說他讀書「每有會意，便欣然忘食」。兩者間在文意上是否有矛盾之處？請加以說明。',
+    },
+  });
+  mark('之。造飲', { paragraph: 'continue' });
+  mark('贊曰', {
+    paragraph: 'start',
+    paraNotes: {
+      zhi: '引黔婁之妻之言，讚揚五柳先生不慕榮利的個性。',
+      xiu: '不直接稱揚五柳先生，而以上古時代無懷氏、葛天氏的人民加以比擬，讚譽他的質樸率真；也照應首句的「先生不知何許人也」，筆法委婉含蓄。',
+      wen: '本文分成「傳」和「贊」兩部分，請指出二者有哪些句子的旨意彼此呼應？',
+    },
+  });
+
+  if (plan.size === 0 && paras.size === 0) return result;
   const rows = result.rows.map((row) => ({
     ...row,
     columns: row.columns.map((col) => ({
       ...col,
-      blocks: col.blocks.map((b) => (plan.has(b.id) ? { ...b, popups: plan.get(b.id)! } : b)),
+      blocks: col.blocks.map((b) => {
+        let out = plan.has(b.id) ? { ...b, popups: plan.get(b.id)! } : b;
+        if (out.type === 'text' && paras.has(b.id)) out = { ...out, ...paras.get(b.id)! };
+        return out;
+      }),
     })),
   }));
   return { ...result, rows };

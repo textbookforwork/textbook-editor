@@ -12,6 +12,7 @@ import { BlockTextTools, InlineTextTools } from './TextPanel';
 import { setTablePanel, useTableSelection } from './TablePanel';
 import { useEditingWebBlockId, setEditingWebBlockId } from '../components/blocks/WebBlockView';
 import type { TextRole } from '../model/types';
+import { useParagraphIndex } from '../components/ParagraphContext';
 import { pickFile, putFile } from './assets';
 import { setCroppingId, useCroppingId } from '../components/blocks/ImageCropper';
 
@@ -82,10 +83,12 @@ function BlockCapsule() {
   const tableUi = useTableSelection();
   const croppingId = useCroppingId();
   const editingWebId = useEditingWebBlockId();
+  const paraIndex = useParagraphIndex();
 
   const hit = findBlock(ed.doc, id);
   if (!hit || !rect) return null;
   const { block, row } = hit;
+  const paraNo = paraIndex.get(id)?.no ?? null;
 
   return (
     <Capsule
@@ -102,21 +105,39 @@ function BlockCapsule() {
     >
       {block.type === 'text' && (
         <>
-          {/* 層級只留「章、節、內文、補充」四種 */}
+          {/*
+            層級：章、節、內文、段落、補充。段落就是內文再加上「這是課文的第幾段」，
+            編號依標成段落的順序自動算（第 N 段）；被換頁切開的後半選「接續上一段」
+          */}
           <Dropdown
             variant="tool"
             value={
-              PICKABLE_ROLES.includes(block.role)
-                ? block.role
-                : block.role === 'itemTitle' || block.role === 'subItemTitle'
-                  ? 'sectionTitle'
-                  : block.role === 'lead'
-                    ? 'body'
-                    : 'supplement'
+              block.paragraph === 'start'
+                ? 'para'
+                : block.paragraph === 'continue'
+                  ? 'para-cont'
+                  : PICKABLE_ROLES.includes(block.role)
+                    ? block.role
+                    : block.role === 'itemTitle' || block.role === 'subItemTitle'
+                      ? 'sectionTitle'
+                      : block.role === 'lead'
+                        ? 'body'
+                        : 'supplement'
             }
-            aria-label="內容角色"
-            options={PICKABLE_ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
-            onChange={(v) => ed.dispatch({ type: 'setTextRole', blockId: id, role: v as TextRole })}
+            aria-label="內容層級"
+            options={[
+              ...PICKABLE_ROLES.filter((r) => r !== 'supplement').map((r) => ({ value: r, label: ROLE_LABEL[r] })),
+              { value: 'para', label: '段落', short: paraNo ? `第 ${paraNo} 段` : '段落' },
+              { value: 'para-cont', label: '接續上一段', short: '接續上段' },
+              ...(PICKABLE_ROLES.includes('supplement') ? [{ value: 'supplement', label: ROLE_LABEL.supplement }] : []),
+            ]}
+            onChange={(v) => {
+              const para = v === 'para' ? 'start' : v === 'para-cont' ? 'continue' : undefined;
+              const role = (para ? 'body' : v) as TextRole;
+              if (role !== block.role) ed.dispatch({ type: 'setTextRole', blockId: id, role });
+              if (para !== block.paragraph)
+                ed.dispatch({ type: 'patchBlock', blockId: id, blockType: 'text', patch: { paragraph: para } });
+            }}
           />
           <BlockTextTools block={block} blockId={id} settings={ed.doc.settings} />
           <Divider />

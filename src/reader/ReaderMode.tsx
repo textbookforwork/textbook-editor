@@ -15,6 +15,9 @@ import { ReaderRail } from './ReaderRail';
 import { Toolbox } from './Toolbox';
 import { loadPinned, savePinned, type InkTool, type RailTool } from './tools';
 import { useInk } from './useInk';
+import { ParaFocusCtx, type ParaFocus } from '../components/ParagraphContext';
+import { paraButtons } from '../model/paragraphs';
+import { findBlock } from '../model/document';
 
 type Props = {
   doc: Doc;
@@ -65,6 +68,17 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
 
   const ink = useInk(doc.id, page?.index ?? 0);
 
+  // 聚焦的段落：點段號開、再點一次或點空白處關；翻頁就放掉（那一段可能不在這一頁了）
+  const [para, setPara] = useState<{ id: string; el: HTMLElement } | null>(null);
+  useEffect(() => setPara(null), [current]);
+  const paraFocus = useMemo<ParaFocus>(
+    () => ({
+      focusId: para?.id ?? null,
+      toggle: (id, el) => setPara((cur) => (cur?.id === id ? null : { id, el })),
+    }),
+    [para]
+  );
+
   const togglePin = useCallback(
     (t: RailTool) => {
       setPinned((list) => {
@@ -101,7 +115,10 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
         if (tool) {
           setTool(null);
           e.stopPropagation();
+          return;
         }
+        // 泡泡開著時 Esc 先由檢視器收泡泡（它在捕獲階段接走），再按一次才放掉聚焦
+        if (para) setPara(null);
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
@@ -114,7 +131,7 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
     };
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
-  }, [tool, toolboxOpen, outlineOpen, ink]);
+  }, [tool, toolboxOpen, outlineOpen, ink, para]);
 
   return (
     <Root>
@@ -151,7 +168,14 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
       />
 
       <Main>
-        <Stage ref={stageRef as RefObject<HTMLElement>}>
+        <ParaFocusCtx.Provider value={paraFocus}>
+        <Stage
+          ref={stageRef as RefObject<HTMLElement>}
+          onPointerDown={(e) => {
+            // 點段號以外的地方就放掉聚焦（段號自己會切換）
+            if (para && !(e.target as HTMLElement).closest('[data-para-no]')) setPara(null);
+          }}
+        >
           {/* 點一句留黑、其餘調暗；它不畫任何 DOM，只掛監聽 */}
           <SentenceFocus active root={stageRef} />
           {page && (
@@ -168,6 +192,8 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
           )}
           {page && <Supplements page={page} open={supplementOpen} onClose={() => setSupplementOpen(false)} />}
         </Stage>
+        </ParaFocusCtx.Provider>
+        {para && <ParaRail doc={doc} focus={para} />}
       </Main>
 
       {outlineOpen && (
@@ -201,6 +227,80 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
     </Root>
   );
 }
+
+/**
+ * 聚焦段落時右側那排圓形按鈕：旨、修、句、問（填了才有），有補充再加一顆補。
+ * 按下去在那一段旁邊彈泡泡——用的是補充同一個泡泡，直排時一樣往左長、字是直的。
+ */
+function ParaRail({ doc, focus }: { doc: Doc; focus: { id: string; el: HTMLElement } }) {
+  const viewer = usePopupViewer();
+  const hit = findBlock(doc, focus.id);
+  const block = hit?.block.type === 'text' ? hit.block : null;
+  if (!block || !viewer) return null;
+  const buttons = paraButtons(block);
+  // 泡泡對準整個段落元件（段號的父層），不是對準小小的段號
+  const anchor = focus.el.parentElement ?? focus.el;
+  return (
+    <Rail aria-label="這一段的說明">
+      {buttons.length === 0 && <RailEmpty>這一段沒有說明</RailEmpty>}
+      {buttons.map((b) => (
+        <RoundBtn
+          key={b.key}
+          type="button"
+          title={b.name}
+          aria-label={b.name}
+          onClick={() => {
+            if (b.key === 'bu') {
+              viewer.open({ ...block, popups: readyPopups(block) }, anchor);
+              return;
+            }
+            const body = block.paraNotes?.[b.key] ?? '';
+            viewer.open({ ...block, popups: [{ id: `para-${b.key}`, kind: 'text', title: b.name, body }] }, anchor);
+          }}
+        >
+          {b.btn}
+        </RoundBtn>
+      ))}
+    </Rail>
+  );
+}
+
+const Rail = styled.nav`
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const RoundBtn = styled.button`
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 999px;
+  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
+  background: ${(p) => p.theme.surface.raised};
+  box-shadow: ${(p) => p.theme.shadow.card};
+  color: ${(p) => p.theme.text.primary};
+  font: inherit;
+  font-size: var(--ds-typography-body-size);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: ${(p) => p.theme.surface.sunken}; }
+  &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: 2px; }
+`;
+
+const RailEmpty = styled.span`
+  writing-mode: vertical-rl;
+  font-size: var(--ds-typography-caption-size);
+  color: ${(p) => p.theme.text.tertiary};
+`;
 
 const Root = styled.div`
   flex: 1;

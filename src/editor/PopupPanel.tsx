@@ -16,6 +16,8 @@ import { canHavePopup } from '../model/registry';
 import { RichPopupModal } from './RichPopupModal';
 import { ConfirmDialog } from './ConfirmDialog';
 import type { PopupItem } from '../model/types';
+import { PARA_NOTE_KINDS } from '../model/paragraphs';
+import { useParagraphIndex } from '../components/ParagraphContext';
 
 /**
  * 掛補充的設定面板。
@@ -60,6 +62,7 @@ export function PopupPanel() {
   const [dropAt, setDropAt] = useState<number | null>(null);
   const addRef = useRef<HTMLDivElement>(null);
   const [confirmChange, setConfirmChange] = useState(false);
+  const paraIndex = useParagraphIndex();
 
   useEffect(() => {
     if (!blockId) return;
@@ -76,6 +79,9 @@ export function PopupPanel() {
 
   const { block } = hit;
   const close = () => ed.openPopupPanel(null);
+  // 課文段落的第一塊：面板多出旨修句問四格，原本的補充歸在「補」底下——跟閱讀時那排圓形按鈕同一個順序
+  const paraNo = block.type === 'text' && block.paragraph ? paraIndex.get(block.id)?.no ?? null : null;
+  const paraBlock = block.type === 'text' && paraNo != null ? block : null;
   const patch = (item: PopupItem) => ed.dispatch({ type: 'updatePopup', blockId, item });
 
   /** 更換種類：清掉這個元件所有補充，回到種類選單 */
@@ -96,13 +102,43 @@ export function PopupPanel() {
   return createPortal(
     <Drawer role="dialog" aria-label="補充內容設定">
       <Head>
-        <Title>補充內容</Title>
+        <Title>{paraBlock ? `第 ${paraNo} 段` : '補充內容'}</Title>
         <Ghost onClick={close} aria-label="關閉">
           <Icon name="x" size={24} label="關閉" />
         </Ghost>
       </Head>
 
       <Body>
+        {paraBlock && (
+          <>
+            {PARA_NOTE_KINDS.map((k) => (
+              <NoteField key={k.key}>
+                <NoteHead>
+                  <NoteDot aria-hidden>{k.btn}</NoteDot>
+                  {k.name}
+                </NoteHead>
+                <Area
+                  rows={3}
+                  value={paraBlock.paraNotes?.[k.key] ?? ''}
+                  placeholder={k.key === 'wen' ? '可以換行分點，例如：一、……' : '填了才會出現這顆按鈕'}
+                  aria-label={k.name}
+                  onChange={(e) =>
+                    ed.dispatch({
+                      type: 'patchBlock',
+                      blockId,
+                      blockType: 'text',
+                      patch: { paraNotes: { ...paraBlock.paraNotes, [k.key]: e.target.value } },
+                    })
+                  }
+                />
+              </NoteField>
+            ))}
+            <NoteHead>
+              <NoteDot aria-hidden>補</NoteDot>
+              補充
+            </NoteHead>
+          </>
+        )}
         {/* 這個元件放的是哪一種（一個元件只能一種）：只在這裡寫一次，旁邊「更換」 */}
         {block.popups.length > 0 && (
           <KindRow>
@@ -847,3 +883,30 @@ const AddItem = styled.button`
   ${AddWrap}[data-open] &:hover { background: ${(p) => p.theme.surface.muted}; }
 `
 
+
+/** 段落說明的一格：上面一顆跟閱讀時同款的小圓鈕＋名稱，下面文字框 */
+const NoteField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const NoteHead = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${(p) => p.theme.space.gapSm};
+  font-size: var(--ds-typography-body-sm-size);
+  font-weight: 500;
+  color: ${(p) => p.theme.text.primary};
+`;
+
+const NoteDot = styled.span`
+  display: grid;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: 999px;
+  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
+  background: ${(p) => p.theme.surface.raised};
+  font-size: var(--ds-typography-caption-size);
+`;

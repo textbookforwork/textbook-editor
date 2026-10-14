@@ -77,7 +77,7 @@ export function InlineTextTools({ block, blockId, start, end }: InlineProps) {
         }
         title={rubyOn ? '取消注音' : '加上注音'}
       >
-        注音
+        注
       </ToolBtn>
 
       <ToolBtn $iconOnly $on={all('underline')} onClick={() => toggle('underline')} title="底線">
@@ -278,6 +278,17 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
   const rubyOn = hasAllRuby(block.spans);
   const [alignOpen, setAlignOpen] = useState(false);
   const alignRef = useRef<HTMLButtonElement>(null);
+  const [fontOpen, setFontOpen] = useState(false);
+  const fontRef = useRef<HTMLButtonElement>(null);
+  // 整段的字型：每個字都同一種才算有值；混用時按鈕顯示「字型」
+  const fonts = new Set(block.spans.filter((x) => x.text).map((x) => x.fontFamily ?? null));
+  const blockFont = fonts.size <= 1 ? ([...fonts][0] ?? null) : undefined;
+  const setBlockFont = (value: string | null) =>
+    ed.dispatch({
+      type: 'setSpans',
+      blockId,
+      spans: block.spans.map(({ fontFamily: _drop, ...rest }) => (value ? { ...rest, fontFamily: value } : rest)),
+    });
 
   // 這一段實際的方向：自己有設就照自己的，沒設跟整本
   const effective = block.writingMode ?? settings.writingMode;
@@ -298,6 +309,39 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
 
   return (
     <>
+      {/* 整段的字型：跟選字時的字體選單同一份清單，套到這一段每個字 */}
+      <ToolBtn
+        ref={fontRef}
+        $open={fontOpen}
+        onClick={() => setFontOpen((o) => !o)}
+        title="字型"
+        aria-label="字型"
+      >
+        {blockFont === undefined ? '字型' : INLINE_FONTS.find((f) => f.value === blockFont)?.label ?? '字型'}
+        <Icon name="chevron-down" size={16} />
+      </ToolBtn>
+      {fontOpen && (
+        <Popover anchor={fontRef.current} label="字型" onClose={() => setFontOpen(false)}>
+          <Menu>
+            {INLINE_FONTS.map((f) => (
+              <MenuItem
+                key={f.label}
+                type="button"
+                $on={blockFont === f.value}
+                style={f.value ? { fontFamily: f.value } : undefined}
+                onClick={() => {
+                  setBlockFont(f.value);
+                  setFontOpen(false);
+                }}
+              >
+                {f.label}
+                <Sample style={f.value ? { fontFamily: f.value } : undefined}>永字八法</Sample>
+              </MenuItem>
+            ))}
+          </Menu>
+        </Popover>
+      )}
+
       {/* 字級：直接顯示目前字級數字，用下拉選單調整 */}
       <Dropdown
         variant="tool"
@@ -373,7 +417,7 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
         }
         title={rubyOn ? '取消這一段的注音' : '為這一段加上注音'}
       >
-        注音
+        注
       </ToolBtn>
 
       {/*

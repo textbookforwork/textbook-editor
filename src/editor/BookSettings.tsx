@@ -82,7 +82,14 @@ export function BookSettings({ doc, onPatch, onMeta, onClose, onImport }: Props)
         </Group>
 
         <Group>
-          <GroupLabel>頁面比例</GroupLabel>
+          <GroupLabel>
+            頁面比例
+            {/* 點一下或滑過才出現，平板沒有滑過，所以做成按鈕、靠 focus 打開 */}
+            <Hint type="button" aria-label="頁面比例怎麼選" aria-describedby="ratio-hint">
+              <Icon name="info" size={16} />
+              <HintText id="ratio-hint" role="tooltip">iPad 選 4:3，Chromebook 選 16:9。</HintText>
+            </Hint>
+          </GroupLabel>
           <SegmentedControl
             aria-label="頁面比例"
             value={s.aspectRatio}
@@ -199,6 +206,49 @@ const GroupLabel = styled.span`
   font-size: var(--ds-typography-label-size);
   font-weight: var(--ds-typography-label-weight);
   color: ${(p) => p.theme.text.secondary};
+`;
+
+/** 跟標題同色、比標題字小一點，看起來是標題的一部分，不是另一顆按鈕 */
+const Hint = styled.button`
+  position: relative;
+  inline-size: 16px;
+  block-size: 16px;
+  margin-inline-start: 2px;
+  display: inline-grid;
+  place-items: center;
+  vertical-align: -2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: ${(p) => p.theme.icon.secondary};
+  cursor: help;
+
+  svg { inline-size: 14px; block-size: 14px; }
+  &:hover, &:focus-visible { color: ${(p) => p.theme.icon.default}; }
+`;
+
+/** 跟其他浮層同一套：淡白底、細框、浮起的陰影，字用次要色 */
+const HintText = styled.span`
+  position: absolute;
+  inset-block-start: calc(100% + 6px);
+  inset-inline-start: -8px;
+  z-index: 10;
+  padding: 8px 12px;
+  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
+  border-radius: ${(p) => p.theme.radius.field};
+  background: ${(p) => p.theme.surface.page};
+  box-shadow: ${(p) => p.theme.shadow.float};
+  color: ${(p) => p.theme.text.secondary};
+  font-size: var(--ds-typography-label-size);
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+
+  ${Hint}:hover &,
+  ${Hint}:focus & { opacity: 1; }
 `;
 
 const Triple = styled.div`

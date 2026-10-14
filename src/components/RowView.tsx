@@ -12,6 +12,8 @@ import { textFlowStyle, FLOW_SHARE_OF_PAGE } from '../styles/roles';
 import { usePopupViewer } from '../viewer/PopupViewer';
 import { readyPopups } from '../model/popups';
 import { PopupBadge } from './PopupBadge';
+import { useParagraphIndex, useParaFocus } from './ParagraphContext';
+import { paraLabel } from '../model/paragraphs';
 import { COLUMN_GAP } from '../model/pageSize';
 import { blockBox, fitTwoPerPage } from '../model/blockSizing';
 import { blockRegistry } from '../model/registry';
@@ -113,6 +115,9 @@ export function RowView({
   const ed = useEditorCtx();
   // 檢視器在編輯與預覽兩邊都在：老師看到的補充就是學生看到的那一個
   const viewer = usePopupViewer();
+  const paraIndex = useParagraphIndex();
+  // 只有閱讀模式有：點段號聚焦那一段
+  const paraFocus = useParaFocus();
   const vertical = settings.writingMode === 'vertical';
   const ref = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
@@ -287,9 +292,13 @@ export function RowView({
                   // 閱讀時不放角標：有補充的元件本身就能點，點下去直接打開。
                   // 元件裡自己會動的東西（播放鈕、連結、注釋號）照舊，不被搶走
                   const ready = readyPopups(b);
-                  const tap = !ed && viewer && ready.length > 0
+                  // 課文段落不靠點元件本身打開：點段號聚焦，再按右側的圓形按鈕（「補」就是這些補充）
+                  const para = b.type === 'text' ? paraIndex.get(b.id) : undefined;
+                  const tap = !ed && viewer && ready.length > 0 && !para
                     ? (el: HTMLElement) => viewer.open({ ...b, popups: ready }, el)
                     : null;
+                  // 聚焦某一段時，其他元件調暗；同一段被換頁切開的後半一起亮
+                  const dim = !!paraFocus?.focusId && para?.startId !== paraFocus.focusId;
                   return (
                   <BlockShell
                     key={b.id}
@@ -323,7 +332,33 @@ export function RowView({
                     /* 非文字元件只佔自己那麼大：縮成一半的圖，右邊那一半是空白，
                        點下去要算點到空白，不是點到圖 */
                     $fit={b.type !== 'text'}
+                    $dim={dim}
                   >
+                    {/* 段號：畫在段首外側的頁邊（絕對定位，不佔版面）。被切到下一頁的那一份不再畫。
+                        編輯時點它打開這一段的說明面板；閱讀時點它聚焦這一段；縮圖裡只是記號 */}
+                    {para?.no != null && isStart && (
+                      <ParaNo
+                        type="button"
+                        data-para-no
+                        $vertical={vertical}
+                        $active={!!ed || !!paraFocus}
+                        $edit={!!ed}
+                        $on={paraFocus?.focusId === para.startId}
+                        tabIndex={ed || paraFocus ? 0 : -1}
+                        aria-hidden={ed || paraFocus ? undefined : true}
+                        aria-label={ed ? `第 ${para.no} 段：編輯段落說明` : `第 ${para.no} 段`}
+                        aria-pressed={paraFocus ? paraFocus.focusId === para.startId : undefined}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (ed) {
+                            ed.select(b.id);
+                            ed.openPopupPanel(b.id);
+                          } else paraFocus?.toggle(para.startId, e.currentTarget);
+                        }}
+                      >
+                        {paraLabel(para.no, vertical)}
+                      </ParaNo>
+                    )}
                     {ed && mode && box && (
                       <ResizeHandles
                         mode={mode}
@@ -346,7 +381,8 @@ export function RowView({
                         }
                       />
                     )}
-                    {ready.length > 0 && !tap && (
+                    {/* 閱讀時的課文段落不畫角標：它的補充收在右側的「補」按鈕裡 */}
+                    {ready.length > 0 && !tap && !(para && !ed) && (
                       <PopupBadge
                         count={readyPopups(b).length}
                         /* 把角標本身交出去：一項的補充直接在角標旁彈泡泡，多項才開中央視窗。只交出填完的項目 */
@@ -715,9 +751,11 @@ const Continues = styled.div<{ $end?: boolean }>`
  * 以及畫選取態。外框用 outline 不用 border——border 會改變元素尺寸，
  * 而尺寸是分頁算過的，一改就跟量測對不起來。
  */
-const BlockShell = styled.div<{ $selected?: boolean; $framed?: boolean; $fit?: boolean; $tap?: boolean }>`
+const BlockShell = styled.div<{ $selected?: boolean; $framed?: boolean; $fit?: boolean; $tap?: boolean; $dim?: boolean }>`
   position: relative;
   border-radius: 4px;
+  transition: opacity 0.2s;
+  ${(p) => p.$dim && 'opacity: 0.28;'}
   /*
    * 閱讀時有補充的元件：不畫框線；滑過時鋪一層淡灰底，往外多鋪 8px（用陰影鋪，不佔版面），
    * 告訴學生這裡點得下去。框線只在用鍵盤移到它時出現（無障礙）
@@ -739,4 +777,37 @@ const BlockShell = styled.div<{ $selected?: boolean; $framed?: boolean; $fit?: b
 
   /* 外框已經畫在這裡，裡面的文字取得焦點時就不要再畫一圈 */
   ${(p) => p.$selected && '[contenteditable]:focus-visible { outline: none; }'}
+`;
+
+/**
+ * 段號：方框裡一個數字（直排是國字）。對齊段落的第一行（直排是第一欄），
+ * 畫在外側 10px——橫排在左邊、直排在上方，都落在頁面留白裡。
+ * 用實體的 top / right / bottom，直排時邏輯軸會轉向，不能用 inset-inline 之類。
+ */
+const ParaNo = styled.button<{ $vertical: boolean; $active: boolean; $on: boolean; $edit: boolean }>`
+  position: absolute;
+  /* 編輯時列的拖曳握把佔著段首外側那一格，段號讓到旁邊（直排往左、橫排往下） */
+  ${(p) =>
+    p.$vertical
+      ? `bottom: calc(100% + 10px); right: ${p.$edit ? 34 : 3}px;`
+      : `right: calc(100% + 10px); top: ${p.$edit ? 34 : 3}px;`}
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  writing-mode: horizontal-tb;
+  border: 1.5px solid ${(p) => p.theme.text.primary};
+  border-radius: 4px;
+  background: ${(p) => (p.$on ? p.theme.text.primary : p.theme.surface.raised)};
+  color: ${(p) => (p.$on ? p.theme.surface.raised : p.theme.text.primary)};
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: ${(p) => (p.$active ? 'pointer' : 'default')};
+  pointer-events: ${(p) => (p.$active ? 'auto' : 'none')};
+  transition: background 0.15s, color 0.15s;
+  ${(p) => p.$active && !p.$on && `&:hover { background: ${p.theme.surface.sunken}; }`}
+  &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: 2px; }
 `;

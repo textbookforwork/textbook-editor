@@ -107,6 +107,12 @@ export type Footnote = {
   body: string;
 };
 
+// ── 段落 ─────────────────────────────────────────────────
+/** 段落說明的種類：段旨、修辭、句型、提問。「補」是元件原本的補充（popups），不在這裡。 */
+export type ParaNoteKind = 'zhi' | 'xiu' | 'ju' | 'wen';
+/** 每種一則，可以換行分點（例如提問的「一、……二、……」）。空字串視同沒有。 */
+export type ParaNotes = Partial<Record<ParaNoteKind, string>>;
+
 // ── Pop-up ───────────────────────────────────────────────
 /**
  * Pop-up 是元件的屬性，不是第十種元件。一個元件可以掛多個。
@@ -196,6 +202,14 @@ export type TextBlock = BlockBase & {
    * 直排時是行與行（直行之間）的距離。
    */
   lineHeight?: number;
+  /**
+   * 課文段落。start＝新的一段（段號自動編，橫排 1、2、3，直排一、二、三）；
+   * continue＝接續上一段（被換頁切開的後半，不編號，聚焦時跟上一段一起亮）。沒設＝不是段落。
+   * 段號畫在段首外側的頁邊，不佔版面，所以分頁不受影響。
+   */
+  paragraph?: 'start' | 'continue';
+  /** 段落的說明，閱讀時一種一顆圓形按鈕。只有 paragraph === 'start' 的那一塊會用到。 */
+  paraNotes?: ParaNotes;
   /** 對齊。用邏輯值，直排時 start 是上、end 是下。沒設＝start。 */
   align?: 'start' | 'center' | 'end' | 'justify';
   /**
