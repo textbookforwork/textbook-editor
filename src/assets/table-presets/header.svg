@@ -1,0 +1,23 @@
+<svg width="72" height="48" viewBox="0 0 72 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="tablePreview">
+<g clip-path="url(#clip0_0_64)">
+<rect width="72" height="48" rx="8" fill="white"/>
+<path id="Vector" d="M72 0H0V12H72V0Z" fill="#F0FF62"/>
+<g id="Vector_2">
+</g>
+<g id="Vector_3">
+</g>
+<path id="Vector_4" d="M24 0V48" stroke="#9D9C9A"/>
+<path id="Vector_5" d="M48 0V48" stroke="#9D9C9A"/>
+<path id="Vector_6" d="M0 12H72" stroke="#9D9C9A"/>
+<path id="Vector_7" d="M0 24H72" stroke="#9D9C9A"/>
+<path id="Vector_8" d="M0 36H72" stroke="#9D9C9A"/>
+</g>
+<rect x="0.5" y="0.5" width="71" height="47" rx="7.5" stroke="#9D9C9A"/>
+</g>
+<defs>
+<clipPath id="clip0_0_64">
+<rect width="72" height="48" rx="8" fill="white"/>
+</clipPath>
+</defs>
+</svg>
