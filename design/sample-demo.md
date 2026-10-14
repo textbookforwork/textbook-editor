@@ -7,6 +7,7 @@ grade: 3
 term: 下
 subject: 自然
 direction: 橫排
+layout: 自動切頁
 unit: 夜空的觀察
 page: [40, 47]
 ---

@@ -73,13 +73,13 @@ function parseFrontmatter(src: string): { meta: DocMeta; settings: Partial<DocSe
   const range = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/.exec(fields.page ?? '');
   return {
     title: fields.title ?? '',
-    // 寫了才覆寫：沒寫的話沿用目前的設定。範例都明寫，切換範例時方向才不會殘留上一份的
-    settings:
-      fields.direction === '直排'
-        ? { writingMode: 'vertical' }
-        : fields.direction === '橫排'
-          ? { writingMode: 'horizontal' }
-          : {},
+    // 方向、版型都是寫了才覆寫：沒寫的話沿用目前的設定。範例都明寫，切換範例時才不會殘留上一份的
+    settings: {
+      ...(fields.direction === '直排' ? { writingMode: 'vertical' as const } : {}),
+      ...(fields.direction === '橫排' ? { writingMode: 'horizontal' as const } : {}),
+      ...(fields.layout === '自動切頁' ? { layout: 'paged' as const } : {}),
+      ...(fields.layout === '流式排版' ? { layout: 'flow' as const } : {}),
+    },
     meta: {
       sourceId: fields.id,
       publisher: fields.publisher,
