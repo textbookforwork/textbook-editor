@@ -126,7 +126,8 @@ export type Action =
    * 免得把 { url } 蓋到一段文字上。
    */
   | { type: 'patchBlock'; blockId: string; blockType: Block['type']; patch: BlockPatch }
-  | { type: 'addPopup'; blockId: string; item: PopupItem }
+  /** forWords：要連到幾個字上的補充，自成一組，不受「一個元件一種」的限制（種類由面板管）。 */
+  | { type: 'addPopup'; blockId: string; item: PopupItem; forWords?: boolean }
   | { type: 'updatePopup'; blockId: string; item: PopupItem }
   | { type: 'removePopup'; blockId: string; popupId: string }
   | { type: 'reorderPopups'; blockId: string; from: number; to: number };

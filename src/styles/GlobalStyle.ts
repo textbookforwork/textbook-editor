@@ -56,6 +56,41 @@ export const GlobalStyle = createGlobalStyle`
     word-break: break-word;
 
     /*
+     * 段號：段首第一格的方框字（照國文 prototype）。畫成 ::before，不進文字內容，
+     * 游標與「第幾個字」的換算都碰不到它。框的大小固定，不隨號碼變——
+     * 量測探針只要知道「是段落」就量得準，不必知道第幾段。
+     * 兩位數在直排裡用直中橫擠進同一格。
+     */
+    &[data-pno]::before {
+      content: attr(data-pno);
+      display: inline-block;
+      box-sizing: border-box;
+      inline-size: 1.4em;
+      block-size: 1.4em;
+      /* 框後空一個全形字：這裡的 em 是框自己縮成 0.7 的字級，除回去才是內文的一個字寬 */
+      margin-inline-end: calc(1em / 0.7);
+      border: 1.5px solid currentColor;
+      border-radius: 4px;
+      font-size: 0.7em;
+      font-weight: 600;
+      line-height: calc(1.4em - 3px);
+      text-align: center;
+      text-indent: 0;
+      vertical-align: middle;
+      text-combine-upright: all;
+      transition: background 0.15s, color 0.15s;
+    }
+    /* 直排用 middle 會往右偏約 0.2 字（它對齊的是西文的 x 字高）；用 baseline 才落在字欄正中 */
+    [data-vertical] &[data-pno]::before,
+    &[data-vertical][data-pno]::before { vertical-align: baseline; }
+    &[data-horizontal][data-pno]::before { vertical-align: middle; }
+    &[data-pno-on]::before {
+      background: ${(p) => p.theme.text.primary};
+      border-color: ${(p) => p.theme.text.primary};
+      color: ${(p) => p.theme.surface.raised};
+    }
+
+    /*
      * 注音照課本的排法：每個字的右邊一條直的注音欄，橫排、直排都一樣。
      * 不用瀏覽器內建的 ruby 排版——它把注音當一串字橫著攤在字的上方（直排時攤在旁邊、
      * 拉得跟字一樣長），調號也被當成一般的字排進去。
@@ -127,6 +162,19 @@ export const GlobalStyle = createGlobalStyle`
       text-underline-offset: 0.12em;
       text-decoration-skip-ink: none;
     }
+    /*
+     * 只有底線時畫成設計系統的深綠（border.accent，跟啟用狀態同一個綠）。
+     * 跟刪除線、上線疊在一起時，CSS 一個元素只能有一個裝飾線顏色，就維持字色。
+     */
+    [data-u]:not([data-s]):not([data-o]) { text-decoration-color: ${(p) => p.theme.border.accent}; }
+    /*
+     * 標成生字、語詞、句子的字已經有側邊點點線，不再畫底線（兩條線並排分不出哪條能點）。
+     * 刪除線、上線照留。
+     */
+    [data-note][data-u] { text-decoration-line: none; }
+    [data-note][data-u][data-s] { text-decoration-line: line-through; }
+    [data-note][data-u][data-o] { text-decoration-line: overline; }
+    [data-note][data-u][data-s][data-o] { text-decoration-line: line-through overline; }
 
     ruby rt {
       font-weight: 400;
@@ -148,6 +196,29 @@ export const GlobalStyle = createGlobalStyle`
     [data-pop]:hover { background: ${(p) => p.theme.brand.primary}; }
 
     /*
+     * 標了段落說明（旨修句問）的幾個字：旁邊一條點線，跟國文 prototype 一樣。
+     * 畫在 block 方向的邊框上——行內元素這個方向的邊框不撐行高，量測與畫面一致。
+     * 橫排畫在字下，直排畫在字右（下面的直排規則）。
+     */
+    [data-note] {
+      border-block-end: 2px dotted ${(p) => p.theme.text.tertiary};
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+      cursor: pointer;
+    }
+    /*
+     * 帶注音的字是一個橫的小盒子（見上面的 ruby），邊框會畫錯邊、還會撐開它。
+     * 改用背景畫點線：不佔空間。橫排畫在字下，直排的規則在下面（畫在字的右緣、注音的左邊）。
+     */
+    ruby[data-note] {
+      border: none;
+      background-image: linear-gradient(to right, ${(p) => p.theme.text.tertiary} 50%, transparent 0);
+      background-size: 4px 2px;
+      background-repeat: repeat-x;
+      background-position: 0 100%;
+    }
+
+    /*
      * 注釋號是一個原子，跟注音同一類：看得到、刪得掉，但編不進去。
      * 游標計算會跳過它（見 editor/caret.ts），所以行內標記的範圍
      * 不會因為課文裡有 25 個編號而整段位移。
@@ -162,7 +233,16 @@ export const GlobalStyle = createGlobalStyle`
     }
   }
 
-  /* 直排：底線在左、上線在右（橫排的「上」到直排是右側） */
+  /* 直排：點點線畫在字的左側（block-end 在直排就是左邊），跟底線同一側——標了的字不畫底線，不會疊在一起 */
+  [data-vertical] .ds-rich ruby[data-note],
+  .ds-rich[data-vertical] ruby[data-note] {
+    border: none;
+    background-image: linear-gradient(to bottom, ${(p) => p.theme.text.tertiary} 50%, transparent 0);
+    background-size: 2px 4px;
+    background-repeat: repeat-y;
+    /* 點線在字的左側，跟沒注音的字對齊在同一條線上（注音欄在右邊，不受影響） */
+    background-position: 0 0;
+  }
   [data-vertical] .ds-rich [data-u],
   .ds-rich[data-vertical] [data-u] {
     text-underline-position: left;

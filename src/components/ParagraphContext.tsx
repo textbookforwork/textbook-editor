@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
 import { paragraphIndex, type ParaInfo } from '../model/paragraphs';
 import type { Row } from '../model/types';
+import { circled, wordNoteNumbers } from '../model/wordNotes';
 
 /**
  * 段號要看整份文件才算得出來，但畫段號的 RowView 只拿得到自己那一列，
@@ -10,10 +11,27 @@ const IndexCtx = createContext<Map<string, ParaInfo>>(new Map());
 
 export function ParagraphProvider({ rows, children }: { rows: Row[]; children: ReactNode }) {
   const index = useMemo(() => paragraphIndex(rows), [rows]);
-  return <IndexCtx.Provider value={index}>{children}</IndexCtx.Provider>;
+  const nos = useMemo(() => wordNoteNumbers(rows), [rows]);
+  return (
+    <IndexCtx.Provider value={index}>
+      <NoteNoCtx.Provider value={nos}>{children}</NoteNoCtx.Provider>
+    </IndexCtx.Provider>
+  );
 }
 
 export const useParagraphIndex = () => useContext(IndexCtx);
+
+/** 生字詞的號碼（①②）也要看整份文件才算得出來，跟段號同一個地方算、往下傳。 */
+const NoteNoCtx = createContext<Map<string, number>>(new Map());
+export const useWordNoteNumbers = () => useContext(NoteNoCtx);
+/** 給 spansToHtml 的號碼函式 */
+export function useNoteNo() {
+  const nos = useContext(NoteNoCtx);
+  return useCallback((id: string) => {
+    const n = nos.get(id);
+    return n ? circled(n) : undefined;
+  }, [nos]);
+}
 
 /**
  * 閱讀時聚焦哪一段。只有閱讀模式提供；編輯與縮圖拿到 null，段號就只是記號。

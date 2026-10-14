@@ -37,6 +37,7 @@ export function sameMarks(a: InlineSpan, b: InlineSpan): boolean {
     normalColor(a.color) === normalColor(b.color) &&
     (a.fontFamily ?? undefined) === (b.fontFamily ?? undefined) &&
     (a.popupId ?? undefined) === (b.popupId ?? undefined) &&
+    (a.noteId ?? undefined) === (b.noteId ?? undefined) &&
     a.href === b.href &&
     a.footnoteRef === b.footnoteRef
   );
@@ -58,6 +59,7 @@ export type SpanMarks = Pick<
   | 'color'
   | 'fontFamily'
   | 'popupId'
+  | 'noteId'
   | 'ruby'
 >;
 

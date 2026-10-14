@@ -75,6 +75,13 @@ export type EditorUI = {
   popupFor: string | null;
   openPopupPanel: (blockId: string | null) => void;
 
+  /**
+   * 從文字工具列按「補充」開面板時，選起來的那幾個字。
+   * 游標一移進面板，畫面上的選取就沒了，所以先記在這裡，面板最上方拿它來標旨修句問或連補充。
+   */
+  popupPick: PopupPick | null;
+  setPopupPick: (p: PopupPick | null) => void;
+
   /** 用學生看到的樣子預覽這個元件的補充。 */
   previewPopups: (block: Block) => void;
 
@@ -88,6 +95,8 @@ export type InlineSelection = {
   slice?: { start: number; end: number };
 };
 
+export type PopupPick = { blockId: string; start: number; end: number };
+
 const Ctx = createContext<(Editor & EditorUI) | null>(null);
 
 export function EditorProvider({ editor, children }: { editor: Editor; children: ReactNode }) {
@@ -99,6 +108,7 @@ export function EditorProvider({ editor, children }: { editor: Editor; children:
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [inlineSelection, setInlineSelection] = useState<InlineSelection | null>(null);
   const [popupFor, openPopupPanel] = useState<string | null>(null);
+  const [popupPick, setPopupPick] = useState<PopupPick | null>(null);
   const viewer = usePopupViewer();
   const previewPopups = useCallback((b: Block) => viewer?.open(b), [viewer]);
 
@@ -257,6 +267,8 @@ export function EditorProvider({ editor, children }: { editor: Editor; children:
       setInlineSelection,
       popupFor,
       openPopupPanel,
+      popupPick,
+      setPopupPick,
       previewPopups,
       startDrag,
     }),
@@ -274,6 +286,7 @@ export function EditorProvider({ editor, children }: { editor: Editor; children:
       dropTarget,
       inlineSelection,
       popupFor,
+      popupPick,
       previewPopups,
       startDrag,
     ]

@@ -10,14 +10,15 @@ import { useEditorCtx } from './EditorContext';
 import { findBlock } from '../model/document';
 import { textOf } from '../model/document';
 import { fetchSiteTitle, linkLabel } from './siteTitle';
-import { POPUP_KIND, POPUP_KINDS, missingOf, newPopup, richPagesOf, withRichPages } from '../model/popups';
+import { POPUP_KIND, POPUP_KINDS, elementPopups, missingOf, newPopup, richPagesOf, withRichPages } from '../model/popups';
 import { getAsset, pickFile, putFile, putImage, urlOf } from './assets';
 import { canHavePopup } from '../model/registry';
 import { RichPopupModal } from './RichPopupModal';
 import { ConfirmDialog } from './ConfirmDialog';
-import type { PopupItem } from '../model/types';
-import { PARA_NOTE_KINDS } from '../model/paragraphs';
+import type { ParaNoteKind, PopupItem, RangeNote } from '../model/types';
+import { PARA_NOTE_KINDS, RANGE_KINDS, rangeKindOf, rangeNoteFilled, sentenceNotesOf } from '../model/paragraphs';
 import { useParagraphIndex } from '../components/ParagraphContext';
+import { lengthOf, markSpans, plainOf, sliceSpans } from '../model/spans';
 
 /**
  * 掛補充的設定面板。
@@ -45,8 +46,28 @@ export function PopupPanel() {
       for (const item of hit.block.popups) {
         if (missingOf(item)) cur.dispatch({ type: 'removePopup', blockId, popupId: item.id });
       }
+      // 框選的字標了生字、語詞、句子卻沒填內容的：連字上的標記一起拿掉，學生不會看到點了沒東西的點點線
+      const b = hit.block;
+      if (b.type === 'text' && b.rangeNotes?.some((n) => !rangeNoteFilled(n))) {
+        const empty = new Set(b.rangeNotes.filter((n) => !rangeNoteFilled(n)).map((n) => n.id));
+        cur.dispatch({
+          type: 'patchBlock',
+          blockId,
+          blockType: 'text',
+          patch: { rangeNotes: b.rangeNotes.filter((n) => !empty.has(n.id)) },
+        });
+        cur.dispatch({
+          type: 'setSpans',
+          blockId,
+          spans: b.spans.map((s) => (s.noteId && empty.has(s.noteId) ? { ...s, noteId: undefined } : s)),
+        });
+      }
     };
   }, [blockId]);
+  // 選起來的字只屬於開面板的那一次：面板關掉或換到別的元件就丟掉
+  useEffect(() => {
+    if (ed?.popupPick && ed.popupPick.blockId !== blockId) ed.setPopupPick(null);
+  }, [blockId, ed]);
   // 展開中的卡片。預設全部收合，一眼看完掛了哪些東西；新增的那一項自動展開
   const [open, setOpen] = useState<Set<string>>(() => new Set());
   const toggle = (id: string) =>
@@ -63,6 +84,8 @@ export function PopupPanel() {
   const addRef = useRef<HTMLDivElement>(null);
   const [confirmChange, setConfirmChange] = useState(false);
   const paraIndex = useParagraphIndex();
+  // 段落說明哪幾格展開著。預設收合，一眼看完填了哪些
+  const [openNotes, setOpenNotes] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     if (!blockId) return;
@@ -83,16 +106,56 @@ export function PopupPanel() {
   const paraNo = block.type === 'text' && block.paragraph ? paraIndex.get(block.id)?.no ?? null : null;
   const paraBlock = block.type === 'text' && paraNo != null ? block : null;
   const patch = (item: PopupItem) => ed.dispatch({ type: 'updatePopup', blockId, item });
+  // 文字改過（長度變了）位置就不準，不再顯示，免得標到別的字上
+  const pick =
+    block.type === 'text' && ed.popupPick?.blockId === blockId && ed.popupPick.end <= lengthOf(block.spans) && ed.popupPick.end > ed.popupPick.start
+      ? ed.popupPick
+      : null;
+
+  // 框選的字：面板跟整段長得一樣（四張卡＋補充），只是改的是這幾個字
+  const picked = pick && block.type === 'text' ? sliceSpans(block.spans, pick.start, pick.end) : [];
+  const quote = plainOf(picked);
+  const same = (key: 'noteId' | 'popupId') => {
+    const first = picked[0]?.[key];
+    return picked.length > 0 && picked.every((x) => x[key] === first) ? first : undefined;
+  };
+  const pickNoteId = same('noteId');
+  const pickNote = pickNoteId && block.type === 'text' ? block.rangeNotes?.find((n) => n.id === pickNoteId) ?? null : null;
+  // 框選的字：補充區只列連到這幾個字的，新增的會自動連過來——其餘長得跟整段一樣
+  const pickPopups = new Set(picked.map((x) => x.popupId).filter(Boolean));
+  // 整段（或整個元件）只列沒連到字上的；框選的字只列連到它們的。兩組各自一種類型
+  const elementIds = new Set(elementPopups(block).map((p) => p.id));
+  const shown = pick ? block.popups.filter((p) => pickPopups.has(p.id)) : block.popups.filter((p) => elementIds.has(p.id));
+  const inGroup = (id: string) => (pick ? pickPopups.has(id) : elementIds.has(id));
+  const markPick = (m: { noteId?: string; popupId?: string }) => {
+    if (!pick || block.type !== 'text') return;
+    ed.dispatch({ type: 'setSpans', blockId, spans: markSpans(block.spans, pick.start, pick.end, m) });
+  };
+  const pickKind = pickNote ? rangeKindOf(pickNote) : null;
+  const patchPickNote = (patch: Partial<RangeNote>) => {
+    if (block.type !== 'text' || !pickNote) return;
+    ed.dispatch({
+      type: 'patchBlock',
+      blockId,
+      blockType: 'text',
+      patch: { rangeNotes: (block.rangeNotes ?? []).map((n) => (n.id === pickNote.id ? { ...n, ...patch } : n)) },
+    });
+  };
+  /** 句子底下的旨修句問（舊資料一併換成新的存法） */
+  const writePickSentence = (kind: ParaNoteKind, value: string) =>
+    pickNote && patchPickNote({ kind: 'sentence', body: '', notes: { ...sentenceNotesOf(pickNote), [kind]: value } });
 
   /** 更換種類：清掉這個元件所有補充，回到種類選單 */
   const clearAll = () => {
-    for (const p of block.popups) ed.dispatch({ type: 'removePopup', blockId, popupId: p.id });
+    for (const p of shown) ed.dispatch({ type: 'removePopup', blockId, popupId: p.id });
     setConfirmChange(false);
   };
 
   const addKind = (k: PopupItem['kind']) => {
     const item = newPopup(k);
-    ed.dispatch({ type: 'addPopup', blockId, item });
+    ed.dispatch({ type: 'addPopup', blockId, item, forWords: !!pick });
+    // 從框選的字進來新增的，順手連到這幾個字
+    if (pick) markPick({ popupId: item.id });
     setOpen((prev) => new Set(prev).add(item.id));
     // 只能上傳的種類（圖片、聲音）直接打開選檔視窗；要打字的就把游標放進第一格
     if (item.kind === 'image' || item.kind === 'audio') void uploadInto(item, patch);
@@ -102,7 +165,7 @@ export function PopupPanel() {
   return createPortal(
     <Drawer role="dialog" aria-label="補充內容設定">
       <Head>
-        <Title>{paraBlock ? `第 ${paraNo} 段` : '補充內容'}</Title>
+        <Title title={pick ? quote : undefined} style={{ minInlineSize: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{pick ? `「${quote}」` : paraBlock ? `第 ${paraNo} 段` : '補充內容'}</Title>
         <Ghost onClick={close} aria-label="關閉">
           <Icon name="x" size={24} label="關閉" />
         </Ghost>
@@ -111,44 +174,158 @@ export function PopupPanel() {
       <Body>
         {paraBlock && (
           <>
-            {PARA_NOTE_KINDS.map((k) => (
-              <NoteField key={k.key}>
-                <NoteHead>
-                  <NoteDot aria-hidden>{k.btn}</NoteDot>
-                  {k.name}
-                </NoteHead>
-                <Area
-                  rows={3}
-                  value={paraBlock.paraNotes?.[k.key] ?? ''}
-                  placeholder={k.key === 'wen' ? '可以換行分點，例如：一、……' : '填了才會出現這顆按鈕'}
-                  aria-label={k.name}
-                  onChange={(e) =>
-                    ed.dispatch({
-                      type: 'patchBlock',
-                      blockId,
-                      blockType: 'text',
-                      patch: { paraNotes: { ...paraBlock.paraNotes, [k.key]: e.target.value } },
-                    })
-                  }
-                />
-              </NoteField>
-            ))}
-            <NoteHead>
-              <NoteDot aria-hidden>補</NoteDot>
-              補充
-            </NoteHead>
+            {/* 框選的字標成生字詞：一則註釋，一行說明，一張卡填完 */}
+            {pick && pickNote && pickKind !== 'sentence' && (
+              <List>
+                <NoteCard data-popup-id={`rnote-${pickNote.id}`} $open>
+                  <NoteRowHead>
+                    <NoteDot aria-hidden $filled={!!pickNote.body.trim()}>{RANGE_KINDS.find((k) => k.key === pickKind)!.dot}</NoteDot>
+                    <NoteName>{RANGE_KINDS.find((k) => k.key === pickKind)!.note}</NoteName>
+                  </NoteRowHead>
+                  <NoteArea
+                    value={pickNote.body}
+                    placeholder="例：音ㄕˋ，愛好。"
+                    aria-label={`「${quote}」的註釋`}
+                    onChange={(e) => patchPickNote({ body: e.target.value })}
+                  />
+                </NoteCard>
+              </List>
+            )}
+            {/* 整段的旨修句問；框選的字標成句子時，是那個句子的旨修句問。沒標的字只管補充 */}
+            {(!pick || pickKind === 'sentence') && <List>
+              {PARA_NOTE_KINDS.map((k) => {
+                const value = pick && pickNote ? sentenceNotesOf(pickNote)[k.key] ?? '' : paraBlock.paraNotes?.[k.key] ?? '';
+                const filled = !!value.trim();
+                const isOpen = openNotes.has(k.key);
+                return (
+                  <NoteCard key={k.key} data-popup-id={`note-${k.key}`} $open={isOpen}>
+                    <NoteToggle
+                      type="button"
+                      aria-expanded={isOpen}
+                      onClick={() => {
+                        setOpenNotes((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(k.key)) next.delete(k.key);
+                          else next.add(k.key);
+                          return next;
+                        });
+                        if (!isOpen) focusFirstField(`note-${k.key}`);
+                      }}
+                    >
+                      <NoteDot aria-hidden $filled={filled}>{k.btn}</NoteDot>
+                      <NoteName>{k.name}</NoteName>
+                      {/* 收合時：填過的接一行摘要，沒填的只有右邊一個 ＋ */}
+                      {!isOpen && filled && <NoteSummary>{value.replace(/\s+/g, ' ')}</NoteSummary>}
+                      {!isOpen && !filled && (
+                        <NotePlus>
+                          <Icon name="plus" size={16} />
+                        </NotePlus>
+                      )}
+                    </NoteToggle>
+                    {isOpen && (
+                      <NoteArea
+                        value={value}
+                        aria-label={pick ? `「${quote}」的${k.name}` : k.name}
+                        onChange={(e) =>
+                          pick
+                            ? writePickSentence(k.key, e.target.value)
+                            : ed.dispatch({
+                                type: 'patchBlock',
+                                blockId,
+                                blockType: 'text',
+                                patch: { paraNotes: { ...paraBlock.paraNotes, [k.key]: e.target.value } },
+                              })
+                        }
+                      />
+                    )}
+                  </NoteCard>
+                );
+              })}
+            </List>}
+            {/* 框選幾個字標的說明：引出那幾個字，下面直接填 */}
+            {/* 已經標過的框選字：整段的時候才列，框選字的時候上面四張卡就是它們 */}
+            {!pick && (paraBlock.rangeNotes?.length ?? 0) > 0 && (
+              <>
+                <Section>
+                  <SectionLabel>框選的字</SectionLabel>
+                </Section>
+                <List>
+                  {paraBlock.rangeNotes!.map((n) => {
+                    const kind = RANGE_KINDS.find((k) => k.key === rangeKindOf(n))!;
+                    const quote = paraBlock.spans.filter((s) => s.noteId === n.id).map((s) => s.text).join('');
+                    const sentence = kind.key === 'sentence';
+                    return (
+                      <NoteCard key={n.id} data-popup-id={`rnote-${n.id}`} $open>
+                        <NoteRowHead>
+                          <NoteDot aria-hidden $filled={rangeNoteFilled(n)}>{kind.dot}</NoteDot>
+                          <NoteQuote title={quote}>「{quote}」</NoteQuote>
+                          <Trash
+                            onClick={() => {
+                              ed.dispatch({
+                                type: 'patchBlock',
+                                blockId,
+                                blockType: 'text',
+                                patch: { rangeNotes: paraBlock.rangeNotes!.filter((x) => x.id !== n.id) },
+                              });
+                              ed.dispatch({
+                                type: 'setSpans',
+                                blockId,
+                                spans: paraBlock.spans.map((s) => (s.noteId === n.id ? { ...s, noteId: undefined } : s)),
+                              });
+                            }}
+                            aria-label={`刪除這則${kind.note}`}
+                          >
+                            <Icon name="trash" size={16} label="刪除" />
+                          </Trash>
+                        </NoteRowHead>
+                        {/* 句子底下的旨修句問要在課文裡選那幾個字、按補充再改；這裡只列填了哪些 */}
+                        {sentence ? (
+                          <NoteSummary as="p" style={{ whiteSpace: 'normal' }}>
+                            {PARA_NOTE_KINDS.filter((k) => sentenceNotesOf(n)[k.key]?.trim())
+                              .map((k) => `${k.name}：${sentenceNotesOf(n)[k.key]!.trim()}`)
+                              .join('　') || '還沒填'}
+                          </NoteSummary>
+                        ) : (
+                          <NoteArea
+                            value={n.body}
+                            aria-label={`「${quote}」的${kind.note}`}
+                            onChange={(e) =>
+                              ed.dispatch({
+                                type: 'patchBlock',
+                                blockId,
+                                blockType: 'text',
+                                patch: {
+                                  rangeNotes: paraBlock.rangeNotes!.map((x) => (x.id === n.id ? { ...x, body: e.target.value } : x)),
+                                },
+                              })
+                            }
+                          />
+                        )}
+                      </NoteCard>
+                    );
+                  })}
+                </List>
+              </>
+            )}
+            {/* 跟上面四張卡同一種列頭：圓圈「補」＋名稱，不另外畫分隔線 */}
+            {/* 沒標成生字詞或句子的字，面板只有補充：不放列頭，直接是新增的按鈕 */}
+            {!(pick && !pickNote) && <BuHead>
+              {/* 跟閱讀模式左欄「補充資源」同一個圖示 */}
+              <NoteDot aria-hidden $filled={shown.length > 0}><Icon name="blocks" size={16} /></NoteDot>
+              <NoteName>補充</NoteName>
+            </BuHead>}
           </>
         )}
         {/* 這個元件放的是哪一種（一個元件只能一種）：只在這裡寫一次，旁邊「更換」 */}
-        {block.popups.length > 0 && (
+        {shown.length > 0 && (
           <KindRow>
-            <Icon name={POPUP_KIND[block.popups[0].kind].icon} size={20} />
-            <KindLabel>{POPUP_KIND[block.popups[0].kind].label}</KindLabel>
+            <Icon name={POPUP_KIND[shown[0].kind].icon} size={20} />
+            <KindLabel>{POPUP_KIND[shown[0].kind].label}</KindLabel>
             <ChangeKind
               type="button"
               onClick={() => {
                 // 都還沒填就直接換；填過東西先確認，免得按錯把內容弄丟
-                if (block.popups.some((p) => !missingOf(p))) setConfirmChange(true);
+                if (shown.some((p) => !missingOf(p))) setConfirmChange(true);
                 else clearAll();
               }}
             >
@@ -156,8 +333,9 @@ export function PopupPanel() {
             </ChangeKind>
           </KindRow>
         )}
-        {block.popups.length > 0 && <List>
+        {shown.length > 0 && <List>
           {block.popups.map((item, i) => {
+            if (!inGroup(item.id)) return null;
             // 大彈窗只能有一個，不必收合：一直展開、沒有箭頭
             const single = item.kind === 'rich';
             const isOpen = single || open.has(item.id);
@@ -199,7 +377,7 @@ export function PopupPanel() {
               }}
             >
               <CardHead>
-                {block.popups.length > 1 && (
+                {shown.length > 1 && (
                   <Grip
                     data-hover-only
                     aria-label="拖曳排序"
@@ -264,9 +442,9 @@ export function PopupPanel() {
         {/* 一個元件只掛一種類型、可以多個：還沒掛時列出所有種類讓老師挑；
             掛了之後只剩一顆「新增○○」，加的是同一種 */}
         <AddWrap ref={addRef} $open={false}>
-          {block.popups.length > 0 && block.popups[0].kind === 'rich' ? null : block.popups.length > 0 ? (
-            <AddBtn type="button" $open={false} onClick={() => addKind(block.popups[0].kind)}>
-              新增{MEASURE[block.popups[0].kind]}
+          {shown.length > 0 && shown[0].kind === 'rich' ? null : shown.length > 0 ? (
+            <AddBtn type="button" $open={false} onClick={() => addKind(shown[0].kind)}>
+              新增{MEASURE[shown[0].kind]}
               <Icon name="plus" size={16} />
             </AddBtn>
           ) : (
@@ -282,13 +460,13 @@ export function PopupPanel() {
         </AddWrap>
       </Body>
 
-      {confirmChange && block.popups.length > 0 && (
+      {confirmChange && shown.length > 0 && (
         <ConfirmDialog
           title="要更換類型嗎？"
           /* 只有一項就不寫「1 個」 */
           message={`已加入的${
-            block.popups.length > 1 ? ` ${block.popups.length} ${MEASURE[block.popups[0].kind].slice(1)}` : ''
-          }${POPUP_KIND[block.popups[0].kind].label}會一併刪除。`}
+            shown.length > 1 ? ` ${shown.length} ${MEASURE[shown[0].kind].slice(1)}` : ''
+          }${POPUP_KIND[shown[0].kind].label}會一併刪除。`}
           confirmLabel="更換"
           onConfirm={clearAll}
           onCancel={() => setConfirmChange(false)}
@@ -884,29 +1062,114 @@ const AddItem = styled.button`
 `
 
 
-/** 段落說明的一格：上面一顆跟閱讀時同款的小圓鈕＋名稱，下面文字框 */
-const NoteField = styled.div`
+/** 面板裡的小標：「段落說明」「補充」。右邊一行淡字補充說明 */
+const Section = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: ${(p) => p.theme.space.gapSm};
+  padding-inline: ${(p) => p.theme.space.insetXs};
+`;
+
+const SectionLabel = styled.span`
+  font-size: var(--ds-typography-label-size);
+  font-weight: 500;
+  color: ${(p) => p.theme.text.secondary};
+`;
+
+/** 一種說明一列：收合時是透明的清單列（滑過淡灰），展開時變白卡把文字框包起來——跟補充卡片同一種樣子 */
+const NoteCard = styled.div<{ $open: boolean }>`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: ${(p) => p.theme.space.gapSm};
+  padding: 4px ${(p) => p.theme.space.insetXs};
+  border-radius: ${(p) => p.theme.radius.tile};
+  ${(p) =>
+    p.$open
+      ? `background: ${p.theme.surface.raised}; padding-block-end: ${p.theme.space.insetXs}; box-shadow: ${p.theme.shadow.card};`
+      : `&:hover { background: ${p.theme.surface.sunken}; }`}
 `;
 
-const NoteHead = styled.div`
+const NoteToggle = styled.button`
   display: flex;
   align-items: center;
-  gap: ${(p) => p.theme.space.gapSm};
-  font-size: var(--ds-typography-body-sm-size);
-  font-weight: 500;
-  color: ${(p) => p.theme.text.primary};
+  gap: 10px;
+  min-block-size: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
 `;
 
-const NoteDot = styled.span`
+/** 跟閱讀時那顆圓形按鈕同款的小圓。填過的實心，一眼看得出哪幾顆學生會看到 */
+const NoteDot = styled.span<{ $filled: boolean }>`
+  flex: none;
   display: grid;
   place-items: center;
   inline-size: 28px;
   block-size: 28px;
   border-radius: 999px;
-  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
-  background: ${(p) => p.theme.surface.raised};
+  border: ${(p) => p.theme.border.widthDefault} solid
+    ${(p) => (p.$filled ? p.theme.text.primary : p.theme.border.default)};
+  background: ${(p) => (p.$filled ? p.theme.text.primary : p.theme.surface.raised)};
+  color: ${(p) => (p.$filled ? p.theme.surface.raised : p.theme.text.secondary)};
   font-size: var(--ds-typography-caption-size);
+`;
+
+const NoteName = styled.span`
+  flex: none;
+  font-size: var(--ds-typography-body-sm-size);
+  font-weight: 500;
+  color: ${(p) => p.theme.text.primary};
+`;
+
+const NoteSummary = styled.span`
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ds-typography-body-sm-size);
+  color: ${(p) => p.theme.text.secondary};
+`;
+
+const NotePlus = styled.span`
+  margin-inline-start: auto;
+  display: grid;
+  place-items: center;
+  color: ${(p) => p.theme.icon.secondary};
+`;
+
+/** 文字框跟著字數長高（最少兩行），不先撐出一大塊灰底 */
+const NoteArea = styled.textarea`
+  ${fieldAreaCss}
+  field-sizing: content;
+  min-block-size: 56px;
+  font-size: var(--ds-typography-body-sm-size);
+  resize: none;
+`;
+
+const NoteRowHead = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: 36px;
+`;
+
+/** 被標的那幾個字，用課文的樣子引出來 */
+const NoteQuote = styled.span`
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ds-typography-body-sm-size);
+  font-weight: 500;
+  color: ${(p) => p.theme.text.primary};
+`;
+
+/** 補充區的列頭：跟四張說明卡收合時對齊 */
+const BuHead = styled(NoteRowHead)`
+  padding-inline: ${(p) => p.theme.space.insetXs};
 `;

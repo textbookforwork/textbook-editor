@@ -86,6 +86,9 @@ export function createDomMeasurer(opts: DomMeasurerOptions): DomMeasurer {
     else delete probe.dataset.vertical;
     if (flow.flipped && !flow.vertical) probe.dataset.horizontal = 'true';
     else delete probe.dataset.horizontal;
+    // 段號佔段首一格，框的大小固定，掛什麼號碼量起來都一樣
+    if (block.paragraph) probe.dataset.pno = '一';
+    else delete probe.dataset.pno;
     probe.style.maxWidth = '';
     probe.style.maxHeight = '';
     probe.style.overflow = '';

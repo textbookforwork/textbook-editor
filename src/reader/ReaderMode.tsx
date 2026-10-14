@@ -1,7 +1,8 @@
-import { readyPopups } from '../model/popups';
+import { readyElementPopups, readyPopups } from '../model/popups';
 import { useCallback, useEffect, useMemo, useState, type RefObject } from 'react';
 import styled from 'styled-components';
 import { PageView } from '../components/PageView';
+import { Icon } from '../components/Icon';
 import { PAGE_SIZE } from '../model/pageSize';
 import { outlineOf, pageOfRow } from '../model/outline';
 import type { Page } from '../model/paginate';
@@ -16,7 +17,7 @@ import { Toolbox } from './Toolbox';
 import { loadPinned, savePinned, type InkTool, type RailTool } from './tools';
 import { useInk } from './useInk';
 import { ParaFocusCtx, type ParaFocus } from '../components/ParagraphContext';
-import { paraButtons } from '../model/paragraphs';
+import { paraButtons, paragraphIndex } from '../model/paragraphs';
 import { findBlock } from '../model/document';
 
 type Props = {
@@ -173,7 +174,7 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
           ref={stageRef as RefObject<HTMLElement>}
           onPointerDown={(e) => {
             // 點段號以外的地方就放掉聚焦（段號自己會切換）
-            if (para && !(e.target as HTMLElement).closest('[data-para-no]')) setPara(null);
+            if (para && !(e.target as HTMLElement).closest('[data-para-hit]')) setPara(null);
           }}
         >
           {/* 點一句留黑、其餘調暗；它不畫任何 DOM，只掛監聽 */}
@@ -188,12 +189,13 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
                 pageHeight={size.height}
                 scale={scale}
               />
+              {/* 放在頁面裡，才會落在頁底的留白上，不管頁面被縮放成多大 */}
+              {para && <ParaRail doc={doc} focus={para} />}
             </Sheet>
           )}
           {page && <Supplements page={page} open={supplementOpen} onClose={() => setSupplementOpen(false)} />}
         </Stage>
         </ParaFocusCtx.Provider>
-        {para && <ParaRail doc={doc} focus={para} />}
       </Main>
 
       {outlineOpen && (
@@ -229,8 +231,9 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
 }
 
 /**
- * 聚焦段落時右側那排圓形按鈕：旨、修、句、問（填了才有），有補充再加一顆補。
- * 按下去在那一段旁邊彈泡泡——用的是補充同一個泡泡，直排時一樣往左長、字是直的。
+ * 聚焦段落時頁面右下角那條直的膠囊：旨、修、句、問（填了才有），有補充再加一個補。
+ * 位置固定，學生不用找；是哪一段由「其他段落變淡」交代，不另放段號。
+ * 按下去泡泡仍對準段落彈出（用的是補充同一個泡泡，直排時一樣往左長、字是直的）。
  */
 function ParaRail({ doc, focus }: { doc: Doc; focus: { id: string; el: HTMLElement } }) {
   const viewer = usePopupViewer();
@@ -238,68 +241,70 @@ function ParaRail({ doc, focus }: { doc: Doc; focus: { id: string; el: HTMLEleme
   const block = hit?.block.type === 'text' ? hit.block : null;
   if (!block || !viewer) return null;
   const buttons = paraButtons(block);
-  // 泡泡對準整個段落元件（段號的父層），不是對準小小的段號
-  const anchor = focus.el.parentElement ?? focus.el;
+  // 沒有說明就整條不出現，不寫「沒有說明」
+  if (buttons.length === 0) return null;
+  const no = paragraphIndex(doc.rows).get(block.id)?.no;
+  // 泡泡對準整個段落元件
+  const anchor = focus.el;
   return (
-    <Rail aria-label="這一段的說明">
-      {buttons.length === 0 && <RailEmpty>這一段沒有說明</RailEmpty>}
+    // data-para-hit：在頁面裡按這條，不算「點段落以外的地方」，聚焦不會被放掉
+    <Rail data-para-hit aria-label={no ? `第 ${no} 段的說明` : '這一段的說明'}>
       {buttons.map((b) => (
-        <RoundBtn
+        <RailBtn
           key={b.key}
           type="button"
-          title={b.name}
           aria-label={b.name}
           onClick={() => {
             if (b.key === 'bu') {
-              viewer.open({ ...block, popups: readyPopups(block) }, anchor);
+              viewer.open({ ...block, popups: readyElementPopups(block) }, anchor);
               return;
             }
             const body = block.paraNotes?.[b.key] ?? '';
             viewer.open({ ...block, popups: [{ id: `para-${b.key}`, kind: 'text', title: b.name, body }] }, anchor);
           }}
         >
-          {b.btn}
-        </RoundBtn>
+          {/* 補充用左欄「補充資源」同一個圖示，其餘是旨修句問的字 */}
+          {b.key === 'bu' ? <Icon name="blocks" size={20} /> : b.btn}
+        </RailBtn>
       ))}
     </Rail>
   );
 }
 
+/** 頁面右下角、直的一條，浮在頁邊的留白上 */
 const Rail = styled.nav`
   position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 12px;
+  bottom: 12px;
+  flex-direction: column;
+  /* 在筆跡層之上，畫筆開著也按得到 */
   z-index: 15;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const RoundBtn = styled.button`
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
+  align-items: center;
+  padding: 4px 0;
   border-radius: 999px;
-  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
+  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
   background: ${(p) => p.theme.surface.raised};
   box-shadow: ${(p) => p.theme.shadow.card};
+`;
+
+/** 字本身就是按鈕，不再各畫一個圓；按得到的範圍 44（平板手指的下限） */
+const RailBtn = styled.button`
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: none;
   color: ${(p) => p.theme.text.primary};
   font: inherit;
-  font-size: var(--ds-typography-body-size);
-  font-weight: 500;
+  font-size: var(--ds-typography-body-sm-size);
   cursor: pointer;
   transition: background 0.15s;
   &:hover { background: ${(p) => p.theme.surface.sunken}; }
-  &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: 2px; }
-`;
-
-const RailEmpty = styled.span`
-  writing-mode: vertical-rl;
-  font-size: var(--ds-typography-caption-size);
-  color: ${(p) => p.theme.text.tertiary};
+  &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: -4px; }
 `;
 
 const Root = styled.div`

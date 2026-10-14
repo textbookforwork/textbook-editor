@@ -34,6 +34,7 @@ import { contentBox } from './model/pageSize';
 import { gapBefore } from './model/spacing';
 import type { Page } from './model/paginate';
 import type { Doc, DocSettings } from './model/types';
+import { ParagraphProvider } from './components/ParagraphContext';
 
 /**
  * 內建範例，讓人不必先準備檔案就能看見結果。
@@ -231,6 +232,7 @@ export function App() {
       )}
 
       <PopupViewerProvider onJump={jumpToRow}>
+      <ParagraphProvider rows={doc.rows}>
       <Main>
         {/* 縮圖欄只在編輯時出現；閱讀模式用左欄的「目次」跳頁 */}
         {!preview && (
@@ -300,6 +302,7 @@ export function App() {
         </EditorProvider>
       )}
       </Main>
+      </ParagraphProvider>
       </PopupViewerProvider>
 
       {importing && (

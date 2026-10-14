@@ -341,3 +341,16 @@ describe.skipIf(!hasReal('design/sample-guowen.md'))('國文：直排、題目�
     expect(r.skipped).toEqual([]);
   });
 });
+
+describe('紙本換頁切開的段落', () => {
+  it('頁碼標記後面沒有段首縮排的文字，併回上一段', () => {
+    const r = parse('　　閑靜少言，或置酒而招\n\n@頁[115]\n\n之。造飲輒盡，以此自終。\n\n　　贊曰：');
+    const texts = blocks(r).filter((b): b is TextBlock => b.type === 'text').map((b) => plainOf(b.spans));
+    expect(texts).toEqual(['閑靜少言，或置酒而招之。造飲輒盡，以此自終。', '贊曰：']);
+  });
+
+  it('頁碼標記後面是新的一段（有縮排）就照常分開', () => {
+    const r = parse('　　第一段。\n\n@頁[115]\n\n　　第二段。');
+    expect(blocks(r).filter((b) => b.type === 'text')).toHaveLength(2);
+  });
+});

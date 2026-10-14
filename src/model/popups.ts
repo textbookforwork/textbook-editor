@@ -104,3 +104,18 @@ export const titleOf = (item: PopupItem) => item.title.trim() || POPUP_KIND[item
 export function readyPopups<T extends { popups: PopupItem[] }>(block: T): PopupItem[] {
   return block.popups.filter((p) => !missingOf(p));
 }
+
+/** 連到幾個字上的補充（文字裡有 span 指向它）。它們自成一組，點那幾個字才開。 */
+export function wordPopupIds(block: { popups: PopupItem[]; spans?: { popupId?: string }[] }): Set<string> {
+  return new Set((block.spans ?? []).map((x) => x.popupId).filter((id): id is string => !!id));
+}
+
+/** 整個元件的補充：沒連到字上的那些。點元件、段落的「補」開的是這一組。 */
+export function elementPopups<T extends { popups: PopupItem[]; spans?: { popupId?: string }[] }>(block: T): PopupItem[] {
+  const words = wordPopupIds(block);
+  return block.popups.filter((p) => !words.has(p.id));
+}
+
+/** 整個元件的補充裡填完的（閱讀端用）。 */
+export const readyElementPopups = <T extends { popups: PopupItem[]; spans?: { popupId?: string }[] }>(block: T) =>
+  elementPopups(block).filter((p) => !missingOf(p));

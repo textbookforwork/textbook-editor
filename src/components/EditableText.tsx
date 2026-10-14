@@ -15,6 +15,9 @@ export type Props = {
   /** 單段覆寫書寫方向時的記號，讓 GlobalStyle 把著重線與底線畫在對的那一邊。 */
   'data-vertical'?: string;
   'data-horizontal'?: string;
+  /** 段號（見 GlobalStyle 的 [data-pno]）。 */
+  'data-pno'?: string;
+  'data-pno-on'?: string;
 };
 
 /**

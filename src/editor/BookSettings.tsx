@@ -87,7 +87,7 @@ export function BookSettings({ doc, onPatch, onMeta, onClose, onImport }: Props)
             {/* 點一下或滑過才出現，平板沒有滑過，所以做成按鈕、靠 focus 打開 */}
             <Hint type="button" aria-label="頁面比例怎麼選" aria-describedby="ratio-hint">
               <Icon name="info" size={16} />
-              <HintText id="ratio-hint" role="tooltip">iPad 選 4:3，Chromebook 選 16:9。</HintText>
+              <HintText id="ratio-hint" role="tooltip">學生使用 iPad 選 4:3，Chromebook 選 16:9。</HintText>
             </Hint>
           </GroupLabel>
           <SegmentedControl
@@ -203,31 +203,34 @@ const Group = styled.div`
 `;
 
 const GroupLabel = styled.span`
+  display: inline-flex;
+  align-items: center;
   font-size: var(--ds-typography-label-size);
   font-weight: var(--ds-typography-label-weight);
   color: ${(p) => p.theme.text.secondary};
 `;
 
-/** 跟標題同色、比標題字小一點，看起來是標題的一部分，不是另一顆按鈕 */
+/** 跟標題同色、跟字一樣大、置中對齊，看起來是標題的一部分，不是另一顆按鈕 */
 const Hint = styled.button`
   position: relative;
-  inline-size: 16px;
-  block-size: 16px;
-  margin-inline-start: 2px;
-  display: inline-grid;
+  /* 圖示的圓只佔外框 20/24，放大到 1.1em，圓才跟中文字一樣高 */
+  inline-size: 1.1em;
+  block-size: 1.1em;
+  margin-inline-start: 4px;
+  display: grid;
   place-items: center;
-  vertical-align: -2px;
+  font-size: inherit;
   padding: 0;
   border: none;
   background: transparent;
   color: ${(p) => p.theme.icon.secondary};
   cursor: help;
 
-  svg { inline-size: 14px; block-size: 14px; }
+  svg { inline-size: 100%; block-size: 100%; }
   &:hover, &:focus-visible { color: ${(p) => p.theme.icon.default}; }
 `;
 
-/** 跟其他浮層同一套：淡白底、細框、浮起的陰影，字用次要色 */
+/** 跟其他浮層同一套：淡白底、細框、浮起的陰影；字用主要色，要讀得清楚 */
 const HintText = styled.span`
   position: absolute;
   inset-block-start: calc(100% + 6px);
@@ -238,7 +241,7 @@ const HintText = styled.span`
   border-radius: ${(p) => p.theme.radius.field};
   background: ${(p) => p.theme.surface.page};
   box-shadow: ${(p) => p.theme.shadow.float};
-  color: ${(p) => p.theme.text.secondary};
+  color: ${(p) => p.theme.text.primary};
   font-size: var(--ds-typography-label-size);
   font-weight: 400;
   line-height: 1.5;

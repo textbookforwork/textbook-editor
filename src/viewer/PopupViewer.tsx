@@ -205,7 +205,7 @@ export function PopupViewerProvider({
                     </Ghost>
                   </Head>
                   <Zoom $full={!zoom.title.trim()}>
-                    <img src={urlOf(zoom.assetId)} alt={zoom.title} />
+                    <ZoomImage src={urlOf(zoom.assetId)} alt={zoom.title} />
                   </Zoom>
                 </>
               ) : detail ? (
@@ -471,6 +471,23 @@ const Title = styled.div`
  * 扣掉的數字是遮罩內距（48）、標題列（約 73）與這一區自己的內距（48）。
  */
 /* 圖盡可能大：視窗多大就撐多大，只留邊距 */
+/**
+ * 放大的圖。圖檔讀不到時（原型的上傳只活在這次開啟，重新整理就沒了）不留一條空白長條，
+ * 改說清楚發生什麼事。
+ */
+function ZoomImage({ src, alt }: { src: string | undefined; alt: string }) {
+  const [broken, setBroken] = useState(false);
+  if (!src || broken) return <ZoomMissing>這張圖片讀不到了，請回編輯模式重新上傳</ZoomMissing>;
+  return <img src={src} alt={alt} onError={() => setBroken(true)} />;
+}
+
+const ZoomMissing = styled.p`
+  margin: 0;
+  padding: 48px 24px;
+  font-size: var(--ds-typography-body-sm-size);
+  color: ${(p) => p.theme.text.secondary};
+`;
+
 const Zoom = styled.div<{ $full?: boolean }>`
   flex: 1;
   min-block-size: 0;

@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ensureUniqueDocIds, withoutModules } from '../model/document';
 import type { Doc } from '../model/types';
+import { footnotesToWordNotes } from '../model/wordNotes';
 
 const DOC_KEY = 'ds-editor:doc';
 const SHARE_KEY = 'ds-editor:share';
@@ -37,7 +38,8 @@ export function loadDoc(): Doc | null {
     const doc = JSON.parse(raw) as Doc;
     // 最低限度的形狀檢查：舊版本存的東西結構不同時，寧可從頭開始也不要炸在半路。
     if (!doc || typeof doc !== 'object' || !Array.isArray(doc.rows)) return null;
-    return withoutModules(ensureUniqueDocIds(doc));
+    // 舊存檔裡還沒轉的注釋，讀進來時一併轉成生字詞的註釋
+    return footnotesToWordNotes(withoutModules(ensureUniqueDocIds({ ...doc, footnotes: doc.footnotes ?? [] })));
   } catch {
     return null;
   }

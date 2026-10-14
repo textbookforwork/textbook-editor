@@ -1,4 +1,5 @@
 import { makeText, textOf } from '../model/document';
+import { markSpans, plainOf } from '../model/spans';
 import type { ImportResult } from '../model/markdown';
 import type { Block, PopupItem, TextBlock } from '../model/types';
 
@@ -226,7 +227,7 @@ function seedGuowen(result: ImportResult): ImportResult {
   // 聲音：一個
   put('陶淵明，一名', [{ id: 'gw-pop-9', kind: 'audio', title: '作者介紹朗讀', assetId: 'sample-audio-narration' }]);
 
-  // 課文三段標成段落（第二段被 @頁[115] 切成兩塊，後半接續上一段）。
+  // 課文三段標成段落（第二段在 md 裡被 @頁[115] 隔開，匯入時已併成一段）。
   // 說明內容取自同一課的題解、課文賞析、語文小視窗與問題討論，不另外編
   const paras = new Map<string, Pick<TextBlock, 'paragraph' | 'paraNotes'>>();
   const mark = (head: string, v: Pick<TextBlock, 'paragraph' | 'paraNotes'>) => {
@@ -244,11 +245,9 @@ function seedGuowen(result: ImportResult): ImportResult {
     paragraph: 'start',
     paraNotes: {
       zhi: '只擷取幾項具體的生活言行：好讀書卻「不求甚解」、性嗜酒卻「不吝情去留」、面對貧窮卻「晏如也」，勾勒出五柳先生安貧樂道、任真自得的性格。',
-      ju: '「曾不吝情去留」的「去留」是偏義複詞，只取「去」的意思。',
       wen: '本文先說五柳先生讀書「不求甚解」，接著又說他讀書「每有會意，便欣然忘食」。兩者間在文意上是否有矛盾之處？請加以說明。',
     },
   });
-  mark('之。造飲', { paragraph: 'continue' });
   mark('贊曰', {
     paragraph: 'start',
     paraNotes: {
@@ -266,6 +265,19 @@ function seedGuowen(result: ImportResult): ImportResult {
       blocks: col.blocks.map((b) => {
         let out = plan.has(b.id) ? { ...b, popups: plan.get(b.id)! } : b;
         if (out.type === 'text' && paras.has(b.id)) out = { ...out, ...paras.get(b.id)! };
+        // 框選的說明：第二段的「曾不吝情去留」標成句型（取自語文小視窗的偏義複詞）
+        if (out.type === 'text' && out.paragraph) {
+          const at = plainOf(out.spans).indexOf('曾不吝情去留');
+          if (at >= 0) {
+            out = {
+              ...out,
+              spans: markSpans(out.spans, at, at + 6, { noteId: 'gw-note-1' }),
+              rangeNotes: [
+                { id: 'gw-note-1', kind: 'ju', body: '「去留」是偏義複詞，在此只取「去」（離開）的意思。' },
+              ],
+            };
+          }
+        }
         return out;
       }),
     })),

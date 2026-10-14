@@ -1,6 +1,8 @@
 import { newId } from './ids';
 import { parseInline } from './inline';
+import { mergeSpans } from './spans';
 import { ensureUniqueDocIds, withoutModules } from './document';
+import { footnotesToWordNotes } from './wordNotes';
 import type {
   InlineSpan,
   Block,
@@ -335,7 +337,24 @@ export function parseMarkdown(src: string, opts: ImportOptions): ImportResult {
       continue;
     }
 
-    push([text(stripIndent(lines.map(stripIndent).join('')), 'body')]);
+    const body = stripIndent(lines.map(stripIndent).join(''));
+    // 紙本換頁把一段課文切成兩塊（`@頁[115]` 前後各一半）：頁碼標記後面、沒有段首縮排的文字
+    // 是上一段的後半，併回去——段落就是段落，不會因為紙本在哪裡換頁而變成兩段
+    const last = rows[rows.length - 1];
+    const prev = last?.columns.length === 1 && last.columns[0].blocks.length === 1 ? last.columns[0].blocks[0] : null;
+    if (
+      pendingPrintPage !== undefined &&
+      !/^[　\s]/.test(rawChunk) &&
+      prev?.type === 'text' &&
+      prev.role === 'body'
+    ) {
+      last.columns[0].blocks[0] = { ...prev, spans: mergeSpans([...prev.spans, ...parseInline(body)]) };
+      // 紙本頁碼的錨點不丟：那一頁就是從這一段中間開始的，掛在這一段上（它原本沒有錨點才掛）
+      if (last.printPage == null) rows[rows.length - 1] = { ...last, printPage: pendingPrintPage };
+      pendingPrintPage = undefined;
+      continue;
+    }
+    push([text(body, 'body')]);
   }
 
   if (rows.length > 0) rows[0] = { ...rows[0], breakBefore: false };
@@ -344,12 +363,13 @@ export function parseMarkdown(src: string, opts: ImportOptions): ImportResult {
 
 /** 把匯入結果套進一份文件。 */
 export function applyImport(doc: Doc, result: ImportResult): Doc {
-  return withoutModules(ensureUniqueDocIds({
+  // 注釋直接變成生字詞的註釋（同一串號碼），見 wordNotes.ts
+  return footnotesToWordNotes(withoutModules(ensureUniqueDocIds({
     ...doc,
     title: result.title || doc.title,
     settings: { ...doc.settings, ...result.settings },
     meta: { ...doc.meta, ...result.meta },
     rows: result.rows,
     footnotes: result.footnotes,
-  }));
+  })));
 }

@@ -78,6 +78,7 @@ export function spansToHtml(spans: InlineSpan[]): string {
         style.push(`font-family:${s.fontFamily}`);
       }
       if (s.popupId) attrs.push(`data-pop="${esc(s.popupId)}"`);
+      if (s.noteId) attrs.push(`data-note="${esc(s.noteId)}"`);
       if (s.href) attrs.push(`data-href="${esc(s.href)}"`);
       if (style.length > 0) attrs.push(`style="${esc(style.join(';'))}"`);
 
@@ -156,6 +157,7 @@ export function htmlToSpans(root: HTMLElement): InlineSpan[] {
       if (el.dataset.color) marks.color = el.dataset.color;
       if (el.dataset.font) marks.fontFamily = el.dataset.font;
       if (el.dataset.pop) marks.popupId = el.dataset.pop;
+      if (el.dataset.note) marks.noteId = el.dataset.note;
       if (el.dataset.href) marks.href = el.dataset.href;
       push({ ...marks, text: base, ruby });
       return;
@@ -175,6 +177,7 @@ export function htmlToSpans(root: HTMLElement): InlineSpan[] {
     if (el.dataset.color) marks.color = el.dataset.color;
     if (el.dataset.font) marks.fontFamily = el.dataset.font;
     if (el.dataset.pop) marks.popupId = el.dataset.pop;
+    if (el.dataset.note) marks.noteId = el.dataset.note;
     if (el.dataset.href) marks.href = el.dataset.href;
 
     for (const child of Array.from(el.childNodes)) walk(child, marks);

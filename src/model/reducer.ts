@@ -1,3 +1,4 @@
+import { elementPopups } from './popups';
 import { canHavePopup } from './registry';
 import { newId } from './ids';
 import type { Action, DropTarget } from './actions';
@@ -302,15 +303,18 @@ export function applyAction(doc: Doc, action: Action): Doc {
       );
 
     case 'addPopup':
-      // 一個元件只掛一種類型（可以多個）：跟已經掛的種類不同就不收；大彈窗只能一個
-      return mapBlock(doc, action.blockId, (b) =>
-        canHavePopup(b.type) &&
-        (b.popups.length === 0 ||
+      // 整個元件的補充只掛一種類型（可以多個）：跟已經掛的種類不同就不收；大彈窗只能一個。
+      // 連到幾個字上的補充自成一組，不算進來（forWords）
+      return mapBlock(doc, action.blockId, (b) => {
+        if (!canHavePopup(b.type)) return b;
+        if (action.forWords) return { ...b, popups: [...b.popups, action.item] };
+        const peers = elementPopups(b);
+        return peers.length === 0 ||
           // 大彈窗一個元件只能一個（要更多內容就在大彈窗裡加頁）
-          (b.popups[0].kind === action.item.kind && action.item.kind !== 'rich'))
+          (peers[0].kind === action.item.kind && action.item.kind !== 'rich')
           ? { ...b, popups: [...b.popups, action.item] }
-          : b
-      );
+          : b;
+      });
 
     case 'updatePopup':
       return mapBlock(doc, action.blockId, (b) => ({

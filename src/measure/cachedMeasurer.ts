@@ -20,7 +20,7 @@ function fingerprint(block: Block): string {
   // 字級覆寫、單段直橫排、框高都會改變量到的尺寸，一個都不能漏
   if (block.type === 'text') {
     const t = block as TextBlock;
-    return `${t.role} ${t.fontSize ?? ''} ${t.lineHeight ?? ''} ${t.writingMode ?? ''} ${t.blockSize ?? ''} ${spansToHtml(t.spans)}`;
+    return `${t.role} ${t.fontSize ?? ''} ${t.lineHeight ?? ''} ${t.writingMode ?? ''} ${t.blockSize ?? ''} ${t.paragraph ? 'p' : ''} ${spansToHtml(t.spans)}`;
   }
 
   // 任何會改變尺寸的欄位都要進指紋。拖外框調過的尺寸對每一種元件都算數——

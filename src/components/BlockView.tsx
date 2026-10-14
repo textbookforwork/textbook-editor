@@ -2,6 +2,7 @@ import styled from 'styled-components';
 import { roleStyle, TEXT_SCALE, textFlowStyle } from '../styles/roles';
 import { blockBox, type SizingContext } from '../model/blockSizing';
 import { spansToHtml } from '../model/inlineDom';
+import { PARA_NOTE_KINDS, rangeKindOf, rangeNoteFilled, sentenceNotesOf } from '../model/paragraphs';
 import { usePopupViewer } from '../viewer/PopupViewer';
 import { EditableText } from './EditableText';
 import { ImageBlockView } from './blocks/ImageBlockView';
@@ -14,7 +15,8 @@ import { ModuleBlockView } from './blocks/ModuleBlockView';
 import { ShapeBlockView } from './blocks/ShapeBlockView';
 import { LineBlockView } from './blocks/LineBlockView';
 import type { BlockPatch } from '../model/actions';
-import type { Block, DocSettings, InlineSpan } from '../model/types';
+import type { Block, DocSettings, InlineSpan, PopupItem } from '../model/types';
+import { useNoteNo } from './ParagraphContext';
 
 type Props = {
   block: Block;
@@ -28,6 +30,10 @@ type Props = {
   onSelectRange?: (range: { start: number; end: number } | null) => void;
   /** 點下去選中這個元件。唯讀時不傳。 */
   onSelect?: () => void;
+  /** 課文段落的段號（已照書寫方向轉好）。畫在段首第一格；被切到下一頁的那一份不傳。 */
+  paraLabel?: string;
+  /** 閱讀時這一段正被聚焦：段號反黑。 */
+  paraOn?: boolean;
 };
 
 /**
@@ -44,10 +50,14 @@ export function BlockView({
   onPatch,
   onSelectRange,
   onSelect,
+  paraLabel,
+  paraOn,
 }: Props) {
   const scale = TEXT_SCALE[settings.textScale];
   // 閱讀模式點「掛了補充的詞」要開檢視器；縮圖裡沒有檢視器，點了什麼都不會發生
   const viewer = usePopupViewer();
+  // 生字詞的號碼（①②），全文一串。課文上不標，只出現在彈出的註釋標題
+  const noteNo = useNoteNo();
 
   // 非文字區塊：尺寸由 blockSizing 決定，跟量測用的是同一個函式，
   // 所以畫出來的一定等於量到的，不會撐破頁面。
@@ -68,9 +78,11 @@ export function BlockView({
         ...flow.style,
       };
       // 跟整本不同向的段落要自己掛方向記號，著重線與底線才會畫在對的那一邊
-      const dir = flow.flipped
-        ? flow.vertical ? { 'data-vertical': 'true' } : { 'data-horizontal': 'true' }
-        : {};
+      const dir = {
+        ...(flow.flipped ? (flow.vertical ? { 'data-vertical': 'true' } : { 'data-horizontal': 'true' }) : {}),
+        ...(paraLabel ? { 'data-pno': paraLabel } : {}),
+        ...(paraLabel && paraOn ? { 'data-pno-on': 'true' } : {}),
+      };
 
       // 帶注音、重點詞、注釋號的段落也能直接編：標記存在 DOM 上，
       // 打字動的是文字節點，碰不到標記本身。
@@ -99,6 +111,23 @@ export function BlockView({
           onClick={
             viewer
               ? (e) => {
+                  // 標成生字詞、句子的幾個字：在字旁彈出。生字詞的註釋標題是那幾個字本身（跟課本注釋一樣）；
+                  // 句子底下填了幾種旨修句問就列幾項
+                  const noteEl = (e.target as HTMLElement).closest<HTMLElement>('[data-note]');
+                  const note = noteEl && block.rangeNotes?.find((n) => n.id === noteEl.dataset.note);
+                  if (noteEl && note && rangeNoteFilled(note)) {
+                    e.stopPropagation();
+                    const quote = block.spans.filter((x) => x.noteId === note.id).map((x) => x.text).join('');
+                    const popups: PopupItem[] =
+                      rangeKindOf(note) === 'sentence'
+                        ? PARA_NOTE_KINDS.flatMap((k) => {
+                            const body = sentenceNotesOf(note)[k.key]?.trim();
+                            return body ? [{ id: `note-${note.id}-${k.key}`, kind: 'text' as const, title: k.name, body }] : [];
+                          })
+                        : [{ id: `note-${note.id}`, kind: 'text', title: [noteNo(note.id), quote].filter(Boolean).join(' '), body: note.body }];
+                    viewer.open({ ...block, popups }, noteEl);
+                    return;
+                  }
                   const el = (e.target as HTMLElement).closest<HTMLElement>('[data-pop]');
                   const item = el && block.popups.find((p) => p.id === el.dataset.pop);
                   if (!el || !item) return;

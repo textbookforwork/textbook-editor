@@ -339,18 +339,19 @@ const Shell = styled.div<{ $wide?: boolean; $vertical?: boolean }>`
   ${(p) => p.$vertical && 'writing-mode: vertical-rl;'}
   /*
    * 直排的列（文字、聲音、跳轉）高度跟著最長的標題縮，不固定撐到 360——標題常常只有幾個字。
-   * 關閉鈕釘在右上角（跟點開後的視窗同一個位置），標題一欄排在它左邊。
+   * 關閉鈕釘在右上角（跟點開後的視窗同一個位置），標題一欄排在它左邊，上下各留 16——標題比內文長時泡泡底也有留白。
    */
   ${(p) =>
     p.$vertical &&
     `& > div { inline-size: auto; min-inline-size: 160px; max-inline-size: min(360px, calc(100vh - 24px)); }
-     & > header { margin-right: 40px; padding-top: 16px; }
+     & > header { margin-right: 40px; padding-top: 16px; padding-bottom: 16px; padding-left: 0; }
      & > header > button:last-of-type { position: absolute; top: 8px; right: 8px; }`}
   ${(p) => {
     const vp = p.$vertical ? '100vh' : '100vw';
-    return p.$wide
-      ? `inline-size: max-content; max-inline-size: calc(${vp} - 24px);`
-      : `inline-size: min(360px, calc(${vp} - 24px));`;
+    if (p.$wide) return `inline-size: max-content; max-inline-size: calc(${vp} - 24px);`;
+    // 直排的文字泡泡：高度跟著內文縮，短短一句不撐成一整條 360 高的空白
+    if (p.$vertical) return `inline-size: fit-content; max-inline-size: min(360px, calc(${vp} - 24px));`;
+    return `inline-size: min(360px, calc(${vp} - 24px));`;
   }}
   display: flex;
   flex-direction: column;
@@ -427,6 +428,10 @@ const Body = styled.div<{ $top?: boolean; $vertical?: boolean }>`
   /* 內文很長時在泡泡裡捲，不要把泡泡撐到比視窗高 */
   max-block-size: min(60vh, 480px);
   overflow: auto;
+  /* 直排的文字泡泡：高度只跟內文與標題走，不吃上面「列」的最小高度（那是給多項清單用的） */
+  ${(p) => p.$vertical && '&& { min-inline-size: 0; }'}
+  /* 直排：標題欄跟內文之間只留一小段（padding 寫的是實體方向，要換到右邊）；內文頂端跟標題同高（標題列上緣留 16） */
+  ${(p) => p.$vertical && `padding-right: ${p.theme.space.gapXs}; padding-top: 16px;`}
   /* 沒標題時：上緣對齊原本標題那一行，右邊讓出按鈕的位置 */
   /* 直排時按鈕仍在右上角，要讓開的是第一行的開頭（上方），不是結尾 */
   ${(p) =>
@@ -442,6 +447,8 @@ const Text = styled.p`
   line-height: var(--ds-typography-body-sm-line-height);
   color: ${(p) => p.theme.text.secondary};
   white-space: pre-wrap;
+  /* 一長串沒有空格的英數字（網址、測試字）也要能折行，不然直排時整串衝出泡泡 */
+  overflow-wrap: anywhere;
 `;
 
 /**

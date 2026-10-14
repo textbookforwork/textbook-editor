@@ -82,6 +82,8 @@ export type InlineSpan = {
    * 只開那一項，不開整組——補充是掛在詞上的，不是掛在整段上。
    */
   popupId?: string;
+  /** 這幾個字標成生字、語詞或句子，指向所屬 TextBlock.rangeNotes 裡的 id。只有課文段落會有。 */
+  noteId?: string;
   href?: string;
   /**
    * 注音（md 規格的 `{閑|ㄒㄧㄢˊ}`）。
@@ -112,6 +114,14 @@ export type Footnote = {
 export type ParaNoteKind = 'zhi' | 'xiu' | 'ju' | 'wen';
 /** 每種一則，可以換行分點（例如提問的「一、……二、……」）。空字串視同沒有。 */
 export type ParaNotes = Partial<Record<ParaNoteKind, string>>;
+/**
+ * 框選的字標成什麼：生字詞（一則註釋，一行說明，例如「音ㄕˋ，愛好。」），
+ * 或句子（底下再掛旨修句問，存在 notes，跟整段一樣）。
+ * 舊資料：kind 是旨修句問其中一種（內容在 body）讀成句子；'zi'、'ci'（生字、語詞分開的版本）讀成生字詞——見 paragraphs.ts 的 rangeKindOf。
+ */
+export type RangeKind = 'word' | 'sentence';
+/** 掛在幾個字上的一則說明。 */
+export type RangeNote = { id: string; kind: RangeKind | 'zi' | 'ci' | ParaNoteKind; body: string; notes?: ParaNotes };
 
 // ── Pop-up ───────────────────────────────────────────────
 /**
@@ -203,13 +213,15 @@ export type TextBlock = BlockBase & {
    */
   lineHeight?: number;
   /**
-   * 課文段落。start＝新的一段（段號自動編，橫排 1、2、3，直排一、二、三）；
-   * continue＝接續上一段（被換頁切開的後半，不編號，聚焦時跟上一段一起亮）。沒設＝不是段落。
+   * 課文段落：段號自動編（橫排 1、2、3，直排一、二、三）。沒設＝不是段落。
+   * 一段永遠只有一塊——紙本換頁切開的兩半在匯入時就併回去（見 markdown.ts）。
    * 段號畫在段首外側的頁邊，不佔版面，所以分頁不受影響。
    */
-  paragraph?: 'start' | 'continue';
-  /** 段落的說明，閱讀時一種一顆圓形按鈕。只有 paragraph === 'start' 的那一塊會用到。 */
+  paragraph?: 'start';
+  /** 段落的說明，閱讀時一種一顆圓形按鈕。 */
   paraNotes?: ParaNotes;
+  /** 框選幾個字標的說明（例如某一句的主旨）。字上記 noteId，內容存這裡；閱讀時點那幾個字彈出。 */
+  rangeNotes?: RangeNote[];
   /** 對齊。用邏輯值，直排時 start 是上、end 是下。沒設＝start。 */
   align?: 'start' | 'center' | 'end' | 'justify';
   /**

@@ -20,7 +20,7 @@ import { setCroppingId, useCroppingId } from '../components/blocks/ImageCropper'
  * 浮動膠囊。
  *
  * 兩種狀態，永遠只出現一個：
- *   選了字   → 行內標記（粗體、注音、底線、刪除線、上線、顏色、字體、掛補充）
+ *   選了字   → 行內標記（標記、字體、粗體、注音、底線、刪除線、上線、顏色、掛補充）
  *   選了元件 → 這個元件能改的事（文字角色與字級對齊方向、圖片尺寸、換頁、刪除）
  * 文字那幾顆的實作在 TextPanel.tsx。
  *
@@ -62,15 +62,22 @@ function InlineCapsule() {
          選單裡真的要焦點的控制項會自己 stopPropagation（見 TextPanel 的 Popover） */
       onPointerDown={(e) => e.preventDefault()}
     >
-      <Btn
-        $on={allBold}
-        onClick={() => ed.toggleMark(sel.blockId, sel.range, 'bold', !allBold, sel.slice)}
-        title="粗體"
-      >
-        <Icon name="bold" size={20} label="粗體" />
-      </Btn>
-      {/* 底線、刪除線、上線、顏色、字體、注音、掛補充 */}
-      <InlineTextTools block={hit.block} blockId={sel.blockId} start={start} end={end} />
+      {/* 標記（課文段落才有）、字體，接著粗體、注音、底線、刪除線、上線、顏色、掛補充 */}
+      <InlineTextTools
+        block={hit.block}
+        blockId={sel.blockId}
+        start={start}
+        end={end}
+        afterFont={
+          <Btn
+            $on={allBold}
+            onClick={() => ed.toggleMark(sel.blockId, sel.range, 'bold', !allBold, sel.slice)}
+            title="粗體"
+          >
+            <Icon name="bold" size={20} label="粗體" />
+          </Btn>
+        }
+      />
     </Capsule>
   );
 }
@@ -107,32 +114,29 @@ function BlockCapsule() {
         <>
           {/*
             層級：章、節、內文、段落、補充。段落就是內文再加上「這是課文的第幾段」，
-            編號依標成段落的順序自動算（第 N 段）；被換頁切開的後半選「接續上一段」
+            編號依標成段落的順序自動算（第 N 段）
           */}
           <Dropdown
             variant="tool"
             value={
-              block.paragraph === 'start'
+              block.paragraph
                 ? 'para'
-                : block.paragraph === 'continue'
-                  ? 'para-cont'
-                  : PICKABLE_ROLES.includes(block.role)
-                    ? block.role
-                    : block.role === 'itemTitle' || block.role === 'subItemTitle'
-                      ? 'sectionTitle'
-                      : block.role === 'lead'
-                        ? 'body'
-                        : 'supplement'
+                : PICKABLE_ROLES.includes(block.role)
+                  ? block.role
+                  : block.role === 'itemTitle' || block.role === 'subItemTitle'
+                    ? 'sectionTitle'
+                    : block.role === 'lead'
+                      ? 'body'
+                      : 'supplement'
             }
             aria-label="內容層級"
             options={[
               ...PICKABLE_ROLES.filter((r) => r !== 'supplement').map((r) => ({ value: r, label: ROLE_LABEL[r] })),
               { value: 'para', label: '段落', short: paraNo ? `第 ${paraNo} 段` : '段落' },
-              { value: 'para-cont', label: '接續上一段', short: '接續上段' },
               ...(PICKABLE_ROLES.includes('supplement') ? [{ value: 'supplement', label: ROLE_LABEL.supplement }] : []),
             ]}
             onChange={(v) => {
-              const para = v === 'para' ? 'start' : v === 'para-cont' ? 'continue' : undefined;
+              const para = v === 'para' ? ('start' as const) : undefined;
               const role = (para ? 'body' : v) as TextRole;
               if (role !== block.role) ed.dispatch({ type: 'setTextRole', blockId: id, role });
               if (para !== block.paragraph)
@@ -338,9 +342,10 @@ function BlockCapsule() {
           ed.dispatch({ type: 'setBreakBefore', rowId: row.id, value: !row.breakBefore })
         }
         title={row.breakBefore ? '取消這裡的換頁' : '從這一列開始換到新的一頁'}
+        $icon
       >
-        {row.breakBefore ? '已換頁' : '換頁'}
-        <Icon name="page-break" size={20} />
+        {/* 只留圖示（跟補充鈕一樣）；換過頁靠按鈕的啟用色看出來 */}
+        <Icon name="page-break" size={20} label={row.breakBefore ? '取消換頁' : '換頁'} />
       </Btn>
 
       {/* 刪的是這個元件。它是這一列唯一的東西時列會一起消失，不留空殼 */}

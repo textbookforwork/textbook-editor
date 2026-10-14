@@ -186,3 +186,13 @@ describe('新的行內樣式 ⇄ DOM', () => {
   });
 });
 
+
+describe('段落說明的標記', () => {
+  it('框選字標的說明（noteId）存成 data-note，讀得回來', () => {
+    const spans: InlineSpan[] = [{ text: '曾不' }, { text: '吝情去留', noteId: 'n1' }];
+    const el = document.createElement('div');
+    el.innerHTML = spansToHtml(spans);
+    expect(el.querySelector('[data-note="n1"]')?.textContent).toBe('吝情去留');
+    expect(htmlToSpans(el).find((s) => s.noteId)?.noteId).toBe('n1');
+  });
+});

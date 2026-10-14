@@ -19,22 +19,6 @@ describe('段號', () => {
     expect(idx.get(b.id)).toEqual({ no: 2, startId: b.id });
   });
 
-  it('被換頁切開的後半標成接續：不編號、歸在上一段，下一段的號碼不會被多算', () => {
-    // 〈五柳先生傳〉第二段在 md 裡被 @頁[115] 切成兩塊
-    const p1 = para('先生不知何許人也', 'start');
-    const p2a = para('閑靜少言……或置酒而招', 'start');
-    const p2b = para('之。造飲輒盡……以此自終', 'continue');
-    const p3 = para('贊曰', 'start');
-    const idx = paragraphIndex([makeRow([p1]), makeRow([p2a]), makeRow([p2b]), makeRow([p3])]);
-    expect(idx.get(p2b.id)).toEqual({ no: null, startId: p2a.id });
-    expect(idx.get(p3.id)?.no).toBe(3);
-  });
-
-  it('前面沒有段落可以接的「接續」當成新的一段', () => {
-    const lone = para('孤單的一塊', 'continue');
-    expect(paragraphIndex([makeRow([lone])]).get(lone.id)).toEqual({ no: 1, startId: lone.id });
-  });
-
   it('橫排阿拉伯數字，直排國字', () => {
     expect(paraLabel(3, false)).toBe('3');
     expect(paraLabel(3, true)).toBe('三');

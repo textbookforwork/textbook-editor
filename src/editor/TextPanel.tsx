@@ -6,7 +6,10 @@ import { Icon } from '../components/Icon';
 import { useEditorCtx } from './EditorContext';
 import { Dropdown } from './Dropdown';
 import { hasAllRuby, lengthOf, markSpans, sliceSpans, toggleRubySpans, type SpanMarks } from '../model/spans';
-import { newPopup, titleOf } from '../model/popups';
+import { titleOf } from '../model/popups';
+import { RANGE_KINDS, rangeKindOf } from '../model/paragraphs';
+import { newId } from '../model/ids';
+import type { RangeKind } from '../model/types';
 import { defaultLineHeight, FONT_SIZES, INLINE_FONTS, LINE_HEIGHTS, ROLE_DEFAULT_SIZE } from '../styles/roles';
 import type { DocSettings, InlineSpan, TextBlock } from '../model/types';
 
@@ -29,12 +32,14 @@ type InlineProps = {
   /** 選取範圍在原文裡的字元位置（跨頁的片段已經加回起點）。 */
   start: number;
   end: number;
+  /** 接在字體後面的按鈕（粗體）。粗體走編輯器的 toggleMark，不在這裡。 */
+  afterFont?: ReactNode;
 };
 
-export function InlineTextTools({ block, blockId, start, end }: InlineProps) {
+export function InlineTextTools({ block, blockId, start, end, afterFont }: InlineProps) {
   const ed = useEditorCtx()!;
   const picked = sliceSpans(block.spans, start, end);
-  const [open, setOpen] = useState<'color' | 'font' | 'popup' | null>(null);
+  const [open, setOpen] = useState<'color' | 'font' | 'kind' | null>(null);
 
   // 「整段都已經是」才算開著——半段是的時候按下去應該是全部套上
   const all = (f: 'underline' | 'strike' | 'overline') =>
@@ -53,18 +58,111 @@ export function InlineTextTools({ block, blockId, start, end }: InlineProps) {
   const color = uniform('color');
   const font = uniform('fontFamily');
   const popupId = uniform('popupId');
+  const noteId = uniform('noteId');
+  const note = noteId ? block.rangeNotes?.find((n) => n.id === noteId) ?? null : null;
+  const rangeKind = note ? RANGE_KINDS.find((k) => k.key === rangeKindOf(note)) : undefined;
   const rubyOn = hasAllRuby(picked);
   const linked = popupId ? block.popups.find((p) => p.id === popupId) ?? null : null;
 
   const colorRef = useRef<HTMLButtonElement>(null);
   const fontRef = useRef<HTMLButtonElement>(null);
-  const popupRef = useRef<HTMLButtonElement>(null);
   const pickerRef = useRef<HTMLInputElement>(null);
+
+  const kindRef = useRef<HTMLButtonElement>(null);
+  /** 標成某一種：還沒標就新開一則；標過就換種類 */
+  const markKind = (k: RangeKind) => {
+    const notes = block.rangeNotes ?? [];
+    if (note) {
+      ed.dispatch({
+        type: 'patchBlock',
+        blockId,
+        blockType: 'text',
+        patch: { rangeNotes: notes.map((n) => (n.id === note.id ? { ...n, kind: k } : n)) },
+      });
+    } else {
+      const id = newId('note');
+      ed.dispatch({ type: 'patchBlock', blockId, blockType: 'text', patch: { rangeNotes: [...notes, { id, kind: k, body: '' }] } });
+      apply({ noteId: id });
+    }
+    setOpen(null);
+  };
+  /** 取消標記：字上的標記與說明內容一起清 */
+  const unmark = () => {
+    if (!note) return;
+    ed.dispatch({
+      type: 'patchBlock',
+      blockId,
+      blockType: 'text',
+      patch: { rangeNotes: (block.rangeNotes ?? []).filter((n) => n.id !== note.id) },
+    });
+    ed.dispatch({ type: 'setSpans', blockId, spans: block.spans.map((x) => (x.noteId === note.id ? { ...x, noteId: undefined } : x)) });
+    setOpen(null);
+  };
 
   const customColor = color && !SWATCHES.some((s) => s.value === color) ? color : null;
 
   return (
     <>
+      {/* 課文段落裡選的字：先標成生字詞或句子，再按補充填內容。標了的字閱讀時側邊有點點線 */}
+      {block.paragraph && (
+        <>
+          <ToolBtn ref={kindRef} $open={open === 'kind'} onClick={() => setOpen(open === 'kind' ? null : 'kind')} title="標記成生字詞或句子">
+            {rangeKind ? rangeKind.name : '標記'}
+            <Icon name="chevron-down" size={16} />
+          </ToolBtn>
+          {open === 'kind' && (
+            <Popover anchor={kindRef.current} label="標記" onClose={() => setOpen(null)}>
+              <Menu>
+                {RANGE_KINDS.map((k) => (
+                  <MenuItem key={k.key} type="button" $on={rangeKind?.key === k.key} onClick={() => markKind(k.key)}>
+                    {k.name}
+                  </MenuItem>
+                ))}
+                {note && (
+                  <MenuItem type="button" onClick={unmark}>
+                    取消標記
+                    <Icon name="x" size={16} />
+                  </MenuItem>
+                )}
+              </Menu>
+            </Popover>
+          )}
+        </>
+      )}
+
+
+      <ToolBtn
+        ref={fontRef}
+        $open={open === 'font'}
+        onClick={() => setOpen(open === 'font' ? null : 'font')}
+        title="字體"
+      >
+        {INLINE_FONTS.find((f) => f.value === (font ?? null))?.label ?? '字體'}
+        <Icon name="chevron-down" size={16} />
+      </ToolBtn>
+      {open === 'font' && (
+        <Popover anchor={fontRef.current} label="字體" onClose={() => setOpen(null)}>
+          <Menu>
+            {INLINE_FONTS.map((f) => (
+              <MenuItem
+                key={f.label}
+                type="button"
+                $on={(font ?? null) === f.value}
+                style={f.value ? { fontFamily: f.value } : undefined}
+                onClick={() => {
+                  apply({ fontFamily: f.value ?? undefined });
+                  setOpen(null);
+                }}
+              >
+                {f.label}
+              </MenuItem>
+            ))}
+          </Menu>
+        </Popover>
+      )}
+
+      {afterFont}
+
       {/* 注音：按下去直接轉換並標上注音，不需彈出輸入框；全部有注音時再按一次清除 */}
       <ToolBtn
         $on={rubyOn}
@@ -81,13 +179,13 @@ export function InlineTextTools({ block, blockId, start, end }: InlineProps) {
       </ToolBtn>
 
       <ToolBtn $iconOnly $on={all('underline')} onClick={() => toggle('underline')} title="底線">
-        <Glyph $deco="underline">字</Glyph>
+        <Icon name="underline" size={20} label="底線" />
       </ToolBtn>
       <ToolBtn $iconOnly $on={all('strike')} onClick={() => toggle('strike')} title="刪除線">
-        <Glyph $deco="line-through">字</Glyph>
+        <Icon name="strikethrough" size={20} label="刪除線" />
       </ToolBtn>
       <ToolBtn $iconOnly $on={all('overline')} onClick={() => toggle('overline')} title="上線（線段 AB）">
-        <Glyph $deco="overline">AB</Glyph>
+        <Icon name="overline" size={20} label="上線" />
       </ToolBtn>
 
       <ToolBtn
@@ -137,93 +235,20 @@ export function InlineTextTools({ block, blockId, start, end }: InlineProps) {
         </Popover>
       )}
 
-      <ToolBtn
-        ref={fontRef}
-        $open={open === 'font'}
-        onClick={() => setOpen(open === 'font' ? null : 'font')}
-        title="字體"
-      >
-        {INLINE_FONTS.find((f) => f.value === (font ?? null))?.label ?? '字體'}
-        <Icon name="chevron-down" size={16} />
-      </ToolBtn>
-      {open === 'font' && (
-        <Popover anchor={fontRef.current} label="字體" onClose={() => setOpen(null)}>
-          <Menu>
-            {INLINE_FONTS.map((f) => (
-              <MenuItem
-                key={f.label}
-                type="button"
-                $on={(font ?? null) === f.value}
-                style={f.value ? { fontFamily: f.value } : undefined}
-                onClick={() => {
-                  apply({ fontFamily: f.value ?? undefined });
-                  setOpen(null);
-                }}
-              >
-                {f.label}
-                <Sample style={f.value ? { fontFamily: f.value } : undefined}>永字八法</Sample>
-              </MenuItem>
-            ))}
-          </Menu>
-        </Popover>
-      )}
 
-      {/* 掛在詞上的補充：選了幾個字，指定它們點下去開 popups 裡的哪一項 */}
+      {/* 補充：直接開右側面板，選起來的字記在 popupPick，面板照標成的種類給欄位 */}
       <ToolBtn
-        ref={popupRef}
-        $open={open === 'popup'}
-        onClick={() => setOpen(open === 'popup' ? null : 'popup')}
+        $iconOnly={!linked}
+        onClick={() => {
+          ed.setPopupPick({ blockId, start, end });
+          ed.openPopupPanel(blockId);
+        }}
         title={linked ? `點這幾個字會開「${titleOf(linked)}」` : '讓這幾個字點了會開補充'}
       >
-        {linked ? titleOf(linked) : '補充'}
-        <Icon name="blocks" size={20} />
+        {/* 只留圖示（跟元件膠囊的補充鈕一樣）；連過補充的顯示那一項 */}
+        {linked ? titleOf(linked) : null}
+        <Icon name="blocks" size={20} label="補充" />
       </ToolBtn>
-      {open === 'popup' && (
-        <Popover anchor={popupRef.current} label="點了開哪一項補充" onClose={() => setOpen(null)}>
-          <Menu>
-            {block.popups.map((p) => (
-              <MenuItem
-                key={p.id}
-                type="button"
-                $on={p.id === popupId}
-                onClick={() => {
-                  apply({ popupId: p.id });
-                  setOpen(null);
-                }}
-              >
-                {titleOf(p)}
-              </MenuItem>
-            ))}
-            {block.popups.length === 0 && <Hint>這一段還沒有補充</Hint>}
-            <MenuItem
-              type="button"
-              onClick={() => {
-                // 新的一項先掛上元件、把這幾個字連過去，再開設定面板讓老師填內容
-                const item = newPopup('text');
-                ed.dispatch({ type: 'addPopup', blockId, item });
-                apply({ popupId: item.id });
-                setOpen(null);
-                ed.openPopupPanel(blockId);
-              }}
-            >
-              新增補充…
-              <Icon name="plus" size={16} />
-            </MenuItem>
-            {linked && (
-              <MenuItem
-                type="button"
-                onClick={() => {
-                  apply({ popupId: undefined });
-                  setOpen(null);
-                }}
-              >
-                取消這幾個字的連結
-                <Icon name="x" size={16} />
-              </MenuItem>
-            )}
-          </Menu>
-        </Popover>
-      )}
     </>
   );
 }
@@ -538,17 +563,6 @@ export const ToolBtn = styled.button<{ $on?: boolean; $open?: boolean; $value?: 
   }
 `;
 
-/** 可輸入的數字欄。字級跟框高都用它。 */
-/** 用樣式本身當圖示：底線按鈕的字就畫著底線。 */
-const Glyph = styled.span<{ $deco: 'underline' | 'line-through' | 'overline' | 'none' }>`
-  font-size: var(--ds-typography-ui-label-size);
-  font-weight: 600;
-  line-height: 1;
-  text-decoration-line: ${(p) => p.$deco};
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 2px;
-`;
-
 /** 直接以圓圈呈現目前選取文字的顏色（取代調色盤圖示）。 */
 const ColorCircle = styled.span`
   display: inline-block;
@@ -621,10 +635,4 @@ const MenuItem = styled.button<{ $on?: boolean }>`
 const Sample = styled.span`
   color: ${(p) => p.theme.text.tertiary};
 `;
-
-const Hint = styled.div`
-  padding: 8px 12px;
-  color: ${(p) => p.theme.text.tertiary};
-`;
-
 

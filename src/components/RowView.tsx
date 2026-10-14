@@ -10,7 +10,7 @@ import { useEditorCtx } from '../editor/EditorContext';
 import { FlowResizeHandle, ResizeHandles, resizeModeOf } from '../editor/ResizeHandles';
 import { textFlowStyle, FLOW_SHARE_OF_PAGE } from '../styles/roles';
 import { usePopupViewer } from '../viewer/PopupViewer';
-import { readyPopups } from '../model/popups';
+import { readyElementPopups } from '../model/popups';
 import { PopupBadge } from './PopupBadge';
 import { useParagraphIndex, useParaFocus } from './ParagraphContext';
 import { paraLabel } from '../model/paragraphs';
@@ -291,7 +291,8 @@ export function RowView({
                   const box = box0 && b.type === 'table' ? tableFrames.frame(b.id, box0, vertical) : box0;
                   // 閱讀時不放角標：有補充的元件本身就能點，點下去直接打開。
                   // 元件裡自己會動的東西（播放鈕、連結、注釋號）照舊，不被搶走
-                  const ready = readyPopups(b);
+                  // 連到字上的補充不在這裡：點那幾個字才開
+                  const ready = readyElementPopups(b);
                   // 課文段落不靠點元件本身打開：點段號聚焦，再按右側的圓形按鈕（「補」就是這些補充）
                   const para = b.type === 'text' ? paraIndex.get(b.id) : undefined;
                   const tap = !ed && viewer && ready.length > 0 && !para
@@ -299,6 +300,16 @@ export function RowView({
                     : null;
                   // 聚焦某一段時，其他元件調暗；同一段被換頁切開的後半一起亮
                   const dim = !!paraFocus?.focusId && para?.startId !== paraFocus.focusId;
+                  // 點段號：編輯時打開這一段的說明面板，閱讀時聚焦這一段；縮圖裡不能點
+                  const paraClick =
+                    para && isStart && (ed || paraFocus)
+                      ? (shell: HTMLElement) => {
+                          if (ed) {
+                            ed.select(b.id);
+                            ed.openPopupPanel(b.id);
+                          } else paraFocus?.toggle(para.startId, shell);
+                        }
+                      : null;
                   return (
                   <BlockShell
                     key={b.id}
@@ -306,8 +317,30 @@ export function RowView({
                     role={tap ? 'button' : undefined}
                     tabIndex={tap ? 0 : undefined}
                     aria-label={tap ? '打開補充內容' : undefined}
+                    onPointerDown={
+                      paraClick
+                        ? (e) => {
+                            // 先記下「點在段號上」，閱讀模式外層放掉聚焦的判斷要看它（外層的 pointerdown 在這之後）
+                            const el = e.currentTarget;
+                            if (hitParaNo(el, e.clientX, e.clientY)) el.dataset.paraHit = '1';
+                            else delete el.dataset.paraHit;
+                          }
+                        : undefined
+                    }
+                    onPointerMove={
+                      paraClick
+                        ? (e) => {
+                            const el = e.currentTarget;
+                            el.style.cursor = hitParaNo(el, e.clientX, e.clientY) ? 'pointer' : '';
+                          }
+                        : undefined
+                    }
                     onClick={
-                      tap
+                      paraClick
+                        ? (e) => {
+                            if (hitParaNo(e.currentTarget, e.clientX, e.clientY)) paraClick(e.currentTarget);
+                          }
+                        : tap
                         ? (e) => {
                             const t = e.target as HTMLElement;
                             if (t.closest('button, a, input, video, audio, iframe, sup[data-fn]')) return;
@@ -334,30 +367,21 @@ export function RowView({
                     $fit={b.type !== 'text'}
                     $dim={dim}
                   >
-                    {/* 段號：畫在段首外側的頁邊（絕對定位，不佔版面）。被切到下一頁的那一份不再畫。
-                        編輯時點它打開這一段的說明面板；閱讀時點它聚焦這一段；縮圖裡只是記號 */}
-                    {para?.no != null && isStart && (
-                      <ParaNo
+                    {/* 段號畫在文字元件裡（段首第一格，見 GlobalStyle 的 [data-pno]）。它是 ::before 點不到，
+                        所以點擊與游標靠 paraHit 判斷位置；鍵盤用這顆看不見的按鈕 */}
+                    {para && isStart && (ed || paraFocus) && (
+                      <SrOnly
                         type="button"
-                        data-para-no
-                        $vertical={vertical}
-                        $active={!!ed || !!paraFocus}
-                        $edit={!!ed}
-                        $on={paraFocus?.focusId === para.startId}
-                        tabIndex={ed || paraFocus ? 0 : -1}
-                        aria-hidden={ed || paraFocus ? undefined : true}
-                        aria-label={ed ? `第 ${para.no} 段：編輯段落說明` : `第 ${para.no} 段`}
-                        aria-pressed={paraFocus ? paraFocus.focusId === para.startId : undefined}
                         onClick={(e) => {
-                          e.stopPropagation();
+                          const shell = e.currentTarget.parentElement as HTMLElement;
                           if (ed) {
                             ed.select(b.id);
                             ed.openPopupPanel(b.id);
-                          } else paraFocus?.toggle(para.startId, e.currentTarget);
+                          } else paraFocus?.toggle(para.startId, shell);
                         }}
                       >
-                        {paraLabel(para.no, vertical)}
-                      </ParaNo>
+                        {ed ? `第 ${para.no} 段：編輯段落說明` : `第 ${para.no} 段`}
+                      </SrOnly>
                     )}
                     {ed && mode && box && (
                       <ResizeHandles
@@ -384,7 +408,7 @@ export function RowView({
                     {/* 閱讀時的課文段落不畫角標：它的補充收在右側的「補」按鈕裡 */}
                     {ready.length > 0 && !tap && !(para && !ed) && (
                       <PopupBadge
-                        count={readyPopups(b).length}
+                        count={ready.length}
                         /* 把角標本身交出去：一項的補充直接在角標旁彈泡泡，多項才開中央視窗。只交出填完的項目 */
                         /* 角標只在編輯時能按：打開右側的補充內容面板去改。閱讀時不畫角標（點元件本身）；
                            縮圖裡沒有編輯器，只畫記號 */
@@ -428,6 +452,8 @@ export function RowView({
                           : undefined
                       }
                       onSelect={ed ? () => ed.select(b.id) : undefined}
+                      paraLabel={para && isStart ? paraLabel(para.no, vertical) : undefined}
+                      paraOn={!!para && paraFocus?.focusId === para.startId}
                     />
                     </BlockErrorBoundary>
                   </BlockShell>
@@ -780,34 +806,45 @@ const BlockShell = styled.div<{ $selected?: boolean; $framed?: boolean; $fit?: b
 `;
 
 /**
- * 段號：方框裡一個數字（直排是國字）。對齊段落的第一行（直排是第一欄），
- * 畫在外側 10px——橫排在左邊、直排在上方，都落在頁面留白裡。
- * 用實體的 top / right / bottom，直排時邏輯軸會轉向，不能用 inset-inline 之類。
+ * 點的位置是不是段首那一格段號。段號是 ::before 畫的、點不到，所以用位置判斷：
+ * 橫排是第一行最前面那一格，直排是第一欄最上面那一格。
+ * 頁面整頁縮放過，字級量到的是縮放前的值，要乘上縮放比換成螢幕座標。
  */
-const ParaNo = styled.button<{ $vertical: boolean; $active: boolean; $on: boolean; $edit: boolean }>`
+function hitParaNo(shell: HTMLElement, x: number, y: number): boolean {
+  const el = shell.querySelector<HTMLElement>('.ds-rich[data-pno]');
+  if (!el) return false;
+  const r = el.getBoundingClientRect();
+  const cs = getComputedStyle(el);
+  const fs = parseFloat(cs.fontSize);
+  const lh = parseFloat(cs.lineHeight) || fs * 1.6;
+  const vertical = cs.writingMode.startsWith('vertical');
+  const k = vertical ? (el.offsetHeight ? r.height / el.offsetHeight : 1) : el.offsetWidth ? r.width / el.offsetWidth : 1;
+  // 方框約 1em（後面空一格不算，點空格是點文字）
+  const reach = fs * k;
+  return vertical
+    ? x >= r.right - lh * k && x <= r.right && y >= r.top && y <= r.top + reach
+    : x >= r.left && x <= r.left + reach && y >= r.top && y <= r.top + lh * k;
+}
+
+/** 只給鍵盤與報讀軟體的按鈕：看不見，但 Tab 得到。 */
+const SrOnly = styled.button`
   position: absolute;
-  /* 編輯時列的拖曳握把佔著段首外側那一格，段號讓到旁邊（直排往左、橫排往下） */
-  ${(p) =>
-    p.$vertical
-      ? `bottom: calc(100% + 10px); right: ${p.$edit ? 34 : 3}px;`
-      : `right: calc(100% + 10px); top: ${p.$edit ? 34 : 3}px;`}
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 1px;
+  height: 1px;
   padding: 0;
-  writing-mode: horizontal-tb;
-  border: 1.5px solid ${(p) => p.theme.text.primary};
-  border-radius: 4px;
-  background: ${(p) => (p.$on ? p.theme.text.primary : p.theme.surface.raised)};
-  color: ${(p) => (p.$on ? p.theme.surface.raised : p.theme.text.primary)};
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
-  cursor: ${(p) => (p.$active ? 'pointer' : 'default')};
-  pointer-events: ${(p) => (p.$active ? 'auto' : 'none')};
-  transition: background 0.15s, color 0.15s;
-  ${(p) => p.$active && !p.$on && `&:hover { background: ${p.theme.surface.sunken}; }`}
-  &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: 2px; }
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+  &:focus-visible {
+    width: auto;
+    height: auto;
+    clip: auto;
+    margin: 0;
+    padding: 2px 6px;
+    top: 0;
+    right: 0;
+    background: ${(p) => p.theme.surface.raised};
+    outline: 2px solid ${(p) => p.theme.border.focus};
+  }
 `;
