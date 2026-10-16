@@ -1,9 +1,12 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { locate, offsetOf, textNodes } from '../editor/caret';
 
 /**
  * 逐句聚焦：閱讀模式下點一句，那一句留黑、其餘調暗；雙擊標黃；
  * 方向鍵換上一句／下一句；Esc 或點空白處取消。
+ *
+ * 點到課文時要不要聚焦、聚焦哪幾個字，由外層的 decide 決定：
+ * 閱讀模式用它做「第一下點段落、第二下才點句子」，標成句子的字聚焦整個標記。
  *
  * 三件事決定了做法：
  *
@@ -160,6 +163,9 @@ function richElements(root: HTMLElement): HTMLElement[] {
 
 /** 螢幕座標 → 哪個 .ds-rich 的第幾個字。沒點在課文上就是 null。 */
 function hitTest(root: HTMLElement, x: number, y: number): { rich: HTMLElement; offset: number } | null {
+  // caretPositionFromPoint 點在空白處也會吸到最近的字：先確認點下去的地方真的在課文段落裡
+  const under = document.elementFromPoint(x, y)?.closest('.ds-rich') ?? null;
+  if (!isReadOnlyRich(under) || !root.contains(under)) return null;
   let node: Node | null = null;
   let offset = 0;
   if (typeof document.caretPositionFromPoint === 'function') {
@@ -178,7 +184,7 @@ function hitTest(root: HTMLElement, x: number, y: number): { rich: HTMLElement; 
 
   const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element);
   const rich = el?.closest('.ds-rich') ?? null;
-  if (!isReadOnlyRich(rich)) return null;
+  if (!isReadOnlyRich(rich) || rich !== under) return null;
 
   // 點在注音或注釋號上：它們不算字，當成點在它們所依附的那個位置
   const aside = el?.closest('rt, [data-fn]');
@@ -204,7 +210,21 @@ type Props = {
   active: boolean;
   /** 頁面所在的容器。調暗的 class 掛在它身上，點擊與鍵盤也只聽它裡面的。 */
   root: RefObject<HTMLElement | null>;
+  /** 點在課文上時聚焦哪裡。沒給就一律聚焦點到的那一句。 */
+  decide?: (rich: HTMLElement, offset: number, target: Element, e: MouseEvent) => Decision;
+  /** 點在課文以外（空白處）或按 Esc：外層也一起取消。 */
+  onBlank?: () => void;
+  /** 聚焦換了：哪一段文字的第幾個字到第幾個字；null 是取消。 */
+  onMove?: (at: { rich: HTMLElement; start: number; end: number } | null) => void;
 };
+
+export type Decision =
+  /** 聚焦點到的那一句 */
+  | { kind: 'sentence' }
+  /** 聚焦指定的幾個字（例如標成句子的字，範圍照標記，不照標點切） */
+  | { kind: 'range'; start: number; end: number }
+  /** 這一下另有用途（選段落、開生字詞）：放掉句子聚焦，不聚焦任何一句 */
+  | { kind: 'stop' };
 
 const FOCUS = 'sentence-focus';
 const MARK = 'sentence-mark';
@@ -214,7 +234,11 @@ function supportsHighlight(): boolean {
   return typeof CSS !== 'undefined' && 'highlights' in CSS && typeof Highlight === 'function';
 }
 
-export function SentenceFocus({ active, root }: Props) {
+export function SentenceFocus({ active, root, decide, onBlank, onMove }: Props) {
+  // 外層每次重繪都會給新的函式，放進 ref，監聽才不必跟著重掛（重掛會把聚焦清掉）
+  const cb = useRef({ decide, onBlank, onMove });
+  cb.current = { decide, onBlank, onMove };
+
   useEffect(() => {
     const el = root.current;
     if (!active || !el) return;
@@ -223,13 +247,13 @@ export function SentenceFocus({ active, root }: Props) {
       return;
     }
 
-    // 目前聚焦的那一句。rich 是它所在的段落，index 是段落裡的第幾句
-    let current: { rich: HTMLElement; sentences: SentenceSpan[]; index: number } | null = null;
+    // 目前聚焦的範圍。rich 是它所在的段落；index 是它落在第幾句（方向鍵從這裡往前後走）
+    let current: { rich: HTMLElement; sentences: SentenceSpan[]; index: number; span: SentenceSpan } | null = null;
     let marked = false;
 
     const paint = () => {
       if (!current) return;
-      const range = sentenceRange(current.rich, current.sentences[current.index]);
+      const range = sentenceRange(current.rich, current.span);
       CSS.highlights.set(FOCUS, new Highlight(range));
       if (marked) CSS.highlights.set(MARK, new Highlight(range));
       else CSS.highlights.delete(MARK);
@@ -239,34 +263,33 @@ export function SentenceFocus({ active, root }: Props) {
         block: 'nearest',
         inline: 'nearest',
       });
+      cb.current.onMove?.({ rich: current.rich, start: current.span.start, end: current.span.end });
     };
 
     const clear = () => {
+      const had = !!current;
       current = null;
       marked = false;
       CSS.highlights.delete(FOCUS);
       CSS.highlights.delete(MARK);
       el.classList.remove(DIMMED);
+      if (had) cb.current.onMove?.(null);
+    };
+
+    const focusSpan = (rich: HTMLElement, span: SentenceSpan) => {
+      const sentences = splitSentences(richText(rich));
+      if (span.end <= span.start) return;
+      const same = current?.rich === rich && current.span.start === span.start && current.span.end === span.end;
+      // 換到別句就把標黃清掉；點同一句維持原狀，雙擊才會切換標黃
+      if (!same) marked = false;
+      current = { rich, sentences, index: Math.max(0, sentenceIndexAt(sentences, span.start)), span };
+      paint();
     };
 
     const focusAt = (rich: HTMLElement, index: number) => {
       const sentences = splitSentences(richText(rich));
       if (index < 0 || index >= sentences.length) return;
-      const same = current?.rich === rich && current.index === index;
-      // 換到別句就把標黃清掉；點同一句維持原狀，雙擊才會切換標黃
-      if (!same) marked = false;
-      current = { rich, sentences, index };
-      paint();
-    };
-
-    const focusFromEvent = (e: MouseEvent): boolean => {
-      const hit = hitTest(el, e.clientX, e.clientY);
-      if (!hit) return false;
-      const sentences = splitSentences(richText(hit.rich));
-      const index = sentenceIndexAt(sentences, hit.offset);
-      if (index < 0) return false;
-      focusAt(hit.rich, index);
-      return true;
+      focusSpan(rich, sentences[index]);
     };
 
     /** 按鈕、連結、角標有自己的行為，不碰。 */
@@ -275,16 +298,28 @@ export function SentenceFocus({ active, root }: Props) {
 
     const onClick = (e: MouseEvent) => {
       if (isInteractive(e)) return;
-      // 沒點到課文就是點空白處：取消
-      if (!focusFromEvent(e)) clear();
+      const hit = hitTest(el, e.clientX, e.clientY);
+      // 沒點到課文就是點空白處：全部取消
+      if (!hit) {
+        clear();
+        cb.current.onBlank?.();
+        return;
+      }
+      const d = cb.current.decide?.(hit.rich, hit.offset, e.target as Element, e) ?? { kind: 'sentence' };
+      if (d.kind === 'stop') return clear();
+      if (d.kind === 'range') return focusSpan(hit.rich, { start: d.start, end: d.end });
+      const sentences = splitSentences(richText(hit.rich));
+      const index = sentenceIndexAt(sentences, hit.offset);
+      if (index < 0) return clear();
+      focusAt(hit.rich, index);
     };
 
     const onDblClick = (e: MouseEvent) => {
       if (isInteractive(e)) return;
       const hit = hitTest(el, e.clientX, e.clientY);
       if (!hit || !current || hit.rich !== current.rich) return;
-      // 雙擊的那一句就是目前聚焦的那一句才切換標黃（第二下 click 已經把焦點移過去了）
-      if (sentenceIndexAt(current.sentences, hit.offset) !== current.index) return;
+      // 雙擊落在目前聚焦的範圍裡才切換標黃（第二下 click 已經把焦點移過去了）
+      if (hit.offset < current.span.start || hit.offset > current.span.end) return;
       marked = !marked;
       paint();
       // 雙擊預設會選取一個詞，蓋在高亮上面
@@ -305,6 +340,7 @@ export function SentenceFocus({ active, root }: Props) {
       if (!current) return;
       if (e.key === 'Escape') {
         clear();
+        cb.current.onBlank?.();
         // 已經在逐句聚焦裡，Esc 先取消聚焦；外層的「Esc 離開預覽」要再按一次
         e.stopPropagation();
         return;

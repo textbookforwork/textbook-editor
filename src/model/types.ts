@@ -78,8 +78,8 @@ export type InlineSpan = {
    */
   fontFamily?: string;
   /**
-   * 這幾個字點下去會開的補充，指向所屬 TextBlock.popups 裡某一項的 id。
-   * 只開那一項，不開整組——補充是掛在詞上的，不是掛在整段上。
+   * 這幾個字點下去會開的補充：一組字的代號，對到 TextBlock.popups 裡 id 或 wordGroup 是它的那幾項
+   * （見 popups.ts 的 groupOf）。只開這一組，不開整段的——補充是掛在詞上的，不是掛在整段上。
    */
   popupId?: string;
   /** 這幾個字標成生字、語詞或句子，指向所屬 TextBlock.rangeNotes 裡的 id。只有課文段落會有。 */
@@ -130,7 +130,7 @@ export type RangeNote = { id: string; kind: RangeKind | 'zi' | 'ci' | ParaNoteKi
  * 行為規則（無例外、不依數量變化）：有掛補充就開檢視器，
  * 每一項的行動鈕依它自己的 kind 決定。
  */
-export type PopupItem =
+export type PopupItem = (
   | { id: string; kind: 'text'; title: string; body: string }
   | { id: string; kind: 'image'; title: string; assetId: string | null }
   | {
@@ -169,7 +169,15 @@ export type PopupItem =
       blocks: Block[];
       /** 大彈窗可以有好幾頁，學生一次看一頁、左右翻。讀的時候用 richPagesOf()。 */
       pages?: Block[][];
-    };
+    }) & {
+  /**
+   * 連到幾個字上時，屬於哪一組字。字上記的 popupId 是這一組的代號；
+   * 第一項的代號就是它自己的 id（舊資料都是這樣，不必回填），同一組字後加的項目把代號記在這裡。
+   * 所以同一組字可以掛好幾項，字上的標記不必改成清單。
+   */
+  wordGroup?: string;
+};
+
 
 export type PopupKind = PopupItem['kind'];
 

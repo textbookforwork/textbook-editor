@@ -1,4 +1,4 @@
-import { elementPopups } from './popups';
+import { elementPopups, groupOf } from './popups';
 import { canHavePopup } from './registry';
 import { newId } from './ids';
 import type { Action, DropTarget } from './actions';
@@ -46,26 +46,44 @@ function applyDrop(rows: Row[], moved: Row, target: DropTarget): Row[] {
   if (target.mode === 'row') {
     const index = Math.max(0, Math.min(target.index, rows.length));
     const next = rows.slice();
-    // 併回單欄：插進順序裡就是佔滿整寬
-    next.splice(index, 0, {
-      ...moved,
-      columns: normalizeWidths([
-        { id: newId('col'), widthPct: 100, blocks: moved.columns.flatMap((c) => c.blocks) },
-      ]),
-    });
+    // 整列搬家：原本幾欄就還是幾欄。以前會壓成一欄，兩個元件擠進同一欄、只剩整列一個握把，
+    // 其中一個就再也拖不出來（直排時還會變成左右並排）。從多欄拆出來的那一欄自然是單欄、佔滿整寬
+    next.splice(index, 0, { ...moved, columns: normalizeWidths(moved.columns) });
     return next;
   }
 
   return rows.map((row) => {
     if (row.id !== target.rowId) return row;
+    // 拖過來的是多欄的一整列：各欄照樣是各欄，永遠不壓成一欄（理由同上）。
+    // 會不會超過一列的上限由拖曳那邊擋：超過就不給併（useRowDrag 的 draggedCols）
+    if (moved.columns.length > 1) {
+      const merged = target.side === 'left' ? [...moved.columns, ...row.columns] : [...row.columns, ...moved.columns];
+      return { ...row, columns: normalizeWidths(merged.map((c) => ({ ...c, widthPct: 100 / merged.length }))) };
+    }
     const incoming: Column = {
       id: newId('col'),
       widthPct: 100 / (row.columns.length + 1),
       blocks: moved.columns.flatMap((c) => c.blocks),
     };
+    // 原本只有一欄、元件沒佔滿：照元件實際用掉的長度留給它，新的一欄接在它正後面（直排就是正下方），
+    // 元件本身維持原本的大小。否則平均分配；使用者可以再拖分隔線調整
+    if (row.columns.length === 1 && target.keepPct !== undefined) {
+      const keep = Math.max(10, Math.min(90, target.keepPct));
+      const fit = target.fitPct;
+      const old = row.columns[0];
+      const kept: Column = {
+        ...old,
+        widthPct: keep,
+        blocks:
+          fit === undefined
+            ? old.blocks
+            : old.blocks.map((b) => (b.type === 'text' ? b : { ...b, widthPct: clampPct(fit) })),
+      };
+      const added = { ...incoming, widthPct: 100 - keep };
+      return { ...row, columns: normalizeWidths(target.side === 'left' ? [added, kept] : [kept, added]) };
+    }
     const columns =
       target.side === 'left' ? [incoming, ...row.columns] : [...row.columns, incoming];
-    // 併欄之後平均分配寬度；使用者可以再拖分隔線調整
     const even = columns.map((c) => ({ ...c, widthPct: 100 / columns.length }));
     return { ...row, columns: normalizeWidths(even) };
   });
@@ -324,11 +342,14 @@ export function applyAction(doc: Doc, action: Action): Doc {
 
     case 'removePopup':
       return mapBlock(doc, action.blockId, (b) => {
+        const removed = b.popups.find((p) => p.id === action.popupId);
         const next = { ...b, popups: b.popups.filter((p) => p.id !== action.popupId) };
-        // 文字裡掛著這一項的那幾個字也要放掉，否則它們還是一副可以點的樣子，點了卻什麼都沒有
-        if (next.type === 'text' && next.spans.some((s) => s.popupId === action.popupId)) {
+        // 同一組字刪到一項都不剩，那幾個字才放掉，否則它們還是一副可以點的樣子，點了卻什麼都沒有。
+        // 還有別項時字上的代號留著：代號只是組名，第一項刪掉了，後面幾項照樣認得它
+        const group = removed ? groupOf(removed) : action.popupId;
+        if (next.type === 'text' && !next.popups.some((p) => groupOf(p) === group) && next.spans.some((s) => s.popupId === group)) {
           next.spans = mergeSpans(
-            next.spans.map((s) => (s.popupId === action.popupId ? { ...s, popupId: undefined } : s))
+            next.spans.map((s) => (s.popupId === group ? { ...s, popupId: undefined } : s))
           );
         }
         return next;

@@ -10,7 +10,7 @@ import { useEditorCtx } from '../editor/EditorContext';
 import { FlowResizeHandle, ResizeHandles, resizeModeOf } from '../editor/ResizeHandles';
 import { textFlowStyle, FLOW_SHARE_OF_PAGE } from '../styles/roles';
 import { usePopupViewer } from '../viewer/PopupViewer';
-import { readyElementPopups } from '../model/popups';
+import { readyElementPopups, readyPopups } from '../model/popups';
 import { PopupBadge } from './PopupBadge';
 import { useParagraphIndex, useParaFocus } from './ParagraphContext';
 import { paraLabel } from '../model/paragraphs';
@@ -172,6 +172,11 @@ export function RowView({
     ed?.dropTarget?.mode === 'column' && ed.dropTarget.rowId === row.id
       ? ed.dropTarget.side
       : null;
+  // 併在後面、原本的元件沒佔滿：提示線畫在它結尾後面（新的一欄真正開始的地方），不畫在整列最後
+  const dropAt =
+    ed?.dropTarget?.mode === 'column' && ed.dropTarget.rowId === row.id && ed.dropTarget.side === 'right'
+      ? ed.dropTarget.keepPct
+      : undefined;
   /**
    * 被切到下一頁的段落，在兩頁上各畫一次，而且兩份的 rowIndex 相同。
    *
@@ -231,8 +236,9 @@ export function RowView({
         style={{ marginBlockStart: item.gapBefore }}
       >
         {/* 抓取點。用 pointer events 而不是 HTML5 拖曳——
-            HTML5 拖曳在觸控裝置上完全不能用，而老師是用平板的。 */}
-        {ed && (
+            HTML5 拖曳在觸控裝置上完全不能用，而老師是用平板的。
+            多欄的列不畫這一顆：每一欄已經有自己的握把（一個元件一個），整列的握把會跟第一欄的疊在一起 */}
+        {ed && row.columns.length < 2 && (
           <Grip
             data-ui
             $vertical={vertical}
@@ -250,12 +256,11 @@ export function RowView({
         {/* 落點二：推到元件側邊 → 跟它併成兩欄、三欄。
             畫成貼在那一側、跟整列一樣長的直線，刻意跟落點一（橫線）不同形態 */}
         {dropHere && (
-          <SideDrop $side={dropHere === 'left' ? 'start' : 'end'} $vertical={vertical}>
+          <SideDrop $side={dropHere === 'left' ? 'start' : 'end'} $vertical={vertical} $at={dropAt}>
             <span>併成{'零一二三四五'[row.columns.length + 1]}欄</span>
           </SideDrop>
         )}
 
-        {item.continuedFromPrev && <Continues>接上頁</Continues>}
 
         <Columns data-columns>
           {row.columns.map((col, ci) => {
@@ -293,7 +298,7 @@ export function RowView({
                   // 元件裡自己會動的東西（播放鈕、連結、注釋號）照舊，不被搶走
                   // 連到字上的補充不在這裡：點那幾個字才開
                   const ready = readyElementPopups(b);
-                  // 課文段落不靠點元件本身打開：點段號聚焦，再按右側的圓形按鈕（「補」就是這些補充）
+                  // 課文段落不靠點元件本身打開：點段落（或段號）聚焦，再按右下角的膠囊（「補」就是這些補充）
                   const para = b.type === 'text' ? paraIndex.get(b.id) : undefined;
                   const tap = !ed && viewer && ready.length > 0 && !para
                     ? (el: HTMLElement) => viewer.open({ ...b, popups: ready }, el)
@@ -359,6 +364,8 @@ export function RowView({
                     }
                     ref={b.type === 'table' && ed ? tableFrames.ref(b.id) : undefined}
                     data-block-id={ed ? b.id : undefined}
+                    /* 閱讀時點課文要知道點在哪一段（第一下選段，見 ReaderMode） */
+                    data-para={!ed && para ? para.startId : undefined}
                     $selected={isSelected}
                     /* 有把手時外框由把手那一層畫，這裡不再畫一圈 */
                     $framed={!!mode}
@@ -405,10 +412,12 @@ export function RowView({
                         }
                       />
                     )}
-                    {/* 閱讀時的課文段落不畫角標：它的補充收在右側的「補」按鈕裡 */}
-                    {ready.length > 0 && !tap && !(para && !ed) && (
+                    {/* 角標只在編輯時畫。閱讀（預覽、學生端）一律沒有角標：點元件本身、或段落的「補」按鈕打開；
+                        縮圖也不畫。條件只看「有沒有編輯器」，不再用排除法——之前漏掉的情況會讓角標跑回閱讀畫面 */}
+                    {/* 數的是整個元件的補充：整段的，加上掛在句子、生字詞、幾個字上的，老師一眼看得出這段總共掛了多少 */}
+                    {ed && readyPopups(b).length > 0 && (
                       <PopupBadge
-                        count={ready.length}
+                        count={readyPopups(b).length}
                         /* 把角標本身交出去：一項的補充直接在角標旁彈泡泡，多項才開中央視窗。只交出填完的項目 */
                         /* 角標只在編輯時能按：打開右側的補充內容面板去改。閱讀時不畫角標（點元件本身）；
                            縮圖裡沒有編輯器，只畫記號 */
@@ -459,15 +468,27 @@ export function RowView({
                   </BlockShell>
                   );
                 })}
-                {ed && ci < row.columns.length - 1 && (
+                {/* 兩欄之間的分隔線，拖它改兩欄的長短（文字元件的長短就是欄的長短）。
+                    選了元件時把手畫在「選的那一欄」裡、壓在它藍框的那條邊上——畫在別欄再推過來的話，
+                    兩欄左右寬度不同時把手會對不上。沒選時照舊在欄距中間、滑過才看得到 */}
+                {ed && ci < row.columns.length - 1 && !row.columns[ci + 1].blocks.some((b) => b.id === ed.selectedBlockId) && (
                   <Divider
                     rowId={row.id}
                     widths={row.columns.map((c) => c.widthPct)}
                     index={ci}
                     vertical={vertical}
-                    onChange={(widths) =>
-                      ed.dispatch({ type: 'setColumnWidths', rowId: row.id, widths })
-                    }
+                    shown={col.blocks.some((b) => b.id === ed.selectedBlockId) ? 'end' : null}
+                    onChange={(widths) => ed.dispatch({ type: 'setColumnWidths', rowId: row.id, widths })}
+                  />
+                )}
+                {ed && ci > 0 && col.blocks.some((b) => b.id === ed.selectedBlockId) && (
+                  <Divider
+                    rowId={row.id}
+                    widths={row.columns.map((c) => c.widthPct)}
+                    index={ci - 1}
+                    vertical={vertical}
+                    shown="start"
+                    onChange={(widths) => ed.dispatch({ type: 'setColumnWidths', rowId: row.id, widths })}
                   />
                 )}
               </ColumnWrap>
@@ -475,7 +496,6 @@ export function RowView({
           })}
         </Columns>
 
-        {item.continuesOnNext && <Continues $end>接下頁</Continues>}
       </Frame>
 
       {/* 這一列之後的插入點：每一列都有，離內容固定 16px。被切到下一頁的列只在結尾那一份畫 */}
@@ -506,12 +526,15 @@ function Divider({
   widths,
   index,
   vertical,
+  shown,
   onChange,
 }: {
   rowId: string;
   widths: number[];
   index: number;
   vertical: boolean;
+  /** 畫在哪一欄的哪條邊上：end＝這一欄的結尾邊、start＝這一欄的開頭邊（選的是它）、null＝沒選，在欄距中間 */
+  shown: 'start' | 'end' | null;
   onChange: (widths: number[]) => void;
 }) {
   const start = useRef<{ pos: number; a: number; b: number; span: number } | null>(null);
@@ -532,6 +555,7 @@ function Divider({
       aria-label="調整欄寬"
       data-ui
       $vertical={vertical}
+      $shown={shown}
       onPointerDown={(e) => {
         const columns = e.currentTarget.closest<HTMLElement>('[data-columns]');
         const box = columns?.getBoundingClientRect();
@@ -666,17 +690,20 @@ const DropLine = styled.div<{ $where: 'start' | 'end'; $vertical: boolean }>`
  * 絕對定位、不佔版面。一律用實體屬性——直排時列的「側邊」是上下，
  * 這個元件又設了 horizontal-tb，邏輯屬性會算成它自己的方向。
  */
-const SideDrop = styled.div<{ $side: 'start' | 'end'; $vertical: boolean }>`
+const SideDrop = styled.div<{ $side: 'start' | 'end'; $vertical: boolean; $at?: number }>`
   position: absolute;
   z-index: 10;
   pointer-events: none;
   writing-mode: horizontal-tb;
   background: ${(p) => p.theme.border.hover};
   border-radius: ${(p) => p.theme.radius.control};
-  ${(p) =>
-    p.$vertical
-      ? `left: 0; right: 0; block-size: 3px; ${p.$side === 'start' ? 'top: -14px;' : 'bottom: -14px;'}`
-      : `top: 0; bottom: 0; inline-size: 3px; ${p.$side === 'start' ? 'left: -14px;' : 'right: -14px;'}`}
+  ${(p) => {
+    // 新的一欄從哪裡開始：原本那一欄留 $at%（扣掉欄距算），線畫在欄距的正中間
+    const at = p.$at === undefined ? null : `calc((100% - ${COLUMN_GAP}px) * ${p.$at / 100} + ${COLUMN_GAP / 2}px - 1.5px)`;
+    return p.$vertical
+      ? `left: 0; right: 0; block-size: 3px; ${p.$side === 'start' ? 'top: -14px;' : at ? `top: ${at};` : 'bottom: -14px;'}`
+      : `top: 0; bottom: 0; inline-size: 3px; ${p.$side === 'start' ? 'left: -14px;' : at ? `left: ${at};` : 'right: -14px;'}`;
+  }}
 
   span {
     position: absolute;
@@ -701,13 +728,17 @@ const Columns = styled.div`
   align-items: flex-start;
 `;
 
+/**
+ * 多欄時每一欄的握把：跟單欄列的握把（Grip）同樣大小、同樣位置——直排在欄的上方、橫排在欄的左邊。
+ * 第二欄以後的握把剛好落在欄與欄之間的空隙（COLUMN_GAP 48 > 36），不會壓到字；
+ * 以前放在欄裡往內 10px，比旁邊單欄列的握把低一截，還蓋住第一個字。
+ */
 const ColGrip = styled.div<{ $vertical: boolean }>`
   position: absolute;
-  top: -10px;
-  ${(p) => (p.$vertical ? 'right: -10px;' : 'left: -10px;')}
+  ${(p) => (p.$vertical ? 'top: -36px; right: 0;' : 'left: -36px; top: 0;')}
   z-index: 11;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border-radius: ${(p) => p.theme.radius.field};
@@ -719,6 +750,9 @@ const ColGrip = styled.div<{ $vertical: boolean }>`
   opacity: 0.35;
   transition: opacity 0.12s, border-color 0.12s, color 0.12s;
 
+  ${Frame}:hover & {
+    opacity: 1;
+  }
   &:hover {
     opacity: 1;
     border-color: ${(p) => p.theme.border.hover};
@@ -732,41 +766,59 @@ const ColumnWrap = styled.div`
   min-inline-size: 0;
 `;
 
-const Handle = styled.div<{ $vertical: boolean }>`
+/** 選取外框（BlockShell 的 outline）離元件多遠：outline-offset 4px 加上框線的一半 */
+const SELECT_RING = 5;
+
+/**
+ * 兩欄之間的分隔線，拖它改兩欄的長短。畫在欄距的正中間。
+ * 一律用實體屬性：直排時欄是上下疊的，線在欄的下面、是橫的；這一層又設了 horizontal-tb，
+ * 用邏輯屬性會照它自己的方向算，結果線畫到欄的右邊、變成直的，拖不到（之前就是這樣）。
+ * 平常看不見，滑過才出現；選了旁邊的元件時（$shown）直接顯示在它外框的邊上，中間一顆跟外框把手同款的白膠囊。
+ */
+const Handle = styled.div<{ $vertical: boolean; $shown: 'start' | 'end' | null }>`
   position: absolute;
-  inset-block: 0;
-  inset-inline-end: -${COLUMN_GAP / 2}px;
-  inline-size: 16px;
-  /* 直排時欄是上下排的，拖曳軸也要跟著轉 */
-  cursor: ${(p) => (p.$vertical ? 'row-resize' : 'col-resize')};
-  display: grid;
-  place-items: center;
+  ${(p) => {
+    // 沒選：感應區在欄距正中間。選了：壓在選取元件藍框的那條邊上（跟外框把手同位置），
+    // 不然會跟下一欄放在欄距裡的拖曳握把疊在一起。
+    // 藍框畫在元件外面（outline-offset 4px＋框線一半 ≈ 5px），把手的中心要壓在那條藍線上
+    const off = p.$shown ? -(8 + SELECT_RING) : -(COLUMN_GAP / 2 + 8);
+    const edge = p.$shown === 'start' ? (p.$vertical ? 'top' : 'left') : p.$vertical ? 'bottom' : 'right';
+    return p.$vertical
+      ? `left: 0; right: 0; ${edge}: ${off}px; height: 16px; cursor: row-resize;`
+      : `top: 0; bottom: 0; ${edge}: ${off}px; width: 16px; cursor: col-resize;`;
+  }}
+  z-index: 12;
   writing-mode: horizontal-tb;
   touch-action: none;
-  opacity: 0;
+  opacity: ${(p) => (p.$shown ? 1 : 0)};
   transition: opacity 0.12s;
 
+  /* 沒選時滑過才看得到的細線；選了就只有把手，不畫灰線（藍框本身就是那條邊） */
   &::before {
     content: '';
     position: absolute;
-    inset-block: 0;
-    inline-size: 2px;
+    display: ${(p) => (p.$shown ? 'none' : 'block')};
     background: ${(p) => p.theme.border.hover};
+    ${(p) => (p.$vertical ? 'left: 0; right: 0; top: 7px; height: 2px;' : 'top: 0; bottom: 0; left: 7px; width: 2px;')}
+  }
+  /* 把手：跟圖片外框的把手同一款白膠囊 */
+  &::after {
+    content: '';
+    position: absolute;
+    box-sizing: border-box;
+    ${(p) =>
+      p.$vertical
+        ? 'left: 50%; top: 3px; width: 28px; height: 10px; margin-left: -14px;'
+        : 'top: 50%; left: 3px; width: 10px; height: 28px; margin-top: -14px;'}
+    border-radius: ${(p) => p.theme.radius.control};
+    background: ${(p) => p.theme.surface.raised};
+    border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
+    box-shadow: 0 1px 3px rgba(26, 25, 23, 0.18);
+    display: ${(p) => (p.$shown ? 'block' : 'none')};
   }
   &:hover,
   &:active {
     opacity: 1;
-  }
-`;
-
-const Continues = styled.div<{ $end?: boolean }>`
-  font-size: var(--ds-typography-caption-size);
-  line-height: var(--ds-typography-caption-line-height);
-  color: ${(p) => p.theme.text.tertiary};
-  margin-block: ${(p) => (p.$end ? '8px 0' : '0 8px')};
-
-  &::before {
-    content: '${(p) => (p.$end ? '↓ ' : '↑ ')}';
   }
 `;
 

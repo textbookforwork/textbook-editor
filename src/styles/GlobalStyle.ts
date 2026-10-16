@@ -114,27 +114,57 @@ export const GlobalStyle = createGlobalStyle`
       align-items: center;
       /* 字的三成大；內文字小時至少 8px，不然注音糊成一團（注音欄會比字高一點，行距跟著撐開） */
       font-size: max(0.3em, 8px);
+      /*
+       * 注音固定用黑體，不跟課文換字體：明體、楷體的調號（ˊˇˋ）是全形寬的字、符號偏在字框右邊，
+       * 跟著課文換字體時調號會飄到隔壁欄。字體固定，調號的位置才算得準
+       */
+      font-family: var(--ds-typography-font-sans);
+      font-style: normal;
+      font-weight: 400;
       line-height: 1;
       margin-inline-start: 0.1em;
       /* 調號掛在右邊，先把位置留出來，不然會疊到下一個字 */
       padding-inline-end: 0.55em;
-      color: ${(p) => p.theme.text.secondary};
+      /* 跟課文同色：課本的注音是黑的，淡灰會讓字看起來髒、像沒印清楚 */
+      color: ${(p) => p.theme.text.primary};
       user-select: none;
       text-align: center;
     }
 
+    /*
+     * 注音符號的筆畫最高到字身的 92%（Noto Sans TC 的ㄘ；蘋方 86%），所以每個符號最多只能收到 95%，
+     * 再收筆畫就會互相壓到（收到 75% 時在 Mac 上ㄓㄨ、ㄎㄜ都疊在一起）。
+     * 字間距也加在最後一個符號後面，框會比筆畫短一截：用 padding 補回來，
+     * 整欄才置中在字旁邊、調號才對得到最後一個符號
+     */
     rt [data-zy] {
       writing-mode: vertical-rl;
       text-orientation: upright;
-      letter-spacing: 0;
+      letter-spacing: -0.05em;
+      padding-inline-end: 0.05em;
     }
 
+    /* 調號對齊最後一個符號（框的下緣跟它切齊），掛在它的右上，不要飄到前一個符號旁邊 */
+    /*
+     * 調號的規則：上下置中在整串注音的正中間（兩個符號時落在兩個符號之間，例如 ㄈㄢˇ），
+     * 左右從注音欄右緣外開始，不壓到符號。
+     * 調號的字面在自己的字框裡偏上（字面中心約在框頂下 0.28 字）：框頂放在注音欄正中線，
+     * 再往上拉 0.28 字，字面中心才落在正中線。注音固定用黑體（見上面 rt），這個數字才準
+     */
     rt [data-tone] {
       position: absolute;
-      inset-inline-start: calc(100% - 0.6em);
-      bottom: 0.45em;
+      inset-inline-start: calc(100% - 0.5em);
+      top: 50%;
+      transform: translateY(-0.28em);
       font-size: 0.9em;
       line-height: 1;
+    }
+    /*
+     * 只有一個符號：調號掛在符號的右上（W3C clreq 5.5.3.3：調號的一半高出符號頂端），
+     * 不跟著置中——置中會變成貼在符號正旁邊，看起來像另一個符號
+     */
+    rt[data-one] [data-tone] {
+      top: 0;
     }
 
     /* 重點詞（data-kw）只留資料不畫樣式：功能已從工具列拿掉，生字表與搜尋日後仍靠這個標記 */
@@ -171,10 +201,11 @@ export const GlobalStyle = createGlobalStyle`
      * 標成生字、語詞、句子的字已經有側邊點點線，不再畫底線（兩條線並排分不出哪條能點）。
      * 刪除線、上線照留。
      */
-    [data-note][data-u] { text-decoration-line: none; }
-    [data-note][data-u][data-s] { text-decoration-line: line-through; }
-    [data-note][data-u][data-o] { text-decoration-line: overline; }
-    [data-note][data-u][data-s][data-o] { text-decoration-line: line-through overline; }
+    /* 標記在外框上（見 inlineDom 的 spansToHtml），底線在裡面的字上 */
+    :is([data-note], [data-pop]) [data-u] { text-decoration-line: none; }
+    :is([data-note], [data-pop]) [data-u][data-s] { text-decoration-line: line-through; }
+    :is([data-note], [data-pop]) [data-u][data-o] { text-decoration-line: overline; }
+    :is([data-note], [data-pop]) [data-u][data-s][data-o] { text-decoration-line: line-through overline; }
 
     ruby rt {
       font-weight: 400;
@@ -182,41 +213,18 @@ export const GlobalStyle = createGlobalStyle`
     }
 
     /*
-     * 掛了補充的那幾個字。用底色不用底線：底線已經給底線樣式用了，
-     * 疊在一起分不出哪個能點。底色不改變尺寸，量測與畫面一致。
-     * 點擊行為在 BlockView（閱讀模式）接，編輯時只是看得到。
-     */
-    [data-pop] {
-      background: ${(p) => p.theme.brand.primaryTint};
-      border-radius: 3px;
-      box-decoration-break: clone;
-      -webkit-box-decoration-break: clone;
-      cursor: pointer;
-    }
-    [data-pop]:hover { background: ${(p) => p.theme.brand.primary}; }
-
-    /*
-     * 標了段落說明（旨修句問）的幾個字：旁邊一條點線，跟國文 prototype 一樣。
+     * 點得開的幾個字（標成生字詞、句子，或掛了補充）：旁邊一條點線，跟國文 prototype 一樣。
+     * 不用底色：課文上不鋪色塊，點線就交代了「這裡點得開」。
      * 畫在 block 方向的邊框上——行內元素這個方向的邊框不撐行高，量測與畫面一致。
      * 橫排畫在字下，直排畫在字右（下面的直排規則）。
      */
-    [data-note] {
+    [data-note], [data-pop] {
       border-block-end: 2px dotted ${(p) => p.theme.text.tertiary};
       box-decoration-break: clone;
       -webkit-box-decoration-break: clone;
       cursor: pointer;
     }
-    /*
-     * 帶注音的字是一個橫的小盒子（見上面的 ruby），邊框會畫錯邊、還會撐開它。
-     * 改用背景畫點線：不佔空間。橫排畫在字下，直排的規則在下面（畫在字的右緣、注音的左邊）。
-     */
-    ruby[data-note] {
-      border: none;
-      background-image: linear-gradient(to right, ${(p) => p.theme.text.tertiary} 50%, transparent 0);
-      background-size: 4px 2px;
-      background-repeat: repeat-x;
-      background-position: 0 100%;
-    }
+    /* 注音字的點點線也由外框畫（見 inlineDom 的 spansToHtml），跟一般字同一條邊框 */
 
     /*
      * 注釋號是一個原子，跟注音同一類：看得到、刪得掉，但編不進去。
@@ -239,6 +247,15 @@ export const GlobalStyle = createGlobalStyle`
    * 直排時改成：盒子只有字本身（行高 1、對齊基線，跟一般字落在同一條中線），
    * 注音欄浮在字的右邊、伸進欄與欄之間的空隙，不佔位置。
    */
+  /*
+   * 直排字距：一律緊排，有注音的字也不例外——字距一不一樣，整頁的字就對不上同一條橫線。
+   * 注音欄收在字的高度裡（見 rt [data-zy] 的字間距），連續的注音字（啾啾、濺濺）才分得開。
+   */
+  [data-vertical] .ds-rich:not([data-horizontal]) rt,
+  .ds-rich[data-vertical] rt {
+    letter-spacing: 0;
+  }
+
   [data-vertical] .ds-rich:not([data-horizontal]) ruby,
   .ds-rich[data-vertical] ruby {
     position: relative;
@@ -250,28 +267,11 @@ export const GlobalStyle = createGlobalStyle`
     position: absolute;
     left: 100%;
     top: 50%;
-    transform: translateY(-50%);
-  }
-  /*
-   * 直排：點點線畫在字的左側（block-end 在直排就是左邊），跟底線同一側——標了的字不畫底線，不會疊在一起。
-   * 注音字的點點線另外畫一條，不佔位置（佔了會把字推離中線），位置對齊一般字的邊框：
-   * 一般字的邊框在字型框外緣，比字面寬出約 0.225 字，再加上邊框本身 2px。
-   */
-  [data-vertical] .ds-rich:not([data-horizontal]) ruby[data-note],
-  .ds-rich[data-vertical] ruby[data-note] {
-    border: none;
-    background: none;
-  }
-  [data-vertical] .ds-rich:not([data-horizontal]) ruby[data-note]::before,
-  .ds-rich[data-vertical] ruby[data-note]::before {
-    content: '';
-    position: absolute;
-    left: calc(-0.225em - 2px);
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-image: linear-gradient(to bottom, ${(p) => p.theme.text.tertiary} 50%, transparent 0);
-    background-size: 2px 4px;
+    /*
+     * 對準字的視覺中心，不是字框的中心：中文字的字面在行高 1 的框裡略偏下，
+     * 只置中框，注音看起來會往上偏。0.12em 是注音自己的字級，換算約 0.04 字（實測字面與注音的中心對齊）
+     */
+    transform: translateY(-50%) translateY(0.12em);
   }
   [data-vertical] .ds-rich [data-u],
   .ds-rich[data-vertical] [data-u] {

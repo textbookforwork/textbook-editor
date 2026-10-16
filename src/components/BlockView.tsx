@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import styled from 'styled-components';
 import { roleStyle, TEXT_SCALE, textFlowStyle } from '../styles/roles';
 import { blockBox, type SizingContext } from '../model/blockSizing';
 import { spansToHtml } from '../model/inlineDom';
-import { PARA_NOTE_KINDS, rangeKindOf, rangeNoteFilled, sentenceNotesOf } from '../model/paragraphs';
+import { markPopups, markReady, rangeKindOf } from '../model/paragraphs';
 import { usePopupViewer } from '../viewer/PopupViewer';
+import { missingOf, wordGroupPopups } from '../model/popups';
 import { EditableText } from './EditableText';
 import { ImageBlockView } from './blocks/ImageBlockView';
 import { VideoBlockView } from './blocks/VideoBlockView';
@@ -15,7 +17,7 @@ import { ModuleBlockView } from './blocks/ModuleBlockView';
 import { ShapeBlockView } from './blocks/ShapeBlockView';
 import { LineBlockView } from './blocks/LineBlockView';
 import type { BlockPatch } from '../model/actions';
-import type { Block, DocSettings, InlineSpan, PopupItem } from '../model/types';
+import type { Block, DocSettings, InlineSpan } from '../model/types';
 import { useNoteNo } from './ParagraphContext';
 
 type Props = {
@@ -58,6 +60,11 @@ export function BlockView({
   const viewer = usePopupViewer();
   // 生字詞的號碼（①②），全文一串。課文上不標，只出現在彈出的註釋標題
   const noteNo = useNoteNo();
+  // innerHTML 的物件要在文字沒變時保持同一個：React 19 比的是物件身分不是字串，
+  // 換了物件就重設 innerHTML。閱讀模式每點一下都會重畫，重設會把逐句聚焦的高亮
+  // （掛在舊的文字節點上）弄掉，下一下點到的也成了已經被換掉的節點
+  const html = block.type === 'text' ? spansToHtml(block.spans) : '';
+  const richHtml = useMemo(() => ({ __html: html }), [html]);
 
   // 非文字區塊：尺寸由 blockSizing 決定，跟量測用的是同一個函式，
   // 所以畫出來的一定等於量到的，不會撐破頁面。
@@ -73,7 +80,7 @@ export function BlockView({
       // 字級覆寫與單段直橫排都跟量測探針走同一組函式（roleStyle、textFlowStyle）
       const flow = textFlowStyle(block, sizing);
       const s: React.CSSProperties = {
-        ...roleStyle(block.role, scale, block.fontSize, block.lineHeight),
+        ...roleStyle(block.role, scale, block.fontSize, block.lineHeight, flow.vertical),
         textAlign: block.align,
         ...flow.style,
       };
@@ -105,34 +112,37 @@ export function BlockView({
           className="ds-rich"
           style={s}
           {...dir}
-          dangerouslySetInnerHTML={{ __html: spansToHtml(block.spans) }}
+          dangerouslySetInnerHTML={richHtml}
           /* 掛在詞上的補充：點那幾個字只開那一項。檢視器的 open 只認整個元件，
              所以把元件複製一份、只留那一項交過去——一項就會在字旁邊直接彈泡泡 */
           onClick={
             viewer
               ? (e) => {
-                  // 標成生字詞、句子的幾個字：在字旁彈出。生字詞的註釋標題是那幾個字本身（跟課本注釋一樣）；
-                  // 句子底下填了幾種旨修句問就列幾項
+                  // 標成生字詞的幾個字：在字旁彈出註釋，連到這幾個字的補充接在註釋底下。
+                  // 註釋的標題是號碼加那幾個字本身（跟課本注釋一樣）。
+                  // 標成句子的不在這裡開：它的旨修句問與補充在頁面右下角那條膠囊上（閱讀模式管）
                   const noteEl = (e.target as HTMLElement).closest<HTMLElement>('[data-note]');
                   const note = noteEl && block.rangeNotes?.find((n) => n.id === noteEl.dataset.note);
-                  if (noteEl && note && rangeNoteFilled(note)) {
+                  if (noteEl && note && rangeKindOf(note) === 'sentence') return;
+                  if (noteEl && note && markReady(block, note)) {
                     e.stopPropagation();
                     const quote = block.spans.filter((x) => x.noteId === note.id).map((x) => x.text).join('');
-                    const popups: PopupItem[] =
-                      rangeKindOf(note) === 'sentence'
-                        ? PARA_NOTE_KINDS.flatMap((k) => {
-                            const body = sentenceNotesOf(note)[k.key]?.trim();
-                            return body ? [{ id: `note-${note.id}-${k.key}`, kind: 'text' as const, title: k.name, body }] : [];
-                          })
-                        : [{ id: `note-${note.id}`, kind: 'text', title: [noteNo(note.id), quote].filter(Boolean).join(' '), body: note.body }];
-                    viewer.open({ ...block, popups }, noteEl);
+                    const title = [noteNo(note.id), quote].filter(Boolean).join(' ');
+                    const linked = markPopups(block, note.id);
+                    const body = note.body.trim();
+                    if (linked.length === 0) {
+                      viewer.open({ ...block, popups: [{ id: `note-${note.id}`, kind: 'text', title, body }] }, noteEl);
+                    } else {
+                      viewer.open({ ...block, popups: linked }, noteEl, body ? { title, body } : undefined);
+                    }
                     return;
                   }
+                  // 沒標的字只掛補充：開這一組（一項就直接開，多項是一排卡片）
                   const el = (e.target as HTMLElement).closest<HTMLElement>('[data-pop]');
-                  const item = el && block.popups.find((p) => p.id === el.dataset.pop);
-                  if (!el || !item) return;
+                  const items = el?.dataset.pop ? wordGroupPopups(block, el.dataset.pop).filter((p) => !missingOf(p)) : [];
+                  if (!el || items.length === 0) return;
                   e.stopPropagation();
-                  viewer.open({ ...block, popups: [item] }, el);
+                  viewer.open({ ...block, popups: items }, el);
                 }
               : undefined
           }

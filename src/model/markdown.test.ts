@@ -240,3 +240,16 @@ describe('紙本換頁切開的段落', () => {
     expect(blocks(r).filter((b) => b.type === 'text')).toHaveLength(2);
   });
 });
+
+describe('frontmatter 的 pagebreak', () => {
+  const md = '---\ntitle: 測試\npagebreak: 語文小視窗\n---\n\n# 課名\n\n## 題解\n\n內文一\n\n## 課文\n\n內文二\n\n## 語文小視窗\n\n內文三\n';
+  it('只在列出來的小節前換頁', () => {
+    const r = parseMarkdown(md, { autoPageBreak: true });
+    const breaks = r.rows.filter((row) => row.breakBefore).map((row) => (row.columns[0].blocks[0] as TextBlock).spans.map((s) => s.text).join(''));
+    expect(breaks).toEqual(['語文小視窗']);
+  });
+  it('沒寫 pagebreak 照舊每個小節都換', () => {
+    const r = parseMarkdown(md.replace('pagebreak: 語文小視窗\n', ''), { autoPageBreak: true });
+    expect(r.rows.filter((row) => row.breakBefore)).toHaveLength(3);
+  });
+});

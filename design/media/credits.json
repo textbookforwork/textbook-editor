@@ -34,5 +34,59 @@
     "license": "Public domain",
     "licenseUrl": null,
     "source": "https://commons.wikimedia.org/wiki/File:Sidney_Hall_-_Urania%27s_Mirror_-_Orion_(best_currently_available_version_-_2014).jpg"
+  },
+  "mulan-portrait.jpg": {
+    "width": 699,
+    "height": 1200,
+    "title": "Mulan（《歷朝名媛詩詞》木刻版畫，1772）",
+    "author": "陸昶編《歷朝名媛詩詞》；Harvard-Yenching Library 藏",
+    "license": "Public domain",
+    "licenseUrl": null,
+    "source": "https://commons.wikimedia.org/wiki/File:Mulan.jpg"
+  },
+  "mulan-silk-painting.jpg": {
+    "width": 699,
+    "height": 1200,
+    "title": "Mulan, 18th century, ink and colors on silk",
+    "author": "款署「實父仇英製」；大英博物館藏",
+    "license": "Public domain",
+    "licenseUrl": null,
+    "source": "https://commons.wikimedia.org/wiki/File:Mulan,_18th_century,_ink_and_colors_on_silk.jpg"
+  },
+  "mulan-loom.jpg": {
+    "width": 1200,
+    "height": 800,
+    "title": "Jizhu - Chinese Loom & Shuttle, Hangzhou National Archives 38",
+    "author": "CatOnMars",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Jizhu_-_Chinese_Loom_%26_Shuttle,_Hangzhou_National_Archives_38.jpg"
+  },
+  "mulan-weaver.jpg": {
+    "width": 1200,
+    "height": 800,
+    "title": "Lijiang Yunnan China-Woman-with-weaving-loom-01",
+    "author": "CEphoto, Uwe Aranas",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lijiang_Yunnan_China-Woman-with-weaving-loom-01.jpg"
+  },
+  "mulan-yellow-river.jpg": {
+    "width": 1200,
+    "height": 675,
+    "title": "Hukou Waterfalls, Shaanxi 3",
+    "author": "H2v5o68z",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "source": "https://commons.wikimedia.org/wiki/File:Hukou_Waterfalls,_Shaanxi_3.jpg"
+  },
+  "mulan-yanshan.jpg": {
+    "width": 1200,
+    "height": 507,
+    "title": "Yan Mountain in Qinhuangdao",
+    "author": "PQ77wd",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Yan_Mountain_in_Qinhuangdao.jpg"
   }
 }

@@ -33,6 +33,8 @@ type Props = {
    */
   items?: PopupItem[];
   onPick?: (item: PopupItem) => void;
+  /** 生字詞的註釋：攤開在清單上面。 */
+  lead?: { title: string; body: string };
 };
 
 const rectOf = (a: Anchor) => (a instanceof Element ? a.getBoundingClientRect() : a);
@@ -59,7 +61,7 @@ export const isVertical = (a: Anchor) =>
  * 留在裡面會被邊緣裁掉、字也會跟著縮小（跟插入面板、浮動膠囊同一條理由）。
  * 位置規則在 bubblePlacement.ts，這裡只負責量尺寸、聽事件、畫出來。
  */
-export function Bubble({ block, item, anchor, onClose, onJump, onEdit, items, onPick }: Props) {
+export function Bubble({ block, item, anchor, onClose, onJump, onEdit, items, onPick, lead }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState<Placement | null>(null);
   const vertical = isVertical(anchor);
@@ -152,8 +154,15 @@ export function Bubble({ block, item, anchor, onClose, onJump, onEdit, items, on
     // 文字、跳轉、聲音是一列一列的字，直排書裡跟著直排；縮圖卡維持橫的，改成由上往下疊
     const textual = items.every((it) => it.kind === 'text' || it.kind === 'jump' || it.kind === 'audio');
     return createPortal(
-      <Shell ref={ref} role="dialog" aria-label={`補充內容 ${items.length} 項`} style={style} $wide $vertical={vertical && textual}>
+      /* 直排書裡帶著生字詞註釋的泡泡也直排：註釋由右往左讀，縮圖卡排在它左邊 */
+      <Shell ref={ref} role="dialog" aria-label={`補充內容 ${items.length} 項`} style={style} $wide $vertical={vertical && (textual || !!lead)}>
         <Arrow $side={side} $at={place?.arrow ?? 0} />
+        {lead && (
+          <Lead>
+            {lead.title.trim() && <LeadTitle>{lead.title}</LeadTitle>}
+            <Text>{lead.body}</Text>
+          </Lead>
+        )}
         {items.every((it) => it.kind === 'audio') ? (
           <AudioList items={items as AudioItem[]} />
         ) : items.every((it) => it.kind === 'jump') ? (
@@ -445,11 +454,27 @@ const Body = styled.div<{ $top?: boolean; $vertical?: boolean }>`
       : `padding-block-start: ${p.theme.space.insetMd}; padding-inline-end: 48px;`)}
 `;
 
+/** 註釋：跟單項文字泡泡同樣的字，底下接補充的清單 */
+const Lead = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(p) => p.theme.space.gapXs};
+  padding: ${(p) => p.theme.space.insetMd};
+  /* 跟下面的清單之間不重複留白；直排時 block-end 是左邊，照樣成立 */
+  padding-block-end: 0;
+  max-inline-size: 360px;
+`;
+
+const LeadTitle = styled.strong`
+  font-size: var(--ds-typography-body-sm-size);
+  font-weight: 500;
+`;
+
 const Text = styled.p`
   margin: 0;
   font-size: var(--ds-typography-body-sm-size);
   line-height: var(--ds-typography-body-sm-line-height);
-  color: ${(p) => p.theme.text.secondary};
+  color: ${(p) => p.theme.text.primary};
   white-space: pre-wrap;
   /* 一長串沒有空格的英數字（網址、測試字）也要能折行，不然直排時整串衝出泡泡 */
   overflow-wrap: anywhere;
@@ -460,6 +485,8 @@ const Text = styled.p`
  * 直排書裡改成由上往下疊（泡泡在元件左邊，橫著排會寬到放不下），超過高度就上下捲。
  */
 const Cards = styled.div<{ $vertical?: boolean }>`
+  /* 縮圖卡本身維持橫的（圖與標題不轉向）；泡泡直排時它是排在註釋左邊的一欄 */
+  writing-mode: horizontal-tb;
   display: flex;
   ${(p) => p.$vertical && 'flex-direction: column; max-height: min(70vh, 560px);'}
   gap: ${(p) => p.theme.space.gapMd};
@@ -628,5 +655,5 @@ const Excerpt = styled.span<{ $lines: number }>`
   overflow: hidden;
   font-size: var(--ds-typography-body-sm-size);
   line-height: var(--ds-typography-body-sm-line-height);
-  color: ${(p) => p.theme.text.secondary};
+  color: ${(p) => p.theme.text.primary};
 `;

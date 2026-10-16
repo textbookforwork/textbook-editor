@@ -20,6 +20,12 @@ export const PAGE_SIZE: Record<DocSettings['aspectRatio'], { width: number; heig
  */
 export const PAGE_PADDING = 48;
 
+/**
+ * 閱讀模式裁掉的留白（頁座標）。不裁到 0：字貼著圓角會被切到，也沒有呼吸空間，
+ * 留 16 給視覺邊界，其餘 32 讓給內容放大（4:3 頁面約大 7%）。只改顯示，分頁照整頁算。
+ */
+export const READER_CROP = PAGE_PADDING - 16;
+
 /** 欄與欄之間的溝寬。與 GAP.module 同值，橫縱格線一致。 */
 export const COLUMN_GAP = 48;
 

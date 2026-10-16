@@ -60,7 +60,14 @@ export type ImportResult = {
 };
 
 // ── frontmatter ──────────────────────────────────────────
-function parseFrontmatter(src: string): { meta: DocMeta; settings: Partial<DocSettings>; title: string; rest: string } {
+function parseFrontmatter(src: string): {
+  meta: DocMeta;
+  settings: Partial<DocSettings>;
+  title: string;
+  rest: string;
+  /** 只在這幾個 `##` 前面換頁（frontmatter 的 `pagebreak:`，逗號分隔）。沒寫＝每個 `##` 都換。 */
+  breakAt?: Set<string>;
+} {
   const m = /^---\n([\s\S]*?)\n---\n?/.exec(src);
   if (!m) return { meta: {}, settings: {}, title: '', rest: src };
 
@@ -91,6 +98,9 @@ function parseFrontmatter(src: string): { meta: DocMeta; settings: Partial<DocSe
       printPageRange: range ? [Number(range[1]), Number(range[2])] : undefined,
     },
     rest: src.slice(m[0].length),
+    ...(fields.pagebreak
+      ? { breakAt: new Set(fields.pagebreak.split(/[,，、]/).map((x) => x.trim()).filter(Boolean)) }
+      : {}),
   };
 }
 
@@ -133,7 +143,7 @@ const cells = (line: string) =>
   line.slice(1, -1).split('|').map((c) => c.trim());
 
 export function parseMarkdown(src: string, opts: ImportOptions): ImportResult {
-  const { meta, settings, title, rest } = parseFrontmatter(src);
+  const { meta, settings, title, rest, breakAt } = parseFrontmatter(src);
   const rows: Row[] = [];
   const footnotes: Footnote[] = [];
   const unrecognized: string[] = [];
@@ -253,7 +263,8 @@ export function parseMarkdown(src: string, opts: ImportOptions): ImportResult {
 
     if ((m = RE.heading.exec(line))) {
       const role = HEADING_BY_LEVEL[m[1].length];
-      push([text(m[2], role)], opts.autoPageBreak && role === 'sectionTitle');
+      // 自動切頁只切 `##`；md 寫了 pagebreak 就只切列出來的那幾個（例如題解、課文接在標題頁後面）
+      push([text(m[2], role)], opts.autoPageBreak && role === 'sectionTitle' && (!breakAt || breakAt.has(m[2].trim())));
       continue;
     }
     if ((m = RE.printPage.exec(line))) {

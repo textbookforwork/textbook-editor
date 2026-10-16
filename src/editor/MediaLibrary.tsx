@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { primaryButtonCss } from '../components/buttonStyles';
 import styled from 'styled-components';
 import { Icon } from '../components/Icon';
-import { PanelBody, PanelClose, PanelDrawer, PanelHead, PanelTitle, useExclusivePanel } from './SidePanel';
+import { PanelBody, PanelClose, PanelDrawer, PanelHead, PanelTab, PanelTabs, PanelTitle, useExclusivePanel } from './SidePanel';
 import { PdfPagePicker, type ImportedPage } from './PdfPagePicker';
 import { pageThumb } from './pdfPages';
 import { Glyph } from '../viewer/VideoBody';
@@ -664,26 +664,8 @@ const Body = PanelBody;
 /*
  * 媒體庫的字只用兩種大小：按鈕與分頁 14、其餘（說明、輸入框、檔名、日期）12。
  */
-const Tabs = styled.div`
-  display: flex;
-  justify-content: space-between;
-  padding: ${(p) => p.theme.space.gapMd} 20px 0;
-  flex-shrink: 0;
-`;
-
-const TabBtn = styled.button<{ $on: boolean }>`
-  font: inherit;
-  font-size: var(--ds-typography-body-sm-size);
-  font-weight: ${(p) => (p.$on ? 700 : 500)};
-  padding: 6px 2px 8px;
-  border: none;
-  border-block-end: 2px solid ${(p) => (p.$on ? p.theme.brand.accentOnLight : 'transparent')};
-  background: transparent;
-  color: ${(p) => (p.$on ? p.theme.brand.accentOnLight : p.theme.text.secondary)};
-  cursor: pointer;
-  white-space: nowrap;
-  &:hover { color: ${(p) => (p.$on ? p.theme.brand.accentOnLight : p.theme.text.primary)}; }
-`;
+const Tabs = PanelTabs;
+const TabBtn = PanelTab;
 const ListLabel = styled.span`
   font-size: var(--ds-typography-caption-size);
   font-weight: 500;

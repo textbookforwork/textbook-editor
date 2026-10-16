@@ -94,19 +94,30 @@ export function ensureUniqueDocIds(doc: Doc): Doc {
         seen.add(blockId);
 
         let popupsChanged = false;
-        const nextPopups = block.popups.map((pop) => {
+        const renamed = new Map<string, string>();
+        const renamedPopups = block.popups.map((pop) => {
           let popId = pop.id;
           if (seen.has(popId)) {
             popId = newId('pop');
+            renamed.set(pop.id, popId);
             changed = true;
             popupsChanged = true;
           }
           seen.add(popId);
           return popId !== pop.id ? { ...pop, id: popId } : pop;
         });
+        // 字上的代號與同組項目的 wordGroup 指的是舊 id，一起換掉，否則那幾個字就連不到補充了
+        const rename = (id: string | undefined) => (id && renamed.get(id)) || id;
+        const nextPopups = renamed.size
+          ? renamedPopups.map((pop) => (pop.wordGroup ? { ...pop, wordGroup: rename(pop.wordGroup) } : pop))
+          : renamedPopups;
+        const spans =
+          renamed.size && block.type === 'text'
+            ? { spans: block.spans.map((sp) => (sp.popupId && renamed.has(sp.popupId) ? { ...sp, popupId: rename(sp.popupId) } : sp)) }
+            : {};
 
         if (blockId !== block.id || popupsChanged) {
-          return { ...block, id: blockId, popups: nextPopups };
+          return { ...block, ...spans, id: blockId, popups: nextPopups } as typeof block;
         }
         return block;
       });
@@ -142,4 +153,30 @@ export function withoutModules<T extends { rows: Row[] }>(doc: T): T {
     }))
     .filter((r) => r.columns.length > 0);
   return { ...doc, rows };
+}
+
+/**
+ * 一欄只放一個元件。舊版拖整列換順序時會把幾欄壓成一欄（已修好），存檔裡可能留著
+ * 「一欄裡兩個元件」的壞資料：只剩整列一個握把，其中一個再也拖不出來。
+ * 讀檔時拆回一個元件一欄，寬度平分原本那一欄。
+ */
+export function oneBlockPerColumn(doc: Doc): Doc {
+  let changed = false;
+  const rows = doc.rows.map((row) => {
+    if (row.columns.every((c) => c.blocks.length <= 1)) return row;
+    changed = true;
+    return {
+      ...row,
+      columns: row.columns.flatMap((c) =>
+        c.blocks.length <= 1
+          ? [c]
+          : c.blocks.map((b, i) => ({
+              id: i === 0 ? c.id : newId('col'),
+              widthPct: c.widthPct / c.blocks.length,
+              blocks: [b],
+            }))
+      ),
+    };
+  });
+  return changed ? { ...doc, rows } : doc;
 }

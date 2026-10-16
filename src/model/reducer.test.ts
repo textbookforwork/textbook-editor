@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { applyAction } from './reducer';
 import { emptyDoc, makeRow, makeText, textOf } from './document';
 import { parseMarkdown } from './markdown';
+import { elementPopups, wordGroupPopups } from './popups';
 import { newId, resetIds } from './ids';
 import type { Doc, ImageBlock, TextBlock, VideoBlock } from './types';
 
@@ -629,5 +630,64 @@ describe('刪補充時清掉文字上的連結', () => {
     expect(b.popups).toHaveLength(0);
     expect(b.spans.some((s) => s.popupId)).toBe(false);
     expect(textOf(b)).toBe('星座很美');
+  });
+});
+
+describe('同一組字掛好幾項', () => {
+  const img = (id: string, wordGroup?: string) =>
+    ({ id, kind: 'image' as const, title: id, assetId: 'x', ...(wordGroup ? { wordGroup } : {}) });
+  const block = () => ({
+    ...makeText(''),
+    spans: [{ text: '不聞' }, { text: '機杼', popupId: 'p1' }, { text: '聲' }],
+    popups: [img('p1'), img('p2', 'p1')],
+  });
+
+  it('後加的項目也算在那幾個字上，不會跑到整段', () => {
+    const b = block();
+    expect(elementPopups(b)).toHaveLength(0);
+    expect(wordGroupPopups(b, 'p1').map((p) => p.id)).toEqual(['p1', 'p2']);
+  });
+
+  it('刪掉第一項，其餘的還連在那幾個字上', () => {
+    const t = block();
+    const next = applyAction(docWith(makeRow([t])), { type: 'removePopup', blockId: t.id, popupId: 'p1' });
+    const b = next.rows[0].columns[0].blocks[0] as TextBlock;
+    expect(b.spans.find((s) => s.text === '機杼')?.popupId).toBe('p1');
+    expect(elementPopups(b)).toHaveLength(0);
+    expect(wordGroupPopups(b, 'p1').map((p) => p.id)).toEqual(['p2']);
+  });
+
+  it('整組刪光，字才變回一般字', () => {
+    const t = block();
+    let doc = applyAction(docWith(makeRow([t])), { type: 'removePopup', blockId: t.id, popupId: 'p1' });
+    doc = applyAction(doc, { type: 'removePopup', blockId: t.id, popupId: 'p2' });
+    const b = doc.rows[0].columns[0].blocks[0] as TextBlock;
+    expect(b.spans.some((s) => s.popupId)).toBe(false);
+  });
+});
+
+describe('搬多欄的整列不壓成一欄', () => {
+  const twoCols = () => ({
+    id: 'r2',
+    breakBefore: false,
+    columns: [
+      { id: 'c1', widthPct: 50, blocks: [makeText('圖')] },
+      { id: 'c2', widthPct: 50, blocks: [makeText('木蘭詩')] },
+    ],
+  });
+
+  it('換順序：原本兩欄還是兩欄，每欄一個元件（各自有握把）', () => {
+    const doc = { ...emptyDoc(), rows: [makeRow([makeText('甲')]), twoCols(), makeRow([makeText('乙')])] };
+    const next = applyAction(doc, { type: 'moveRow', rowId: 'r2', target: { mode: 'row', index: 0 } });
+    const moved = next.rows.find((r) => r.id === 'r2')!;
+    expect(moved.columns.map((c) => c.blocks.length)).toEqual([1, 1]);
+  });
+
+  it('併到另一列：兩欄各自成欄，不擠進同一欄', () => {
+    const doc = { ...emptyDoc(), rows: [makeRow([makeText('甲')]), twoCols()] };
+    const target = doc.rows[0].id;
+    const next = applyAction(doc, { type: 'moveRow', rowId: 'r2', target: { mode: 'column', rowId: target, side: 'right' } });
+    expect(next.rows).toHaveLength(1);
+    expect(next.rows[0].columns.map((c) => c.blocks.length)).toEqual([1, 1, 1]);
   });
 });

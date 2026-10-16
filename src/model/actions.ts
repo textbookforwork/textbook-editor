@@ -52,7 +52,18 @@ export type BlockPatch = Partial<
  */
 export type DropTarget =
   | { mode: 'row'; index: number }
-  | { mode: 'column'; rowId: string; side: 'left' | 'right' };
+  | {
+      mode: 'column';
+      rowId: string;
+      side: 'left' | 'right';
+      /**
+       * 目標那一列只有一欄、元件沒佔滿時：原本那一欄併欄後留多少（%），新的一欄從它後面接起。
+       * 由拖曳當下量畫面算出來（reducer 不知道元件實際多大）。沒有就平均分。
+       */
+      keepPct?: number;
+      /** 原本那一欄的元件併欄後的 widthPct：欄變窄了，元件要佔得比較多，畫出來才一樣大。文字元件沒有這個。 */
+      fitPct?: number;
+    };
 
 export type Action =
   | { type: 'setTitle'; title: string }

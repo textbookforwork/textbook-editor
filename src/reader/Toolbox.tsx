@@ -35,7 +35,6 @@ export function Toolbox({ pinned, onTogglePin, onClose }: Props) {
                 <Tile
                   key={item.id}
                   type="button"
-                  $on={on}
                   aria-pressed={item.rail ? on : undefined}
                   title={
                     item.rail
@@ -51,6 +50,7 @@ export function Toolbox({ pinned, onTogglePin, onClose }: Props) {
                 >
                   <Icon name={item.icon} size={24} />
                   <span>{item.label}</span>
+
                 </Tile>
               );
             })}
@@ -64,9 +64,10 @@ export function Toolbox({ pinned, onTogglePin, onClose }: Props) {
 const Panel = styled.aside`
   position: absolute;
   /* 緊貼左欄右側，上下跟畫布對齊 */
-  inset-inline-start: 104px;
-  inset-block: ${(p) => p.theme.space.insetLg};
-  inline-size: 220px;
+  inset-inline-start: var(--reader-rail, 104px);
+  inset-block: ${(p) => p.theme.space.insetSm};
+  inline-size: 244px;
+  box-sizing: border-box;
   z-index: 20;
   display: flex;
   flex-direction: column;
@@ -74,9 +75,15 @@ const Panel = styled.aside`
   padding: ${(p) => p.theme.space.insetLg} ${(p) => p.theme.space.insetMd};
   border-radius: ${(p) => p.theme.radius.panel};
   border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
-  background: ${(p) => p.theme.surface.page};
+  background: ${(p) => p.theme.surface.raised};
   box-shadow: ${(p) => p.theme.shadow.card};
   overflow-y: auto;
+  /*
+   * 不顯示捲軸：捲軸會吃掉右側寬度（格子左寬右窄），在圓角處也會被切掉。
+   * 最後一組露出半截，看得出還能往下捲
+   */
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 `;
 
 const Head = styled.header`
@@ -118,16 +125,26 @@ const SectionTitle = styled.h3`
   color: ${(p) => p.theme.text.secondary};
 `;
 
-/** 三格一排，格距 10，剛好 188 寬。 */
+/** 一組工具放在淡灰的底塊裡，白色工具格浮在上面。三格一排平分寬度，左右留白永遠對稱 */
 const Grid = styled.div`
+  padding: 12px;
+  border-radius: ${(p) => p.theme.radius.card};
+  background: ${(p) => p.theme.surface.sunken};
   display: grid;
-  grid-template-columns: repeat(3, ${(p) => p.theme.control.tileMd});
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 `;
 
-const Tile = styled.button<{ $on: boolean }>`
-  inline-size: ${(p) => p.theme.control.tileMd};
-  block-size: ${(p) => p.theme.control.tileMd};
+/**
+ * 工具格：一律白卡、不分有沒有釘在左欄——哪些在左欄上，左欄本身（虛線框加 ×）已經看得到，
+ * 這裡再標一次只是多一層顏色。整片 Lime 太亮，跟白底為主的視覺衝突。
+ * 平常白卡細框；滑過浮起來（淡陰影、上移 1px）；按下往下沉（淡灰、縮一點）。
+ */
+const Tile = styled.button`
+  position: relative;
+  /* 正方形，寬度跟著格線平分 */
+  inline-size: 100%;
+  aspect-ratio: 1;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -135,18 +152,33 @@ const Tile = styled.button<{ $on: boolean }>`
   gap: 2px;
   padding: 0;
   border-radius: ${(p) => p.theme.radius.tile};
-  border: ${(p) => p.theme.border.widthDefault} solid
-    ${(p) => (p.$on ? p.theme.border.accent : p.theme.border.subtle)};
-  background: ${(p) => (p.$on ? p.theme.brand.primaryTintSubtle : p.theme.surface.raised)};
-  color: ${(p) => (p.$on ? p.theme.brand.accentOnLight : p.theme.text.primary)};
+  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
+  background: ${(p) => p.theme.surface.raised};
+  color: ${(p) => p.theme.text.primary};
   font-size: 10px;
   line-height: 14px;
   letter-spacing: 1px;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  svg { color: ${(p) => (p.$on ? p.theme.brand.accentOnLight : p.theme.icon.default)}; }
+  svg { color: ${(p) => p.theme.icon.default}; }
 
-  &:hover { background: ${(p) => (p.$on ? p.theme.brand.primaryTint : p.theme.surface.sunken)}; }
+  &:hover {
+    box-shadow: ${(p) => p.theme.shadow.card};
+    transform: translateY(-1px);
+  }
+  &:active {
+    background: ${(p) => p.theme.surface.sunken};
+    box-shadow: none;
+    transform: scale(0.96);
+  }
+  &:focus-visible {
+    outline: 2px solid ${(p) => p.theme.border.focus};
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover, &:active { transform: none; }
+  }
 `;

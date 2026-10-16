@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { CompactAction, emptyCompactCss } from './emptyCompact';
 import { primaryButtonCss } from '../buttonStyles';
 import { fieldCss } from '../../editor/SidePanel';
 import styled from 'styled-components';
@@ -142,13 +143,18 @@ function Source({
   onPatch: (patch: BlockPatch) => void;
   onSelect?: () => void;
 }) {
+  const upload = async () => {
+    const file = await pickFile('video/*');
+    if (!file) return;
+    onPatch({ source: 'upload', ref: putFile(file), title: block.title || file.name });
+  };
+  const stop = (e: React.PointerEvent) => {
+    onSelect?.();
+    e.stopPropagation();
+  };
   return (
-    <Pick
-      onPointerDown={(e) => {
-        onSelect?.();
-        e.stopPropagation();
-      }}
-    >
+    <>
+    <Pick data-full onPointerDown={stop}>
       <Url
         defaultValue={block.source === 'youtube' ? block.ref : ''}
         placeholder="貼上 YouTube 網址"
@@ -161,17 +167,14 @@ function Source({
         }}
       />
       <Or>或</Or>
-      <Upload
-        onClick={async () => {
-          const file = await pickFile('video/*');
-          if (!file) return;
-          onPatch({ source: 'upload', ref: putFile(file), title: block.title || file.name });
-        }}
-      >
+      <Upload onClick={upload}>
         上傳影片
         <Icon name="upload" size={16} />
       </Upload>
     </Pick>
+    {/* 框太小放不下網址欄與上傳鈕（見 emptyCompact）：只留「上傳影片」，再小只剩影片圖示 */}
+    <CompactAction label="上傳影片" action="upload" kind="video" onPointerDown={stop} onClick={upload} />
+    </>
   );
 }
 
@@ -186,6 +189,7 @@ const Frame = styled.div<{ $poster: string | null; $empty: boolean }>`
   background: ${(p) => (p.$empty ? p.theme.surface.page : p.theme.surface.media)}
     ${(p) => (p.$poster ? `center / cover url(${p.$poster})` : '')};
   overflow: hidden;
+  ${(p) => p.$empty && emptyCompactCss}
 `;
 
 const Play = styled.span<{ $live: boolean }>`

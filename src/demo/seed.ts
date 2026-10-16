@@ -1,7 +1,7 @@
 import { makeText, textOf } from '../model/document';
 import { markSpans, plainOf } from '../model/spans';
 import type { ImportResult } from '../model/markdown';
-import type { Block, PopupItem, TextBlock } from '../model/types';
+import type { Block, PopupItem, RangeNote, TextBlock } from '../model/types';
 
 /**
  * 示範用的種子。
@@ -166,11 +166,13 @@ export function seedStars(result: ImportResult): ImportResult {
 }
 
 /**
- * 國文範例〈五柳先生傳〉的種子：直排書的補充示範。
+ * 國文範例〈木蘭詩〉的種子：直排書的補充示範，也是補充資源面板「本頁／本節／本章」的測試教材。
  *
- * 用來看直排時泡泡往左長、字跟著直排的效果，所以挑的是一列一列的那幾種
- * （文字、聲音、跳轉）各示範一個與多個，加上網頁（縮圖卡）。
+ * 一章三節（題解、課文、語文小視窗），七種補充散在不同節、不同頁；
+ * 課文裡補充分整段、句子、生字詞三層掛，每一層有說明與補充的各種組合（閱讀時三層點按的示範）；
+ * 章名頁不掛，用來看「這一頁沒有補充」的樣子。
  * 依段落開頭的字對元件；對不到的就跳過，教材本身不動。
+ * 圖片、聲音、影片是開放授權的檔案（出處見 design/media/credits.json 與 sampleLibrary）。
  */
 function seedGuowen(result: ImportResult): ImportResult {
   const blocks = result.rows.flatMap((r) => r.columns.flatMap((c) => c.blocks));
@@ -179,83 +181,201 @@ function seedGuowen(result: ImportResult): ImportResult {
   const rowOf = (head: string) =>
     result.rows.find((r) => r.columns.some((c) => c.blocks.some((b) => b === find(head))))?.id ?? null;
 
-  const appreciation = rowOf('課文賞析');
   const plan = new Map<string, PopupItem[]>();
   const put = (head: string, items: PopupItem[]) => {
     const b = find(head);
     if (b && items.length > 0) plan.set(b.id, items);
   };
 
-  // 文字：多個
-  put('先生不知何許人也', [
-    {
-      id: 'gw-pop-1',
-      kind: 'text',
-      title: '五柳先生是誰？',
-      body: '五柳先生是陶淵明假託的人物。作者仿照史書替人立傳的寫法，其實寫的是自己。',
-    },
-    {
-      id: 'gw-pop-2',
-      kind: 'text',
-      title: '「號」是什麼',
-      body: '名與字以外的稱呼。取號的方式很多，五柳先生就是因為住家旁有五棵柳樹而以此為號。',
-    },
-  ]);
-  // 聲音：多個
-  put('閑靜少言', [
-    { id: 'gw-pop-3', kind: 'audio', title: '第二段朗讀', assetId: 'sample-audio-narration' },
-    { id: 'gw-pop-4', kind: 'audio', title: '第二段慢速朗讀', assetId: 'sample-audio-vega' },
-  ]);
-  // 網頁：多個（縮圖卡）。掛在閱讀小叮嚀：課文段落的補充改由段落的「補」按鈕打開，這裡示範一般元件
-  put('閱讀時', [
-    { id: 'gw-pop-5', kind: 'web', title: '維基百科：陶淵明', url: 'https://zh.wikipedia.org/zh-tw/陶淵明', embeddable: true },
-    { id: 'gw-pop-6', kind: 'web', title: '教育部重編國語辭典', url: 'https://dict.revised.moe.edu.tw/', embeddable: false },
-  ]);
-  // 跳轉：一個
-  if (appreciation) {
-    put('贊曰', [{ id: 'gw-pop-7', kind: 'jump', title: '課文賞析', targetRowId: appreciation }]);
-  }
-  // 文字：一個
-  put('本文選自陶淵明集', [
-    {
-      id: 'gw-pop-8',
-      kind: 'text',
-      title: '什麼是「傳」',
-      body: '記載一個人生平事蹟的文體。史書替人物立傳，多半先寫姓名籍貫，再寫事蹟，最後加上評論。',
-    },
-  ]);
-  // 聲音：一個
-  put('陶淵明，一名', [{ id: 'gw-pop-9', kind: 'audio', title: '作者介紹朗讀', assetId: 'sample-audio-narration' }]);
+  const textBlock = (id: string, text: string, role: 'body' | 'sectionTitle' = 'body') => ({ ...makeText(text, role), id });
+  const image = (id: string, assetId: string, alt: string, aspectRatio: number) =>
+    ({ id, type: 'image', assetId, alt, caption: '', hasCaption: false, aspectRatio, widthPct: 45, float: 'right', popups: [] }) as Block;
+  const richPages: Block[][] = [
+    [
+      textBlock('ml-rich-1-h', '換回女裝的木蘭', 'sectionTitle'),
+      image('ml-rich-1-img', 'images/mulan-silk-painting.jpg', '清代絹本設色的木蘭像', 699 / 1200),
+      textBlock('ml-rich-1-p', '「脫我戰時袍，著我舊時裳。當窗理雲鬢，對鏡貼花黃。」這幅清代的絹畫裡，木蘭穿著女裝，身上仍背著弓箭。'),
+    ],
+    [
+      textBlock('ml-rich-2-h', '木蘭當戶織', 'sectionTitle'),
+      image('ml-rich-2-img', 'images/mulan-loom.jpg', '明清時期的木織機', 1200 / 800),
+      textBlock('ml-rich-2-p', '詩一開頭的「唧唧」是織布機的聲音。照片是杭州國家版本館展出的木織機。'),
+    ],
+  ];
 
-  // 課文三段標成段落（第二段在 md 裡被 @頁[115] 隔開，匯入時已併成一段）。
-  // 說明內容取自同一課的題解、課文賞析、語文小視窗與問題討論，不另外編
+  // ── 題解 ──
+  // 圖片：一個（掛在節標題上）
+  put('題解', [{ id: 'ml-pop-img-1', kind: 'image', title: '木蘭像（1772 年木刻版畫）', assetId: 'images/mulan-portrait.jpg' }]);
+  // 文字：多個
+  put('本詩選自', [
+    {
+      id: 'ml-pop-text-1',
+      kind: 'text',
+      title: '什麼是樂府',
+      body: '樂府原本是漢代掌管音樂的官署，負責採集各地民歌配樂演唱。後來把這些可以入樂的詩歌也稱為「樂府」。',
+    },
+    {
+      id: 'ml-pop-text-2',
+      kind: 'text',
+      title: '樂府雙璧',
+      body: '〈木蘭詩〉與〈孔雀東南飛〉都是長篇的樂府敘事詩，一北一南，後人合稱「樂府雙璧」。',
+    },
+  ]);
+
+  // ── 課文 ──
+  // 補充分三層掛：整段（段落的「補」）、標成句子的字（句子的「補」）、標成生字詞或沒標的幾個字（點字彈出）。
+  // 整段只留跟整段有關的；講某一句、某個詞的，掛到那幾個字上（見下面的 wordMarks）
+  // 影片：多個（整段）
+  put('萬里赴戎機', [
+    { id: 'ml-pop-video-1', kind: 'video', title: '敦煌的漢代長城', source: 'upload', ref: 'sample-video-mulan-wall' },
+    { id: 'ml-pop-video-2', kind: 'video', title: '草原上的馬群', source: 'upload', ref: 'sample-video-mulan-horses' },
+  ]);
+  // 大彈窗：一個
+  put('爺孃聞女來', [{ id: 'ml-pop-rich-1', kind: 'rich', title: '木蘭的樣子', blocks: richPages[0], pages: richPages }]);
+  // 跳轉：一個
+  const opening = rowOf('唧唧復唧唧');
+  if (opening) put('雄兔腳撲朔', [{ id: 'ml-pop-jump-1', kind: 'jump', title: '回到課文開頭', targetRowId: opening }]);
+
+  // ── 語文小視窗 ──
+  // 網頁：多個（掛在節標題上）
+  put('語文小視窗', [
+    { id: 'ml-pop-web-1', kind: 'web', title: '維基百科：木蘭辭', url: 'https://zh.wikipedia.org/zh-tw/木蘭辭', embeddable: true },
+    { id: 'ml-pop-web-2', kind: 'web', title: '維基文庫：木蘭詩全文', url: 'https://zh.wikisource.org/zh-hant/木蘭詩', embeddable: false },
+  ]);
+  // 跳轉：多個（回到課文裡的兩組互文）
+  const east = rowOf('東市買駿馬');
+  const war = rowOf('萬里赴戎機');
+  const backs: PopupItem[] = [];
+  if (east) backs.push({ id: 'ml-pop-jump-2', kind: 'jump', title: '回到「東市買駿馬」', targetRowId: east });
+  if (war) backs.push({ id: 'ml-pop-jump-3', kind: 'jump', title: '回到「將軍百戰死」', targetRowId: war });
+  put('互文是', backs);
+
+  // 課文六段標成段落，段旨照各段內容寫，不另外延伸
   const paras = new Map<string, Pick<TextBlock, 'paragraph' | 'paraNotes'>>();
-  const mark = (head: string, v: Pick<TextBlock, 'paragraph' | 'paraNotes'>) => {
+  const mark = (head: string, paraNotes: TextBlock['paraNotes']) => {
     const b = find(head);
-    if (b) paras.set(b.id, v);
+    if (b) paras.set(b.id, { paragraph: 'start', paraNotes });
   };
-  mark('先生不知何許人也', {
-    paragraph: 'start',
-    paraNotes: {
-      zhi: '介紹五柳先生的名號由來。',
-      wen: '本文實為陶淵明的自傳，但為何以五柳先生傳為篇名，而不用陶淵明傳，其用意可能為何？',
-    },
+  // 旨修句問的組合每段不同，閱讀時右下角膠囊的按鈕數跟著變：兩顆、三顆、四顆都有
+  mark('唧唧復唧唧', {
+    zhi: '木蘭停下織布嘆息，因為父親被徵召，決定代父從軍。',
+    xiu: '設問：「問女何所思？問女何所憶？」先提出疑問，再由木蘭自己回答。',
+    wen: '一、木蘭為什麼停下織布嘆息？\n二、她最後做了什麼決定？',
   });
-  mark('閑靜少言', {
-    paragraph: 'start',
-    paraNotes: {
-      zhi: '只擷取幾項具體的生活言行：好讀書卻「不求甚解」、性嗜酒卻「不吝情去留」、面對貧窮卻「晏如也」，勾勒出五柳先生安貧樂道、任真自得的性格。',
-      wen: '本文先說五柳先生讀書「不求甚解」，接著又說他讀書「每有會意，便欣然忘食」。兩者間在文意上是否有矛盾之處？請加以說明。',
-    },
+  mark('東市買駿馬', {
+    zhi: '木蘭備齊鞍馬出征，一路上思念爹娘。',
+    xiu: '互文：東、西、南、北四市各買一樣，意思是跑遍各處市集把裝備買齊。',
+    ju: '「不聞……，但聞……」：聽不到爹娘的呼喚，只聽得到水聲、馬鳴，寫出離家越來越遠的思念。',
   });
-  mark('贊曰', {
-    paragraph: 'start',
-    paraNotes: {
-      zhi: '引黔婁之妻之言，讚揚五柳先生不慕榮利的個性。',
-      xiu: '不直接稱揚五柳先生，而以上古時代無懷氏、葛天氏的人民加以比擬，讚譽他的質樸率真；也照應首句的「先生不知何許人也」，筆法委婉含蓄。',
-      wen: '本文分成「傳」和「贊」兩部分，請指出二者有哪些句子的旨意彼此呼應？',
-    },
+  mark('萬里赴戎機', {
+    zhi: '木蘭在邊塞征戰多年。',
+    xiu: '誇飾：「萬里赴戎機，關山度若飛」，寫行軍又遠又快。\n對偶：「朔氣傳金柝，寒光照鐵衣」。',
   });
+  mark('歸來見天子', {
+    zhi: '木蘭立功歸來，不要官位，只想回到故鄉。',
+    wen: '木蘭為什麼不接受尚書郎的官位？從這裡可以看出她是怎樣的人？',
+  });
+  mark('爺孃聞女來', {
+    zhi: '家人歡迎木蘭回家，木蘭換回女裝，同袍大為驚訝。',
+    xiu: '排比：「爺孃聞女來」「阿姊聞妹來」「小弟聞姊來」，依序寫家人的歡迎。',
+    ju: '「開我……，坐我……」「脫我……，著我……」：一連串的「我」，寫木蘭回到自己家的熟悉與歡喜。',
+    wen: '同袍為什麼「皆驚惶」？',
+  });
+  mark('雄兔腳撲朔', {
+    zhi: '用雙兔並跑難辨雄雌作比，收束全詩。',
+    xiu: '譬喻：以雙兔並跑比喻男女在戰場上難以分辨。\n設問：「安能辨我是雄雌？」答案在問題的反面。',
+  });
+
+  /**
+   * 框選的字。閱讀時第一下點段落、第二下點這些字：
+   * 生字詞在字旁彈出註釋（有補充就接在註釋底下）；句子聚焦整個標記，旨修句問與補充換到右下角的膠囊；
+   * 沒標的字只掛補充，點了直接彈出。一組字可以掛好幾項：字上記第一項的 id，其餘項目用 wordGroup 認這一組。
+   */
+  type WordMark = { id: string; phrase: string; note?: Omit<RangeNote, 'id'>; popups?: PopupItem[] };
+  const wordMarks: WordMark[] = [
+    // 句子：修辭＋補充
+    {
+      id: 'ml-note-loom',
+      phrase: '唧唧復唧唧，木蘭當戶織',
+      note: { kind: 'sentence', body: '', notes: { xiu: '摹寫：「唧唧」摹寫織布機的聲音。' } },
+      popups: [{ id: 'ml-pop-audio-1', kind: 'audio', title: '織布機的聲音', assetId: 'sample-audio-mulan-loom' }],
+    },
+    // 生字詞：註釋＋補充
+    {
+      id: 'ml-note-zhu',
+      phrase: '機杼',
+      note: { kind: 'word', body: '織布機。杼，織布的梭子。' },
+      // 一組字掛兩項
+      popups: [
+        { id: 'ml-pop-img-loom', kind: 'image', title: '明清時期的木織機', assetId: 'images/mulan-loom.jpg' },
+        { id: 'ml-pop-img-weaver', kind: 'image', title: '雲南麗江，在織機前織布的婦女', assetId: 'images/mulan-weaver.jpg' },
+      ],
+    },
+    // 生字詞：只有註釋
+    { id: 'ml-note-jian', phrase: '鞍韉', note: { kind: 'word', body: '馬鞍和馬鞍下的墊子。' } },
+    // 沒標的字：只掛補充
+    {
+      id: 'ml-word-river',
+      phrase: '黃河',
+      popups: [{ id: 'ml-pop-img-2', kind: 'image', title: '黃河（壺口瀑布）', assetId: 'images/mulan-yellow-river.jpg' }],
+    },
+    // 句子：只有補充
+    {
+      id: 'ml-note-neigh',
+      phrase: '但聞燕山胡騎鳴啾啾',
+      note: { kind: 'sentence', body: '', notes: {} },
+      popups: [{ id: 'ml-pop-audio-2', kind: 'audio', title: '馬的嘶鳴', assetId: 'sample-audio-mulan-neigh' }],
+    },
+    // 句子：只有句型（「黃河」第一次出現在上一句，這一句的黃河沒掛補充，兩者不重疊）
+    {
+      id: 'ml-note-dan',
+      phrase: '旦辭黃河去，暮至黑山頭',
+      note: { kind: 'sentence', body: '', notes: { ju: '「旦……，暮……」：早晚兩個時間對舉，寫出行軍的迅速。' } },
+    },
+    // 句子：只有提問
+    {
+      id: 'ml-note-yuan',
+      phrase: '願為市鞍馬，從此替爺征',
+      note: { kind: 'sentence', body: '', notes: { wen: '木蘭可以不去，為什麼還是決定替父親從軍？' } },
+    },
+    // 句子：只有修辭（跟語文小視窗講的同一件事）
+    {
+      id: 'ml-note-1',
+      phrase: '將軍百戰死，壯士十年歸',
+      note: { kind: 'sentence', body: '', notes: { xiu: '互文：將軍和壯士都身經百戰，有的戰死，有的多年後才歸來。' } },
+    },
+    // 生字詞：只有註釋（原本掛在整段的文字補充，講的其實是這幾個字）
+    {
+      id: 'ml-note-xun',
+      phrase: '策勳十二轉',
+      note: {
+        kind: 'word',
+        body: '記功時勳位連升了很多級。「十二」和詩中的「軍書十二卷」「同行十二年」一樣，是表示多的虛數，不是實際的數目。',
+      },
+    },
+  ];
+  const applyMarks = (b: TextBlock): TextBlock => {
+    let out = b;
+    for (const m of wordMarks) {
+      // 只標第一次出現的地方（「黃河」在第二段出現三次）
+      const at = plainOf(out.spans).indexOf(m.phrase);
+      if (at < 0) continue;
+      const end = at + m.phrase.length;
+      let spans = out.spans;
+      if (m.note) spans = markSpans(spans, at, end, { noteId: m.id });
+      // 字上記第一項的 id 當這一組的代號，其餘項目用 wordGroup 認它
+      const head = m.popups?.[0]?.id;
+      if (head) spans = markSpans(spans, at, end, { popupId: head });
+      const grouped = (m.popups ?? []).map((p, k) => (k === 0 ? p : { ...p, wordGroup: head }));
+      out = {
+        ...out,
+        spans,
+        rangeNotes: m.note ? [...(out.rangeNotes ?? []), { id: m.id, ...m.note }] : out.rangeNotes,
+        popups: [...out.popups, ...grouped],
+      };
+    }
+    return out;
+  };
 
   if (plan.size === 0 && paras.size === 0) return result;
   const rows = result.rows.map((row) => ({
@@ -265,22 +385,28 @@ function seedGuowen(result: ImportResult): ImportResult {
       blocks: col.blocks.map((b) => {
         let out = plan.has(b.id) ? { ...b, popups: plan.get(b.id)! } : b;
         if (out.type === 'text' && paras.has(b.id)) out = { ...out, ...paras.get(b.id)! };
-        // 框選的說明：第二段的「曾不吝情去留」標成句型（取自語文小視窗的偏義複詞）
-        if (out.type === 'text' && out.paragraph) {
-          const at = plainOf(out.spans).indexOf('曾不吝情去留');
-          if (at >= 0) {
-            out = {
-              ...out,
-              spans: markSpans(out.spans, at, at + 6, { noteId: 'gw-note-1' }),
-              rangeNotes: [
-                { id: 'gw-note-1', kind: 'ju', body: '「去留」是偏義複詞，在此只取「去」（離開）的意思。' },
-              ],
-            };
-          }
-        }
+        // 框選的字：生字詞、句子、只掛補充的詞，各種組合都有一則（閱讀時三層點按的示範）
+        if (out.type === 'text' && out.paragraph) out = applyMarks(out);
         return out;
       }),
     })),
   }));
+
+  // 預設版面：「題解」標題跟它那一段併成同一列的上下兩欄（直排），標題只佔兩個字的長度，
+  // 內文緊接在它正下方——跟老師在編輯器裡拖出來的一樣（見 useRowDrag 的 measureKeep）
+  const headAt = rows.findIndex((r) => r.columns.some((c) => c.blocks.some((b) => b.type === 'text' && textOf(b).trim() === '題解')));
+  const body = rows[headAt + 1];
+  const bodyBlock = body?.columns.length === 1 ? body.columns[0].blocks[0] : undefined;
+  if (headAt >= 0 && body && bodyBlock?.type === 'text' && textOf(bodyBlock).trim().startsWith('本詩選自')) {
+    const head = rows[headAt];
+    const merged = {
+      ...head,
+      columns: [
+        { ...head.columns[0], widthPct: 12 },
+        { ...body.columns[0], widthPct: 88 },
+      ],
+    };
+    rows.splice(headAt, 2, merged);
+  }
   return { ...result, rows };
 }

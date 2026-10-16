@@ -42,8 +42,8 @@ export type RoleStyle = {
  * 比例跟著等比。整本的 textScale 不再乘進來——老師指定 24 就是 24，
  * 那是他看著頁面定的絕對值，不是相對檔位。
  */
-export function roleStyle(role: TextRole, scale = 1, fontSize?: number, lineHeight?: number): RoleStyle {
-  const base = roleBaseStyle(role, scale, fontSize);
+export function roleStyle(role: TextRole, scale = 1, fontSize?: number, lineHeight?: number, vertical = false): RoleStyle {
+  const base = roleBaseStyle(role, scale, fontSize, vertical);
   // 老師設的行距蓋過角色預設；無單位，字級怎麼變都維持同一個倍數
   return lineHeight && lineHeight > 0 ? { ...base, lineHeight: String(lineHeight) } : base;
 }
@@ -55,7 +55,7 @@ export const defaultLineHeight = (role: TextRole): number =>
 /** 行距下拉選單的可選倍數。 */
 export const LINE_HEIGHTS = [1, 1.2, 1.5, 1.8, 2, 2.5];
 
-function roleBaseStyle(role: TextRole, scale: number, fontSize?: number): RoleStyle {
+function roleBaseStyle(role: TextRole, scale: number, fontSize?: number, vertical = false): RoleStyle {
   const t = ROLE_TOKEN[role];
   const scaled = (name: string) =>
     scale === 1
@@ -63,7 +63,7 @@ function roleBaseStyle(role: TextRole, scale: number, fontSize?: number): RoleSt
       : `calc(var(--ds-typography-${t}-${name}) * ${scale})`;
   const weight = `var(--ds-typography-${t}-weight)`;
   // 預設字級跟 token 不同的角色（節 32、內文 20）：字級用指定值乘檔位，行高照角色比例
-  const own = ROLE_SIZE[role];
+  const own = (vertical && ROLE_SIZE_VERTICAL[role]) || ROLE_SIZE[role];
   if (!(fontSize && fontSize > 0) && own) {
     return {
       fontSize: `${own * scale}px`,
@@ -118,7 +118,20 @@ const ROLE_SIZE: Partial<Record<TextRole, number>> = {
   body: 20,
 };
 
-/** 各內容角色的預設字級（px）。字級選單的「預設」與顯示用這份。 */
+/**
+ * 直排的預設字級。直排內文 24：注音 8px 三個符號疊起來約 22.8（每個符號至少佔字身 95%，
+ * 再收筆畫就互相壓到），比 20 的字高，連續兩個注音字（啾啾）的注音會接成一串；
+ * 24 的字才裝得下、上下還留得出縫，字距不用另外加。橫排的注音在字的右邊，沒有這個問題。
+ */
+const ROLE_SIZE_VERTICAL: Partial<Record<TextRole, number>> = {
+  body: 24,
+};
+
+/** 這個角色的預設字級。直排的內文跟橫排不同（見 ROLE_SIZE_VERTICAL）。 */
+export const defaultSizeOf = (role: TextRole, vertical = false): number =>
+  (vertical && ROLE_SIZE_VERTICAL[role]) || ROLE_DEFAULT_SIZE[role];
+
+/** 各內容角色的預設字級（px），橫排。字級選單的「預設」用 defaultSizeOf，直排的內文另外算。 */
 export const ROLE_DEFAULT_SIZE: Record<TextRole, number> = {
   lessonTitle: 48,
   sectionTitle: 32,

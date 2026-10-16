@@ -6,11 +6,11 @@ import { Icon } from '../components/Icon';
 import { useEditorCtx } from './EditorContext';
 import { Dropdown } from './Dropdown';
 import { hasAllRuby, lengthOf, markSpans, sliceSpans, toggleRubySpans, type SpanMarks } from '../model/spans';
-import { titleOf } from '../model/popups';
+import { wordGroupPopups } from '../model/popups';
 import { RANGE_KINDS, rangeKindOf } from '../model/paragraphs';
 import { newId } from '../model/ids';
 import type { RangeKind } from '../model/types';
-import { defaultLineHeight, FONT_SIZES, INLINE_FONTS, LINE_HEIGHTS, ROLE_DEFAULT_SIZE } from '../styles/roles';
+import { defaultLineHeight, defaultSizeOf, FONT_SIZES, INLINE_FONTS, LINE_HEIGHTS } from '../styles/roles';
 import type { DocSettings, InlineSpan, TextBlock } from '../model/types';
 
 /**
@@ -62,7 +62,8 @@ export function InlineTextTools({ block, blockId, start, end, afterFont }: Inlin
   const note = noteId ? block.rangeNotes?.find((n) => n.id === noteId) ?? null : null;
   const rangeKind = note ? RANGE_KINDS.find((k) => k.key === rangeKindOf(note)) : undefined;
   const rubyOn = hasAllRuby(picked);
-  const linked = popupId ? block.popups.find((p) => p.id === popupId) ?? null : null;
+  // 這幾個字有沒有掛補充：有就跟注音一樣亮灰底，不在按鈕上寫掛了什麼
+  const linked = popupId ? wordGroupPopups(block, popupId).length > 0 : false;
 
   const colorRef = useRef<HTMLButtonElement>(null);
   const fontRef = useRef<HTMLButtonElement>(null);
@@ -238,15 +239,15 @@ export function InlineTextTools({ block, blockId, start, end, afterFont }: Inlin
 
       {/* 補充：直接開右側面板，選起來的字記在 popupPick，面板照標成的種類給欄位 */}
       <ToolBtn
-        $iconOnly={!linked}
+        $iconOnly
+        $on={linked}
         onClick={() => {
           ed.setPopupPick({ blockId, start, end });
           ed.openPopupPanel(blockId);
         }}
-        title={linked ? `點這幾個字會開「${titleOf(linked)}」` : '讓這幾個字點了會開補充'}
+        title={linked ? '編輯這幾個字的補充' : '讓這幾個字點了會開補充'}
       >
-        {/* 只留圖示（跟元件膠囊的補充鈕一樣）；連過補充的顯示那一項 */}
-        {linked ? titleOf(linked) : null}
+        {/* 只留圖示（跟元件膠囊的補充鈕一樣）；掛了補充的亮灰底，跟注音、底線同一種「開著」 */}
         <Icon name="blocks" size={20} label="補充" />
       </ToolBtn>
     </>
@@ -321,7 +322,7 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
   const flipped = !!block.writingMode && block.writingMode !== settings.writingMode;
   const other: TextBlock['writingMode'] = vertical ? 'horizontal' : 'vertical';
 
-  const defaultSize = ROLE_DEFAULT_SIZE[block.role];
+  const defaultSize = defaultSizeOf(block.role, vertical);
   const currentSize = block.fontSize ?? defaultSize;
   const sizeOptions = FONT_SIZES.includes(currentSize)
     ? FONT_SIZES
@@ -381,9 +382,10 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
       />
 
       {/* 行距：圖示加倍數，圖示讓它跟旁邊的字級數字分得開；選回預設值就清掉欄位 */}
+      {/* 直排時行與行是左右排的，圖示跟著轉成左右箭頭、直的行 */}
       <Dropdown
         variant="tool"
-        icon="line-height"
+        icon={vertical ? 'line-height-vertical' : 'line-height'}
         value={String(currentLh)}
         aria-label="行距（倍）"
         title="行距"

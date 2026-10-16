@@ -1,5 +1,5 @@
-import { readyElementPopups } from './popups';
-import type { ParaNoteKind, ParaNotes, RangeKind, RangeNote, Row, TextBlock } from './types';
+import { groupOf, missingOf, readyElementPopups } from './popups';
+import type { InlineSpan, ParaNoteKind, ParaNotes, PopupItem, RangeKind, RangeNote, Row, TextBlock } from './types';
 
 /**
  * 課文段落：段號怎麼編、閱讀時有哪幾顆圓形按鈕。
@@ -84,4 +84,29 @@ export function rangeNoteFilled(n: RangeNote): boolean {
   return rangeKindOf(n) === 'sentence'
     ? Object.values(sentenceNotesOf(n)).some((v) => v?.trim())
     : !!n.body.trim();
+}
+
+/** 連到標記那幾個字上、填完的補充。標成生字詞或句子的字，補充跟著那幾個字走，不歸整段的「補」。 */
+export function markPopups(block: Pick<TextBlock, 'spans' | 'popups'>, noteId: string): PopupItem[] {
+  const ids = new Set(block.spans.filter((s) => s.noteId === noteId && s.popupId).map((s) => s.popupId!));
+  return block.popups.filter((p) => ids.has(groupOf(p)) && !missingOf(p));
+}
+
+/** 閱讀時點得開：有說明，或有連到這幾個字的補充。 */
+export const markReady = (block: Pick<TextBlock, 'spans' | 'popups'>, n: RangeNote) =>
+  rangeNoteFilled(n) || markPopups(block, n.id).length > 0;
+
+/** 標記在純文字上的位置（第幾個字到第幾個字）。中間被別的字隔開時取頭尾。 */
+export function markRange(spans: InlineSpan[], noteId: string): { start: number; end: number } | null {
+  let pos = 0;
+  let start = -1;
+  let end = -1;
+  for (const s of spans) {
+    if (s.noteId === noteId) {
+      if (start < 0) start = pos;
+      end = pos + s.text.length;
+    }
+    pos += s.text.length;
+  }
+  return start < 0 ? null : { start, end };
 }

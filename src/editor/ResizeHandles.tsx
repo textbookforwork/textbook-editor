@@ -102,8 +102,9 @@ export function ResizeHandles({ mode, box, columnInline, vertical, onResize }: P
         : hd === 'e' || hd === 'w';
 
       if (mode === 'aspect') {
-        // 寬高連動：拖角落與左右看寬，拖上下看高
-        if (onlyBlockEdge) w = h * ratio;
+        // 寬高連動：拖上下邊看高，拖左右邊與角落看寬。這是實體方向，直排也一樣——
+        // 之前用「block 軸那兩邊」判斷，直排時軸轉了九十度，拖哪一邊都被另一邊沒變的長度蓋回去，只剩四角拉得動
+        if (hd === 'n' || hd === 's') w = h * ratio;
         else h = w / ratio;
       } else if (corner) {
         // 角落等比，以寬的變化為準（包含 inline 模式的四角縮放）

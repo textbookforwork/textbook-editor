@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import type { DropTarget } from '../model/actions';
+import { COLUMN_GAP } from '../model/pageSize';
 
 /**
  * 拖曳重排，用 pointer events。
@@ -26,6 +27,25 @@ const SIDE_FRACTION = 0.3;
 
 /** 一列最多幾欄。五欄時每欄約 140，放圖示、小圖、短字還可以；再多就什麼都擠不下。 */
 export const MAX_COLUMNS = 5;
+/**
+ * 直排一列最多幾欄。直排的欄是上下疊的，內容區高 672：三欄每欄約 224，
+ * 24px 的字還放得下八、九個；再多一欄直排字就排不下一句。
+ */
+export const MAX_COLUMNS_VERTICAL = 3;
+
+/**
+ * 直排併欄要「往上或往下推」過這段距離才算（頁高的比例）。
+ * 直排的握把在元件頂端，一拿起來游標就在每一列的上方三成裡；只看位置的話，
+ * 想左右換順序也會被當成「併在上面」。所以還要看手是不是真的往上（往下）推了。
+ * 距離跟「沒有推的位置」比：握把在自己那一列的高度，換到目標那一列上（各列上緣不一定一樣高，跨頁也一樣算）。
+ */
+const VERTICAL_PUSH = 0.01;
+/** 直排併欄：游標可以超出那一列上下緣多少（頁高的比例）——頂端那一列要往上推，推進頁邊的留白、甚至頁面外的灰底都算——範圍太窄老師推不到。 */
+const VERTICAL_REACH = 0.15;
+/** 直排併欄：游標在那一列左右多遠內都算（畫面 px）。標題列在直排裡只有一個字寬，要剛好對準太難 */
+const VERTICAL_SLACK_PX = 24;
+/** 直排併欄的「下方」：那一列下方四成。上方靠「往上推」判斷，不靠範圍（握把本來就在上面） */
+const VERTICAL_BOTTOM = 0.6;
 
 /** 超過這個距離才算拖曳，否則只是點一下握把。 */
 const DRAG_THRESHOLD_PX = 4;
@@ -83,6 +103,30 @@ function makeGhost(source: HTMLElement): { ghost: HTMLElement; scale: number } {
   return { ghost, scale };
 }
 
+/**
+ * 目標那一列只有一欄、元件沒佔滿時，量它實際用掉多少，併欄時新的一欄就接在它正後面（直排是正下方）。
+ * 平均分的話，一張只佔三成的圖片併進一段文字，文字會被放到後半欄，中間空一大塊。
+ * 量的是畫面，因為元件實際多大要看分頁與縮放；reducer 只照這兩個數字分欄。
+ */
+function measureKeep(frame: HTMLElement, vertical: boolean): { keepPct?: number; fitPct?: number } {
+  const cols = frame.querySelectorAll<HTMLElement>('[data-col-id]');
+  if (cols.length !== 1) return {};
+  const col = cols[0];
+  const blocks = col.querySelectorAll<HTMLElement>('[data-block-id]');
+  if (blocks.length !== 1) return {};
+  const c = col.getBoundingClientRect();
+  const b = blocks[0].getBoundingClientRect();
+  const total = vertical ? c.height : c.width;
+  // 元件要從欄的起點開始（置中、靠右的元件前面有空，不適用）
+  const lead = vertical ? b.top - c.top : b.left - c.left;
+  const used = vertical ? b.bottom - c.top : b.right - c.left;
+  if (total <= 0 || Math.abs(lead) > 2 || used / total > 0.85) return {};
+  // 併欄後兩欄之間有一道欄距，原本那一欄要扣掉它來算，元件才會一樣大
+  const scale = col.offsetWidth ? c.width / col.offsetWidth : 1;
+  const gap = COLUMN_GAP * scale;
+  return { keepPct: (used / (total - gap)) * 100, fitPct: 100 };
+}
+
 export function useRowDrag(
   setDraggingRowId: (id: string | null) => void,
   setDropTarget: (t: DropTarget | null) => void,
@@ -101,6 +145,12 @@ export function useRowDrag(
         : (e.target as HTMLElement).closest<HTMLElement>('[data-row-id]');
       const startX = e.clientX;
       const startY = e.clientY;
+      // 直排併欄看「往上／往下推了多少」：記下握把在自己那一列的哪個高度。
+      // 拖到別列時，游標停在「那一列的上緣＋同樣的高度」就是沒有推；各列的上緣不一定一樣高，所以不能跟起點直接比
+      const startRow = source?.closest<HTMLElement>('[data-row-id]')?.getBoundingClientRect() ?? null;
+      // 拖的是幾欄：拖整列就是那一列的欄數，拖一欄就是一欄。併進去會超過上限就不給併
+      const draggedCols = subject.columnId ? 1 : source?.querySelectorAll('[data-col-id]').length || 1;
+      const gripOffset = startRow ? startY - startRow.top : null;
 
       let started = false;
       let ghost: HTMLElement | null = null;
@@ -203,17 +253,33 @@ export function useRowDrag(
         const rowId = frame.dataset.rowId!;
         const onSelf = rowId === dragging.current?.rowId;
 
-        // 併欄：僅在橫排時允許側邊推入併欄。
-        // 直排模式下握把位於頂端，拖曳重排是在水平方向滑動，
-        // 殘影中心自然落在頂端（t < 0.3），若允許併欄會誤判成「併成二欄」而破壞換順序。
+        const cols = frame.querySelectorAll('[data-col-id]').length || 1;
+
+        // 直排併欄：欄是上下疊的。游標（不是殘影中心）在那一列的上方三成、而且手往上推過一段＝併在上面；
+        // 下方四成、往下推過一段＝併在下面。左右放寬 VERTICAL_SLACK_PX。只左右移動是換順序（理由見 VERTICAL_PUSH）
+        if (vertical && !onSelf && cols + draggedCols <= MAX_COLUMNS_VERTICAL && gripOffset !== null) {
+          const page = frame.closest<HTMLElement>('[data-page-index]')?.getBoundingClientRect();
+          const overRow = x >= r.left - VERTICAL_SLACK_PX && x <= r.right + VERTICAL_SLACK_PX;
+          if (page && page.height > 0 && overRow) {
+            const moved = (y - (r.top + gripOffset)) / page.height;
+            const reach = VERTICAL_REACH * page.height;
+            const near = y > r.top - reach && y < r.bottom + reach;
+            const tc = (y - r.top) / r.height;
+            if (near && tc < SIDE_FRACTION && moved < -VERTICAL_PUSH)
+              return { mode: 'column', rowId, side: 'left', ...measureKeep(frame, true) };
+            if (near && tc > VERTICAL_BOTTOM && moved > VERTICAL_PUSH)
+              return { mode: 'column', rowId, side: 'right', ...measureKeep(frame, true) };
+          }
+        }
+
+        // 橫排併欄：看殘影中心推進那一列左右三成
         const inside = best.dist === 0;
         const i0 = vertical ? r.top : r.left;
         const span = vertical ? r.height : r.width;
         const t = (ci - i0) / span;
-        const cols = frame.querySelectorAll('[data-col-id]').length || 1;
-        if (!vertical && inside && !onSelf && cols < MAX_COLUMNS) {
-          if (t < SIDE_FRACTION) return { mode: 'column', rowId, side: 'left' };
-          if (t > 1 - SIDE_FRACTION) return { mode: 'column', rowId, side: 'right' };
+        if (!vertical && inside && !onSelf && cols + draggedCols <= MAX_COLUMNS) {
+          if (t < SIDE_FRACTION) return { mode: 'column', rowId, side: 'left', ...measureKeep(frame, false) };
+          if (t > 1 - SIDE_FRACTION) return { mode: 'column', rowId, side: 'right', ...measureKeep(frame, false) };
         }
 
         // 前半插在它之前、後半插在它之後

@@ -105,15 +105,22 @@ export function readyPopups<T extends { popups: PopupItem[] }>(block: T): PopupI
   return block.popups.filter((p) => !missingOf(p));
 }
 
-/** 連到幾個字上的補充（文字裡有 span 指向它）。它們自成一組，點那幾個字才開。 */
+/** 這一項屬於哪一組字。同一組字的第一項，代號就是它自己的 id。 */
+export const groupOf = (p: PopupItem) => p.wordGroup ?? p.id;
+
+/** 文字裡標著的字組代號（span 的 popupId）。連到這些字組的補充點那幾個字才開。 */
 export function wordPopupIds(block: { popups: PopupItem[]; spans?: { popupId?: string }[] }): Set<string> {
   return new Set((block.spans ?? []).map((x) => x.popupId).filter((id): id is string => !!id));
 }
 
+/** 連到某一組字上的補充，照老師加的順序。 */
+export const wordGroupPopups = (block: { popups: PopupItem[] }, group: string) =>
+  block.popups.filter((p) => groupOf(p) === group);
+
 /** 整個元件的補充：沒連到字上的那些。點元件、段落的「補」開的是這一組。 */
 export function elementPopups<T extends { popups: PopupItem[]; spans?: { popupId?: string }[] }>(block: T): PopupItem[] {
   const words = wordPopupIds(block);
-  return block.popups.filter((p) => !words.has(p.id));
+  return block.popups.filter((p) => !words.has(groupOf(p)));
 }
 
 /** 整個元件的補充裡填完的（閱讀端用）。 */

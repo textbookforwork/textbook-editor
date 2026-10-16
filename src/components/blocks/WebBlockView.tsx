@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { CompactAction, emptyCompactCss } from './emptyCompact';
 import { fieldCss } from '../../editor/SidePanel';
 import styled from 'styled-components';
 import { Icon } from '../Icon';
@@ -98,7 +99,10 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
     };
     return (
       <EmptyFrame style={boxStyle} onPointerDown={onSelect}>
+        {/* 框太小放不下網址欄（見 emptyCompact）：只留「貼上網址」，再小只剩網頁圖示；拉大就會出現網址欄 */}
+        <CompactAction label="貼上網址" action="link" kind="globe" primary={false} title="把框拉大就能貼網址" />
         <Pick
+          data-full
           onPointerDown={(e) => {
             onSelect?.();
             e.stopPropagation();
@@ -239,7 +243,10 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
   if (onPatch && (!block.url || isEditingUrl)) {
     return (
       <EmptyFrame style={boxStyle} onPointerDown={onSelect}>
+        {/* 框太小放不下網址欄（見 emptyCompact）：只留「貼上網址」，再小只剩網頁圖示；拉大就會出現網址欄 */}
+        <CompactAction label="貼上網址" action="link" kind="globe" primary={false} title="把框拉大就能貼網址" />
         <Pick
+          data-full
           onPointerDown={(e) => {
             onSelect?.();
             e.stopPropagation();
@@ -318,6 +325,7 @@ const EmptyFrame = styled.div`
   position: relative;
   display: grid;
   place-items: center;
+  ${emptyCompactCss}
   border-radius: ${(p) => p.theme.radius.field};
   border: ${(p) => p.theme.border.widthDefault} dashed ${(p) => p.theme.border.default};
   background: ${(p) => p.theme.surface.page};

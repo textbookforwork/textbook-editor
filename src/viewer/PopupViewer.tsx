@@ -28,7 +28,7 @@ type Ctx = {
    * 只掛一項而且知道角標在哪（有傳 anchor）→ 在角標旁直接彈泡泡；
    * 多項、或沒有角標可對（例如從設定面板按「預覽」）→ 開中央的檢視視窗。
    */
-  open: (block: Block, anchor?: Anchor) => void;
+  open: (block: Block, anchor?: Anchor, lead?: Lead) => void;
   /**
    * 掛上「從檢視器直接去編輯」的入口。
    *
@@ -47,7 +47,13 @@ export function WithoutPopupViewer({ children }: { children: ReactNode }) {
   return <ViewerCtx.Provider value={null}>{children}</ViewerCtx.Provider>;
 }
 
-type Opened = { block: Block; anchor: Anchor | null };
+/**
+ * 生字詞的註釋：泡泡最上面先攤開這一則，底下才是掛在同幾個字上的補充。
+ * 註釋是讀這幾個字一定要看的，不該跟補充一樣收成一張卡。
+ */
+export type Lead = { title: string; body: string };
+
+type Opened = { block: Block; anchor: Anchor | null; lead: Lead | null };
 
 /**
  * 補充內容的檢視器。老師編的時候與學生上課看到的是同一個元件——
@@ -72,18 +78,23 @@ export function PopupViewerProvider({
   const [rich, setRich] = useState<RichItem | null>(null);
   /** 從清單點文字、影片、聲音、網頁：整個視窗換成那一項（跟看大圖同一種做法），左上角可以返回清單 */
   const [detail, setDetail] = useState<PopupItem | null>(null);
-  const open = useCallback((b: Block, anchor?: Anchor) => {
+  /** 從多項泡泡點一則文字：原地換成單則文字的泡泡，跟只掛一則時長得一樣，不開中央視窗 */
+  const [picked, setPicked] = useState<PopupItem | null>(null);
+  const open = useCallback((b: Block, anchor?: Anchor, lead?: Lead) => {
     // 只掛一張圖、一個網頁或一支影片：直接開大視窗，跟從多項裡點開的是同一個畫面，不另外彈小泡泡
-    const solo = b.popups.length === 1 ? b.popups[0] : null;
+    // 帶著註釋的不直接開：註釋要先看得到
+    const solo = b.popups.length === 1 && !lead ? b.popups[0] : null;
     setZoom(solo?.kind === 'image' ? solo : null);
     setRich(null);
+    setPicked(null);
     setDetail(solo?.kind === 'web' || solo?.kind === 'video' ? solo : null);
-    setOpened({ block: b, anchor: anchor ?? null });
+    setOpened({ block: b, anchor: anchor ?? null, lead: lead ?? null });
   }, []);
   const close = useCallback(() => {
     setZoom(null);
     setRich(null);
     setDetail(null);
+    setPicked(null);
     setOpened(null);
   }, []);
   // 包一層函式，否則 setState 會把傳進來的函式當成 updater 執行掉
@@ -95,7 +106,7 @@ export function PopupViewerProvider({
 
   const block = opened?.block ?? null;
   const single =
-    opened && opened.anchor && opened.block.popups.length === 1 ? opened.block.popups[0] : null;
+    opened && opened.anchor && !opened.lead && opened.block.popups.length === 1 ? opened.block.popups[0] : picked;
   /**
    * 只掛一項而且是大彈窗：不彈泡泡，直接開大視窗。
    * 大彈窗的內容是整段課文加圖，泡泡 360px 裝不下；角標上沒有數字、
@@ -104,8 +115,9 @@ export function PopupViewerProvider({
    * 老師預覽到的才是學生點角標看到的那一個。
    */
   /** 掛好幾項而且知道是從哪個元件點的：泡泡裡一排縮圖卡，不開中央清單 */
-  const multi = !!(opened && opened.anchor && opened.block.popups.length > 1);
-  const only = opened && opened.block.popups.length === 1 ? opened.block.popups[0] : null;
+  /** 註釋加上補充（哪怕只有一項）也走這一種：註釋在上、卡片在下 */
+  const multi = !picked && !!(opened && opened.anchor && (opened.block.popups.length > 1 || (opened.lead && opened.block.popups.length > 0)));
+  const only = opened && !opened.lead && opened.block.popups.length === 1 ? opened.block.popups[0] : null;
   const soloRich = only?.kind === 'rich' ? only : null;
   const richOpen = rich ?? soloRich;
   /** 直排書裡點開的一則文字，視窗也直排（跟泡泡同一個判斷：看被點的元件實際的方向）。 */
@@ -126,7 +138,7 @@ export function PopupViewerProvider({
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [block, zoom, rich, detail, close]);
+  }, [block, zoom, rich, detail, picked, close]);
 
   return (
     <ViewerCtx.Provider value={ctx}>
@@ -138,13 +150,15 @@ export function PopupViewerProvider({
           block={opened.block}
           item={opened.block.popups[0]}
           items={opened.block.popups}
+          lead={opened.lead ?? undefined}
           anchor={opened.anchor}
           onClose={close}
           onPick={(it) => {
             if (it.kind === 'jump') {
               close();
               if (it.targetRowId) onJump?.(it.targetRowId);
-            } else if (it.kind === 'image') setZoom(it);
+            } else if (it.kind === 'text') setPicked(it);
+            else if (it.kind === 'image') setZoom(it);
             else if (it.kind === 'rich') setRich(it);
             else setDetail(it);
           }}

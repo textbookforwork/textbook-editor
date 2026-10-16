@@ -125,7 +125,12 @@ export function Dropdown({ value, options, onChange, placeholder = '請選擇', 
             ref={menuRef}
             role="listbox"
             aria-label={label}
-            style={pos}
+            // tool 款的按鈕寬度跟著字，選單不能跟它一樣寬，否則較長的選項會被切掉
+            style={
+              variant === 'tool'
+                ? { ...pos, width: undefined, minWidth: pos.width, maxWidth: window.innerWidth - pos.left - 8 }
+                : pos
+            }
             onKeyDown={onMenuKey}
             data-ui
             // 點選單不要讓編輯區失去游標或取消選取（浮動工具列上的下拉也用這個元件）

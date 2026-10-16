@@ -51,50 +51,83 @@ function zhuyinRt(zy: string): string {
   const plain = zy.replace('˙', '');
   const last = plain.slice(-1);
   const tone = TONES.includes(last) ? last : '';
-  const body = (neutral ? '˙' : '') + (tone ? plain.slice(0, -1) : plain);
-  return `<rt><span data-zy>${esc(body)}</span>${tone ? `<span data-tone>${esc(tone)}</span>` : ''}</rt>`;
+  const symbols = tone ? plain.slice(0, -1) : plain;
+  const body = (neutral ? '˙' : '') + symbols;
+  // 只有一個符號（ㄘˊ、ㄕˋ）：調號掛在右上，不是置中——CSS 數不出有幾個符號，這裡標出來
+  const one = Array.from(symbols).length === 1 ? ' data-one' : '';
+  return `<rt${one}><span data-zy>${esc(body)}</span>${tone ? `<span data-tone>${esc(tone)}</span>` : ''}</rt>`;
 }
 
+/**
+ * 生字詞、句子、補充的標記鍵。相連且鍵相同的字（例如「鞍」與帶注音的「韉」）共用一層外框：
+ * 點點線由那一層的邊框畫成一整條。每個字各畫一段的話，點的節奏在接縫處重來、
+ * 帶注音的字又是另一種盒子，線就斷斷續續、對不齊。
+ */
+const markKey = (s: InlineSpan) => (s.text && (s.noteId || s.popupId) ? `${s.noteId ?? ''}|${s.popupId ?? ''}` : '');
+
 export function spansToHtml(spans: InlineSpan[]): string {
-  return spans
-    .map((s) => {
-      const mark = s.footnoteRef ? supOf(s.footnoteRef) : '';
-      if (!s.text) return mark;
+  let html = '';
+  for (let i = 0; i < spans.length; ) {
+    const key = markKey(spans[i]);
+    if (!key) {
+      html += spanToHtml(spans[i]);
+      i += 1;
+      continue;
+    }
+    let j = i;
+    while (j < spans.length && markKey(spans[j]) === key) j += 1;
+    const first = spans[i];
+    // 外框帶標記，也帶字型：點點線的位置由外框的字型決定，跟裡面的字不同（例如課文設成明體）線就會偏。
+    // 讀回時外框的標記與字型會往裡傳（htmlToSpans 的 inherited），資料不變
+    const outer: string[] = [];
+    if (first.popupId) outer.push(`data-pop="${esc(first.popupId)}"`);
+    if (first.noteId) outer.push(`data-note="${esc(first.noteId)}"`);
+    if (first.fontFamily && isSafeFont(first.fontFamily)) {
+      outer.push(`data-font="${esc(first.fontFamily)}"`, `style="${esc(`font-family:${first.fontFamily}`)}"`);
+    }
+    html += `<span ${outer.join(' ')}>${spans.slice(i, j).map((s) => spanToHtml(s, false)).join('')}</span>`;
+    i = j;
+  }
+  return html;
+}
 
-      const attrs: string[] = [];
-      const style: string[] = [];
-      if (s.keyword) attrs.push('data-kw="1"');
-      if (s.bold) attrs.push('data-bold="1"');
-      if (s.underline) attrs.push('data-u="1"');
-      if (s.strike) attrs.push('data-s="1"');
-      if (s.overline) attrs.push('data-o="1"');
-      if (s.color && s.color !== 'default' && isSafeColor(s.color)) {
-        attrs.push(`data-color="${esc(s.color)}"`);
-        // 語意色由 GlobalStyle 的 [data-color='accent'] 之類畫；任意色值只能寫成行內樣式
-        if (!SEMANTIC_COLORS.has(s.color)) style.push(`color:${s.color}`);
-      }
-      if (s.fontFamily && isSafeFont(s.fontFamily)) {
-        attrs.push(`data-font="${esc(s.fontFamily)}"`);
-        style.push(`font-family:${s.fontFamily}`);
-      }
-      if (s.popupId) attrs.push(`data-pop="${esc(s.popupId)}"`);
-      if (s.noteId) attrs.push(`data-note="${esc(s.noteId)}"`);
-      if (s.href) attrs.push(`data-href="${esc(s.href)}"`);
-      if (style.length > 0) attrs.push(`style="${esc(style.join(';'))}"`);
+/** 一段字的 HTML。withMarks 為 false 時不寫生字詞、補充的標記（由外框帶，見 spansToHtml）。 */
+function spanToHtml(s: InlineSpan, withMarks = true): string {
+  const mark = s.footnoteRef ? supOf(s.footnoteRef) : '';
+  if (!s.text) return mark;
 
-      if (s.ruby) {
-        // 注音是原子：整個刪得掉，但不能編到裡面，否則注音會跟字分家
-        const attrStr = attrs.length > 0 ? ` ${attrs.join(' ')}` : '';
-        return (
-          `<ruby data-ruby="${esc(s.ruby)}" contenteditable="false"${attrStr}>` +
-          `${esc(s.text)}${zhuyinRt(s.ruby)}</ruby>${mark}`
-        );
-      }
+  const attrs: string[] = [];
+  const style: string[] = [];
+  if (s.keyword) attrs.push('data-kw="1"');
+  if (s.bold) attrs.push('data-bold="1"');
+  if (s.underline) attrs.push('data-u="1"');
+  if (s.strike) attrs.push('data-s="1"');
+  if (s.overline) attrs.push('data-o="1"');
+  if (s.color && s.color !== 'default' && isSafeColor(s.color)) {
+    attrs.push(`data-color="${esc(s.color)}"`);
+    // 語意色由 GlobalStyle 的 [data-color='accent'] 之類畫；任意色值只能寫成行內樣式
+    if (!SEMANTIC_COLORS.has(s.color)) style.push(`color:${s.color}`);
+  }
+  if (s.fontFamily && isSafeFont(s.fontFamily)) {
+    attrs.push(`data-font="${esc(s.fontFamily)}"`);
+    style.push(`font-family:${s.fontFamily}`);
+  }
+  if (withMarks && s.popupId) attrs.push(`data-pop="${esc(s.popupId)}"`);
+  if (withMarks && s.noteId) attrs.push(`data-note="${esc(s.noteId)}"`);
+  if (s.href) attrs.push(`data-href="${esc(s.href)}"`);
+  if (style.length > 0) attrs.push(`style="${esc(style.join(';'))}"`);
 
-      const text = esc(s.text);
-      return (attrs.length > 0 ? `<span ${attrs.join(' ')}>${text}</span>` : text) + mark;
-    })
-    .join('');
+  if (s.ruby) {
+    // 注音是原子：整個刪得掉，但不能編到裡面，否則注音會跟字分家
+    const attrStr = attrs.length > 0 ? ` ${attrs.join(' ')}` : '';
+    return (
+      `<ruby data-ruby="${esc(s.ruby)}" contenteditable="false"${attrStr}>` +
+      `${esc(s.text)}${zhuyinRt(s.ruby)}</ruby>${mark}`
+    );
+  }
+
+  const text = esc(s.text);
+  return (attrs.length > 0 ? `<span ${attrs.join(' ')}>${text}</span>` : text) + mark;
 }
 
 /** 把使用者編過的 DOM 讀回 spans。相鄰且標記相同的會被合併。 */

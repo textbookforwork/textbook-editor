@@ -137,7 +137,12 @@ const Sheet = styled.div<{
 }>`
   transform-origin: top left;
   background: ${(p) => p.theme.surface.raised};
-  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
+  /*
+   * 白紙直接放在灰底上就分得出邊，不畫框線。框改透明、不拿掉：拿掉會少 2px，量到的跟畫出來的不一樣。
+   * 側欄縮圖例外：縮圖放在白色側欄上，沒有框就看不出一頁在哪
+   */
+  border: ${(p) => p.theme.border.widthDefault} solid
+    ${(p) => (p.$thumbnail ? p.theme.border.subtle : 'transparent')};
   /* 近直角，模擬紙張 */
   border-radius: 2px;
   padding: ${PAGE_PADDING}px;
@@ -146,6 +151,17 @@ const Sheet = styled.div<{
   /* 只有頁面內真的能橫向捲（流式排版）才把橫向捲動留在頁內；分頁模式要放行給外層，
      否則放大後游標停在頁面上就左右滑不動 */
   overscroll-behavior-x: ${(p) => (p.$flow && !p.$thumbnail ? 'contain' : 'auto')};
+  /*
+   * 流式的頁面左右捲：捲軸只在「正在捲」時出現（scrollReveal 掛 data-scrolling，停下 0.8 秒收起），
+   * 滑鼠停在上面不算——閱讀時滑鼠幾乎一直在頁面上，照全站「滑過就顯示」的規則捲軸會一直掛著
+   */
+  ${(p) =>
+    p.$flow &&
+    !p.$thumbnail &&
+    `
+    &:hover::-webkit-scrollbar-thumb { background: transparent; }
+    &[data-scrolling]::-webkit-scrollbar-thumb { background: ${p.theme.border.default}; }
+  `}
   writing-mode: ${(p) => (p.$vertical ? 'vertical-rl' : 'horizontal-tb')};
   display: flex;
   flex-direction: ${(p) => (p.$horizontalPanels ? 'row' : 'column')};

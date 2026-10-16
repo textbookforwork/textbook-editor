@@ -72,14 +72,14 @@ export function createDomMeasurer(opts: DomMeasurerOptions): DomMeasurer {
   function layoutText(block: TextBlock, inlineSize: number, maxBlockSize: number) {
     ensureAttached();
     // 字級覆寫跟畫面走同一個函式，量到的才是畫出來的
-    const s = roleStyle(block.role, scale, block.fontSize, block.lineHeight);
+    // 單段覆寫書寫方向：盒子的尺寸規則跟 BlockView 共用（textFlowStyle）；直排的內文預設字級不同，先算方向
+    const flow = textFlowStyle(block, { inlineSize, maxBlockSize, vertical });
+    const s = roleStyle(block.role, scale, block.fontSize, block.lineHeight, flow.vertical);
     probe.style.fontSize = s.fontSize;
     probe.style.lineHeight = s.lineHeight;
     probe.style.fontWeight = s.fontWeight;
     probe.style.fontFamily = s.fontFamily;
     probe.style.textAlign = block.align ?? '';
-    // 單段覆寫書寫方向：盒子的尺寸規則跟 BlockView 共用（textFlowStyle）
-    const flow = textFlowStyle(block, { inlineSize, maxBlockSize, vertical });
     probe.style.writingMode = flow.vertical ? 'vertical-rl' : 'horizontal-tb';
     // 直排的著重線與底線畫在另一邊，會影響行寬——探針也要掛同一個記號
     if (flow.vertical) probe.dataset.vertical = 'true';

@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { Icon } from '../components/Icon';
-import { blockRegistry, ROLE_LABEL } from '../model/registry';
+import { primaryButtonCss } from '../components/buttonStyles';
 import { parseMarkdown, type ImportResult } from '../model/markdown';
-import type { BlockType, TextRole } from '../model/types';
 import { SCRIM } from '../styles/scrim';
 
 type Props = {
@@ -15,17 +14,23 @@ type Props = {
 };
 
 /**
- * 匯入 md。
+ * 匯入 md。長相跟系統其他地方同一套：上傳區照媒體庫的上傳框（虛線框、黑色上傳鈕、格式，可拖檔進來）、
+ * 兩個範例照網頁元件的「插入標籤／內嵌網頁」兩顆選項、按鈕照確認對話框（靠右、取消是文字鈕）。
  *
- * 關鍵在**套用之前先看報告**。md 是老師或編輯手寫的，一定會有寫錯的行；
- * 直接吃進去的話那些行會安靜地變成內文，混在課文裡看不出來——
- * 等到上課才發現某個標題沒生效。所以先把「認得的」與「沒認得的」
- * 攤開來給人看，再決定要不要套用。
+ * 選了檔案或範例之後對話框不長大、也不寫「幾列」這種沒用的話；只有出問題才寫一行紅字：
+ * 讀不進來，或有寫錯的行（會安靜地變成內文，上課才發現標題沒生效）。
  */
 export function ImportDialog({ samples, onApply, onClose }: Props) {
   const [name, setName] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [over, setOver] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   const read = (label: string, src: string) => {
     try {
@@ -35,115 +40,83 @@ export function ImportDialog({ samples, onApply, onClose }: Props) {
     } catch {
       setError('這個檔案讀不進來，請確認是教材的 md 格式');
       setResult(null);
+      setName(null);
     }
   };
 
-  const pick = async () => {
+  /** 再按一次已選的範例＝取消選取，回到還沒選的狀態 */
+  const clear = () => {
+    setName(null);
+    setResult(null);
+    setError(null);
+  };
+
+  const take = async (file: File | null | undefined) => {
+    if (!file) return;
+    read(file.name, await file.text());
+  };
+
+  const pick = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.md,text/markdown,text/plain';
-    input.oncancel = () => undefined;
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      read(file.name, await file.text());
-    };
+    input.onchange = () => void take(input.files?.[0]);
     input.click();
   };
+
+  const bad = result?.unrecognized.length ?? 0;
+  const problem = error ?? (bad > 0 ? `有 ${bad} 行沒辨識出來，會當成內文` : null);
+  const isSample = !!name && name in samples;
 
   return createPortal(
     <Scrim onClick={onClose}>
       <Sheet role="dialog" aria-modal="true" aria-label="匯入 .md 檔" onClick={(e) => e.stopPropagation()}>
         <Head>
-          <strong>匯入 .md 檔</strong>
-          <Spacer />
-          <Ghost onClick={onClose} aria-label="關閉">
-            <Icon name="x" size={20} label="關閉" />
-          </Ghost>
+          <span>匯入 .md 檔</span>
+          <Close type="button" onClick={onClose} aria-label="關閉" title="關閉">
+            <Icon name="x" size={24} label="關閉" />
+          </Close>
         </Head>
 
-        <Body>
-          <Pickers>
-            <Primary onClick={pick}>
-              選一個 md 檔
-              <Icon name="file-text" size={20} />
-            </Primary>
-            <Or>或用內建範例</Or>
-            <Samples>
-              {Object.keys(samples).map((k) => (
-                <Sample key={k} onClick={() => read(k, samples[k])}>
-                  {k}
-                </Sample>
-              ))}
-            </Samples>
-          </Pickers>
+        <Drop
+          $over={over}
+          onDragOver={(e) => {
+            if (!e.dataTransfer.types.includes('Files')) return;
+            e.preventDefault();
+            setOver(true);
+          }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setOver(false);
+            void take(e.dataTransfer.files[0]);
+          }}
+        >
+          <Upload type="button" onClick={pick}>
+            上傳 md 檔
+            <Icon name="upload" size={16} />
+          </Upload>
+          {/* 選了自己的檔案才寫檔名；按鈕已經寫了 md，不再重複格式 */}
+          {name && !isSample && <DropHint>{name}</DropHint>}
+        </Drop>
 
-          {error && <Bad>{error}</Bad>}
+        {/* 內建範例：兩顆並排的選項，跟網頁元件的「插入標籤／內嵌網頁」同一款；選中的維持深綠框字，再按一次取消 */}
+        <Choices role="group" aria-label="內建範例">
+          {Object.keys(samples).map((k) => (
+            <Choice key={k} type="button" $on={name === k} aria-pressed={name === k} onClick={() => (name === k ? clear() : read(k, samples[k]))}>
+              {k}
+            </Choice>
+          ))}
+        </Choices>
 
-          {result && (
-            <Report>
-              <ReportHead>
-                <strong>{name}</strong>
-                <Spacer />
-                <Muted>{result.rows.length} 列</Muted>
-              </ReportHead>
-
-              {/* 認出什麼，用課本的詞彙講，不是型別代號 */}
-              <Section>辨識結果</Section>
-              <Chips>
-                {countOf(result).map(([label, n]) => (
-                  <Chip key={label}>
-                    {label} <b>{n}</b>
-                  </Chip>
-                ))}
-              </Chips>
-
-              {result.footnotes.length > 0 && (
-                <Muted>注釋 {result.footnotes.length} 條</Muted>
-              )}
-
-              {/*
-                兩份清單的意義完全不同，所以分開列：
-                一個是「你寫錯了」，一個是「我們決定不做」。
-                混在一起的話老師會浪費時間去修根本不是他的問題。
-              */}
-              {result.unrecognized.length > 0 && (
-                <>
-                  <Section $warn>沒有辨識出來，會當成內文（{result.unrecognized.length} 行）</Section>
-                  <Lines>
-                    {result.unrecognized.slice(0, 8).map((l, i) => (
-                      <li key={i}>{l}</li>
-                    ))}
-                    {result.unrecognized.length > 8 && <li>…還有 {result.unrecognized.length - 8} 行</li>}
-                  </Lines>
-                </>
-              )}
-
-              {result.skipped.length > 0 && (
-                <>
-                  <Section>這個版本刻意不處理（{result.skipped.length} 行）</Section>
-                  <Lines>
-                    {result.skipped.slice(0, 5).map((l, i) => (
-                      <li key={i}>{l}</li>
-                    ))}
-                  </Lines>
-                </>
-              )}
-
-              {result.unrecognized.length === 0 && result.skipped.length === 0 && (
-                <Good>
-                  每一行都認得
-                  <Icon name="check" size={16} />
-                </Good>
-              )}
-            </Report>
-          )}
-        </Body>
+        {problem && <Problem role="alert">{problem}</Problem>}
 
         {/* 匯入可以用復原退回，不必另外警告 */}
         <Foot>
-          <Ghost onClick={onClose}>取消</Ghost>
-          <Apply disabled={!result} onClick={() => result && onApply(result)}>
+          <Ghost type="button" onClick={onClose}>
+            取消
+          </Ghost>
+          <Apply type="button" disabled={!result} onClick={() => result && onApply(result)}>
             匯入
           </Apply>
         </Foot>
@@ -151,21 +124,6 @@ export function ImportDialog({ samples, onApply, onClose }: Props) {
     </Scrim>,
     document.body
   );
-}
-
-/** 用課本的詞彙數，不是型別代號——老師看的是「大標 12」不是「sectionTitle 12」。 */
-function countOf(result: ImportResult): [string, number][] {
-  const counts = new Map<string, number>();
-  const bump = (k: string) => counts.set(k, (counts.get(k) ?? 0) + 1);
-
-  for (const row of result.rows) {
-    for (const col of row.columns) {
-      for (const b of col.blocks) {
-        bump(b.type === 'text' ? ROLE_LABEL[b.role as TextRole] : blockRegistry[b.type as BlockType].label);
-      }
-    }
-  }
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]);
 }
 
 const Scrim = styled.div`
@@ -178,202 +136,131 @@ const Scrim = styled.div`
   padding: ${(p) => p.theme.space.insetLg};
 `;
 
+/** 跟「課本封面」同一款：淡白底、四周 insetLg、上下 20 的間距，不分標題列與內容區 */
 const Sheet = styled.div`
-  inline-size: min(600px, 100%);
-  max-block-size: min(80vh, 720px);
+  inline-size: min(480px, 100%);
   display: flex;
   flex-direction: column;
-  /* 浮層一律用淡白底（#FAFAFA），跟設定面板、共享對話框同一色 */
+  gap: 20px;
+  padding: ${(p) => p.theme.space.insetLg};
   background: ${(p) => p.theme.surface.page};
   border-radius: ${(p) => p.theme.radius.panel};
   box-shadow: ${(p) => p.theme.shadow.float};
-  overflow: hidden;
 `;
 
-const Head = styled.header`
+const Head = styled.div`
   display: flex;
   align-items: center;
-  gap: ${(p) => p.theme.space.gapSm};
-  padding: ${(p) => p.theme.space.insetMd} ${(p) => p.theme.space.insetLg};
-  border-block-end: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
+  justify-content: space-between;
+  font-size: ${(p) => p.theme.typography.bodyLgSize};
+  line-height: ${(p) => p.theme.typography.bodyLgLineHeight};
 `;
 
-const Body = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: ${(p) => p.theme.space.insetLg};
+const Close = styled.button`
+  display: grid;
+  place-items: center;
+  inline-size: 24px;
+  block-size: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: ${(p) => p.theme.icon.default};
+  cursor: pointer;
+`;
+
+/** 跟媒體庫的上傳框同一款：虛線框、置中一顆黑色上傳鈕、下面一行格式；檔案拖進來時框變深、底變灰 */
+const Drop = styled.div<{ $over: boolean }>`
   display: flex;
   flex-direction: column;
-  gap: ${(p) => p.theme.space.gapLg};
-`;
-
-const Pickers = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: ${(p) => p.theme.space.gapSm};
-`;
-
-const Primary = styled.button`
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  inline-size: 100%;
-  font: inherit;
-  min-block-size: 52px;
-  cursor: pointer;
-  border: ${(p) => p.theme.border.widthDefault} dashed ${(p) => p.theme.border.default};
-  border-radius: ${(p) => p.theme.radius.field};
-  background: transparent;
-  color: ${(p) => p.theme.text.secondary};
-
-  &:hover { border-color: ${(p) => p.theme.border.hover}; color: ${(p) => p.theme.text.primary}; }
+  gap: ${(p) => p.theme.space.gapSm};
+  block-size: 128px;
+  padding: ${(p) => p.theme.space.insetMd};
+  box-sizing: border-box;
+  border: ${(p) => p.theme.border.widthDefault} dashed
+    ${(p) => (p.$over ? p.theme.border.hover : p.theme.border.default)};
+  border-radius: ${(p) => p.theme.radius.card};
+  background: ${(p) => (p.$over ? p.theme.surface.sunken : p.theme.surface.raised)};
+  text-align: center;
 `;
 
-const Or = styled.span`
-  font-size: var(--ds-typography-label-size);
+const Upload = styled.button`
+  ${primaryButtonCss}
+  flex: none;
+`;
+
+const DropHint = styled.span`
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ds-typography-caption-size);
   color: ${(p) => p.theme.text.tertiary};
 `;
 
-const Samples = styled.div`
-  display: flex;
+const Choices = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: ${(p) => p.theme.space.gapSm};
-  flex-wrap: wrap;
+`;
+
+/** 跟網頁元件的「插入標籤／內嵌網頁」同一款：白底灰框，滑過與選中是品牌深綠的框與字 */
+const Choice = styled.button<{ $on: boolean }>`
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-`;
-
-const Sample = styled.button`
   font: inherit;
-  font-size: var(--ds-typography-label-size);
-  min-block-size: 40px;
-  padding: 0 16px;
-  cursor: pointer;
-  border-radius: 999px;
-  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
-  background: transparent;
-  color: ${(p) => p.theme.text.secondary};
-
-  &:hover { border-color: ${(p) => p.theme.border.hover}; color: ${(p) => p.theme.text.primary}; }
-`;
-
-const Report = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.space.gapSm};
-  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
-  border-radius: ${(p) => p.theme.radius.card};
-  padding: ${(p) => p.theme.space.insetMd};
-`;
-
-const ReportHead = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const Section = styled.div<{ $warn?: boolean }>`
-  font-size: var(--ds-typography-label-size);
-  color: ${(p) => (p.$warn ? p.theme.feedback.warningDefault : p.theme.text.tertiary)};
-  margin-block-start: 4px;
-`;
-
-const Chips = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-`;
-
-const Chip = styled.span`
-  font-size: var(--ds-typography-label-size);
-  color: ${(p) => p.theme.text.secondary};
-  background: ${(p) => p.theme.surface.sunken};
-  border-radius: ${(p) => p.theme.radius.control};
-  padding: 4px 10px;
-
-  b { color: ${(p) => p.theme.text.primary}; margin-inline-start: 2px; }
-`;
-
-const Lines = styled.ul`
-  margin: 0;
-  padding-inline-start: 18px;
-  font-family: ${(p) => p.theme.typography.fontDisplay};
-  font-size: var(--ds-typography-label-size);
-  color: ${(p) => p.theme.text.secondary};
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-
-  li {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-`;
-
-const Good = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--ds-typography-label-size);
-  color: ${(p) => p.theme.feedback.successDefault};
-`;
-
-const Bad = styled.p`
-  margin: 0;
   font-size: var(--ds-typography-body-sm-size);
+  min-block-size: 40px;
+  padding: 0 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: ${(p) => p.theme.radius.control};
+  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => (p.$on ? p.theme.border.accent : p.theme.border.subtle)};
+  background: ${(p) => p.theme.surface.raised};
+  color: ${(p) => (p.$on ? p.theme.text.accent : p.theme.text.secondary)};
+  transition: border-color 0.12s, color 0.12s;
+  &:hover {
+    border-color: ${(p) => p.theme.border.accent};
+    color: ${(p) => p.theme.text.accent};
+  }
+  /* 滑鼠點了不畫焦點外框（有些瀏覽器會，跟選取的深綠框疊成兩圈）；鍵盤切過來才畫 */
+  &:focus:not(:focus-visible) { outline: none; }
+`;
+
+/** 出問題才有的一行紅字 */
+const Problem = styled.p`
+  margin: -8px 0 0;
+  text-align: center;
+  font-size: ${(p) => p.theme.typography.labelSize};
+  line-height: ${(p) => p.theme.typography.labelLineHeight};
+  font-weight: 500;
   color: ${(p) => p.theme.feedback.errorDefault};
 `;
 
-const Muted = styled.span`
-  font-size: var(--ds-typography-label-size);
-  color: ${(p) => p.theme.text.tertiary};
-`;
-
-const Spacer = styled.span`
-  flex: 1;
-`;
-
+/** 跟確認對話框同一款：靠右，取消是文字鈕、主要按鈕在右 */
 const Foot = styled.footer`
   display: flex;
-  align-items: center;
   justify-content: flex-end;
   gap: ${(p) => p.theme.space.gapSm};
-  padding: 0 ${(p) => p.theme.space.insetLg} ${(p) => p.theme.space.insetLg};
 `;
 
 const Ghost = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   border: none;
   background: transparent;
   color: ${(p) => p.theme.action.ghostText};
-  font: inherit;
   font-size: var(--ds-typography-label-size);
   cursor: pointer;
   border-radius: ${(p) => p.theme.radius.control};
-  padding: 0 12px;
-  min-block-size: 44px;
-
+  padding: 0 20px;
+  min-block-size: ${(p) => p.theme.control.heightMd};
   &:hover { background: ${(p) => p.theme.action.ghostBgHover}; }
 `;
 
+/** 匯入是「把東西帶進來」：全站上傳、匯入共用的黑色主要按鈕，高度跟取消一樣 */
 const Apply = styled.button`
-  font: inherit;
+  ${primaryButtonCss}
+  min-block-size: ${(p) => p.theme.control.heightMd};
   font-size: var(--ds-typography-label-size);
-  min-block-size: 44px;
-  padding: 0 20px;
-  cursor: pointer;
-  border: none;
-  border-radius: ${(p) => p.theme.radius.control};
-  background: ${(p) => p.theme.action.primaryBg};
-  color: ${(p) => p.theme.action.primaryText};
-
-  &:disabled {
-    background: ${(p) => p.theme.action.disabledBg};
-    color: ${(p) => p.theme.action.disabledText};
-    cursor: default;
-  }
-  &:not(:disabled):hover { background: ${(p) => p.theme.action.primaryBgHover}; }
 `;

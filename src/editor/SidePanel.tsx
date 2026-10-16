@@ -91,6 +91,44 @@ export const PanelBody = styled.div`
 `;
 
 /**
+ * 面板裡的分頁籤（媒體庫的素材種類、補充資源的類別）。照 Figma：純文字、
+ * 選中的是品牌深綠加底線，不畫分隔線。
+ */
+export const PanelTabs = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: ${(p) => p.theme.space.gapMd} 20px 0;
+  flex-shrink: 0;
+`;
+
+export const PanelTab = styled.button<{ $on: boolean }>`
+  font: inherit;
+  font-size: var(--ds-typography-body-sm-size);
+  font-weight: ${(p) => (p.$on ? 700 : 500)};
+  position: relative;
+  padding: 6px 2px 8px;
+  border: none;
+  background: transparent;
+  /* 底線從中間長出來，換分頁籤時看得出移到哪 */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    block-size: 2px;
+    border-radius: 2px;
+    background: ${(p) => p.theme.brand.accentOnLight};
+    transform: scaleX(${(p) => (p.$on ? 1 : 0)});
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  @media (prefers-reduced-motion: reduce) { &::after { transition: none; } }
+  color: ${(p) => (p.$on ? p.theme.brand.accentOnLight : p.theme.text.secondary)};
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s;
+  &:hover { color: ${(p) => (p.$on ? p.theme.brand.accentOnLight : p.theme.text.primary)}; }
+`;
+
+/**
  * 面板裡的輸入框：跟 Dropdown 同一款淡灰膠囊、不畫框；打字時才出現灰色細框。
  * 左邊留白跟 Dropdown 一樣 12px，輸入框和下拉的字切齊。多行文字框另外把圓角收小（見 fieldAreaCss）。
  */

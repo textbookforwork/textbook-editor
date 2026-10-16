@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ensureUniqueDocIds, withoutModules } from '../model/document';
+import { ensureUniqueDocIds, oneBlockPerColumn, withoutModules } from '../model/document';
 import type { Doc } from '../model/types';
 import { footnotesToWordNotes } from '../model/wordNotes';
 
@@ -39,7 +39,8 @@ export function loadDoc(): Doc | null {
     // 最低限度的形狀檢查：舊版本存的東西結構不同時，寧可從頭開始也不要炸在半路。
     if (!doc || typeof doc !== 'object' || !Array.isArray(doc.rows)) return null;
     // 舊存檔裡還沒轉的注釋，讀進來時一併轉成生字詞的註釋
-    return footnotesToWordNotes(withoutModules(ensureUniqueDocIds({ ...doc, footnotes: doc.footnotes ?? [] })));
+    // 一欄裡擠了兩個元件的舊壞資料也在這裡拆回一個元件一欄（見 oneBlockPerColumn）
+    return oneBlockPerColumn(footnotesToWordNotes(withoutModules(ensureUniqueDocIds({ ...doc, footnotes: doc.footnotes ?? [] }))));
   } catch {
     return null;
   }

@@ -21,6 +21,12 @@ const IMAGES: [string, string][] = [
   ['star-chart', '星圖'],
   ['star-trails', '星軌'],
   ['orion-lines', '獵戶座連線'],
+  ['mulan-portrait', '木蘭像'],
+  ['mulan-silk-painting', '木蘭絹畫'],
+  ['mulan-loom', '木織機'],
+  ['mulan-weaver', '織布'],
+  ['mulan-yellow-river', '黃河'],
+  ['mulan-yanshan', '燕山'],
 ];
 
 export function seedSampleLibrary() {
@@ -33,6 +39,17 @@ export function seedSampleLibrary() {
     fileUrl('star-trails.mp4')
   );
   addSampleAsset({ assetId: 'sample-audio-narration', kind: 'audio', name: '夏季大三角旁白.mp3' }, fileUrl('narration.mp3'));
+  // 國文範例〈木蘭詩〉用的開放授權素材，出處見 design/media-samples/credits.json
+  addSampleAsset(
+    { assetId: 'sample-video-mulan-wall', kind: 'video', source: 'upload', name: '敦煌的漢代長城.mp4' },
+    fileUrl('mulan-great-wall.mp4')
+  );
+  addSampleAsset(
+    { assetId: 'sample-video-mulan-horses', kind: 'video', source: 'upload', name: '草原上的馬群.mp4' },
+    fileUrl('mulan-steppe-horses.mp4')
+  );
+  addSampleAsset({ assetId: 'sample-audio-mulan-loom', kind: 'audio', name: '織布機的聲音.mp3' }, fileUrl('mulan-loom-sound.mp3'));
+  addSampleAsset({ assetId: 'sample-audio-mulan-neigh', kind: 'audio', name: '馬的嘶鳴.mp3' }, fileUrl('mulan-horse-neigh.mp3'));
   addSampleAsset({ assetId: 'sample-audio-vega', kind: 'audio', name: '三顆主角星.mp3' }, fileUrl('vega.mp3'));
   addSampleAsset({ assetId: 'sample-web-wiki', kind: 'web', name: '維基百科：夏季大三角', url: 'https://zh.wikipedia.org/zh-tw/夏季大三角' });
   addSampleAsset({ assetId: 'sample-web-cwa', kind: 'web', name: '中央氣象署', url: 'https://www.cwa.gov.tw' });

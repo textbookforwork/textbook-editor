@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import firstMd from '../design/sample-wuliu.md?raw';
+import firstMd from '../design/sample-mulan.md?raw';
 import { applyImport, parseMarkdown } from './model/markdown';
 import { emptyDoc } from './model/document';
-import { PAGE_SIZE } from './model/pageSize';
+import { READER_CROP, PAGE_SIZE } from './model/pageSize';
 import { usePages } from './hooks/usePages';
 import { useEditor } from './hooks/useEditor';
 import { PageView } from './components/PageView';
@@ -39,7 +39,7 @@ import { ParagraphProvider } from './components/ParagraphContext';
 /**
  * 內建範例，讓人不必先準備檔案就能看見結果。
  *
- * 「自然（範例）」與「國文（範例）」都是自製的（國文只有〈五柳先生傳〉的正文，古文沒有著作權），可以公開。
+ * 「自然（範例）」與「國文（範例）」都是自製的（國文只有〈木蘭詩〉的正文，古文沒有著作權），可以公開。
  * 範例是「有檔案才出現」：design/ 底下少了哪一份，選單就少那一項，程式不用改。
  */
 const sampleFiles = import.meta.glob<string>('../design/sample-*.md', {
@@ -48,7 +48,7 @@ const sampleFiles = import.meta.glob<string>('../design/sample-*.md', {
   eager: true,
 });
 const SAMPLE_LABELS: [file: string, label: string][] = [
-  ['sample-wuliu', '國文（範例・直排）'],
+  ['sample-mulan', '國文（範例・直排）'],
   ['sample-demo', '自然（範例・橫排）'],
 ];
 const SAMPLES: Record<string, string> = Object.fromEntries(
@@ -58,7 +58,7 @@ const SAMPLES: Record<string, string> = Object.fromEntries(
   })
 );
 
-// 開啟時載入國文範例〈五柳先生傳〉（直排），跟從匯入對話框選「國文（範例・直排）」走同一條路。
+// 開啟時載入國文範例〈木蘭詩〉（直排），跟從匯入對話框選「國文（範例・直排）」走同一條路。
 // seedStars 掛的補充不在 md 裡，是為了讓人一開啟就看得到 Pop-up——
 // 交接後不要這一段的話，把 seedStars 拿掉即可。
 // 上次儲存過（儲存鈕或自動存）就接著上次的；沒有才載入範例。
@@ -91,11 +91,12 @@ export function App() {
   const stageRef = useRef<HTMLDivElement>(null);
   const pageSize = PAGE_SIZE[doc.settings.aspectRatio];
   const { scale, percent, setZoom, zoomIn, zoomOut, resetZoom } = useZoom(stageRef, {
-    pageWidth: pageSize.width,
-    pageHeight: pageSize.height,
+    // 閱讀模式不顯示頁面四周的留白（見 ReaderMode 的 Crop），縮放照內容區算，字大約 7%
+    pageWidth: preview ? pageSize.width - 2 * READER_CROP : pageSize.width,
+    pageHeight: preview ? pageSize.height - 2 * READER_CROP : pageSize.height,
     // 閱讀模式的畫布四周各留 24（內距 24×2 = 48）；切換頁面鈕固定在左欄「頁數」下方
-    reserveX: preview ? 48 : 112, // 編輯：EditStage 左右各 56px 留白
-    reserveY: preview ? 48 : 64,
+    reserveX: preview ? 0 : 112, // 編輯：EditStage 左右各 56px 留白
+    reserveY: preview ? 0 : 64,
     watch: preview,
   });
   // 一進編輯模式就是 100%，不沿用上次放大過的倍率

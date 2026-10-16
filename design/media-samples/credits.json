@@ -1,0 +1,30 @@
+{
+  "mulan-loom-sound.mp3": {
+    "title": "WWS Narrowshuttleloom（截取 30 秒）",
+    "author": "Work With Sounds / Museum of Municipal Engineering",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:WWS_Narrowshuttleloom.ogg"
+  },
+  "mulan-horse-neigh.mp3": {
+    "title": "Wiehern",
+    "author": "Hü.",
+    "license": "Public domain",
+    "licenseUrl": null,
+    "source": "https://commons.wikimedia.org/wiki/File:Wiehern.ogg"
+  },
+  "mulan-great-wall.mp4": {
+    "title": "Han dynasty Great Wall 2014（去聲音）",
+    "author": "Bairuilong",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Han_dynasty_Great_Wall_2014.webmhd.webm"
+  },
+  "mulan-steppe-horses.mp4": {
+    "title": "Parc Nacional Hustai - Cavall de Przewalski（縮小、去聲音）",
+    "author": "Josep Renalias (Lohen11)",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Parc_Nacional_Hustai_-_Cavall_de_Przewalski.webm"
+  }
+}

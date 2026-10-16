@@ -68,9 +68,14 @@ export function PopupBadge({ count, onClick, vertical = false, side = 'end' }: P
  * 邏輯屬性算的會是它自己的方向，不是頁面的。
  */
 const OUT = 'calc(100% + 8px)';
+/**
+ * 開頭那一側跟元件的拖曳握把在同一個角落（握把 28px，直排在欄的右上方、橫排在欄的左上方），
+ * 所以讓開握把：直排排在握把左邊、橫排排在握把下面。結尾那一側沒有握把，照原位。
+ */
+const PAST_GRIP = '36px';
 const place = (vertical: boolean, side: 'start' | 'end') => {
-  if (vertical) return side === 'end' ? `top: ${OUT}; right: 0;` : `bottom: ${OUT}; right: 0;`;
-  return side === 'end' ? `left: ${OUT}; top: 0;` : `right: ${OUT}; top: 0;`;
+  if (vertical) return side === 'end' ? `top: ${OUT}; right: 0;` : `bottom: ${OUT}; right: ${PAST_GRIP};`;
+  return side === 'end' ? `left: ${OUT}; top: 0;` : `right: ${OUT}; top: ${PAST_GRIP};`;
 };
 
 const Badge = styled.button<{ $vertical: boolean; $side: 'start' | 'end' }>`

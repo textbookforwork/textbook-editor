@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { primaryButtonCss } from '../buttonStyles';
 import styled from 'styled-components';
+import { CompactAction, emptyCompactCss } from './emptyCompact';
 import { Icon } from '../Icon';
 import { pickFile, putImage, urlOf } from '../../editor/assets';
 import { toast } from '../../editor/Toast';
@@ -113,6 +114,7 @@ export function ImageBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
           {onPatch ? (
             // 點在描述框、上傳鈕這一區也要選取元件（不然要點兩次）；只是不往外傳，免得畫布當成點空白處
             <Pick
+              data-full
               onPointerDown={(e) => {
                 onSelect?.();
                 e.stopPropagation();
@@ -145,10 +147,24 @@ export function ImageBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
                 <Icon name={busy ? 'loader' : 'upload'} size={16} />
               </Upload>
             </Pick>
+          ) : null}
+          {/* 框太小放不下生成與上傳（見 emptyCompact）：只留「上傳圖片」，再小只剩圖片圖示 */}
+          {onPatch ? (
+            <CompactAction
+              label={busy ? '讀取中…' : '上傳圖片'}
+              action={busy ? 'loader' : 'upload'}
+              kind="image"
+              onPointerDown={(e) => {
+                onSelect?.();
+                e.stopPropagation();
+              }}
+              onClick={upload}
+              disabled={busy}
+            />
           ) : (
-            <Missing>{block.alt || '還沒設定圖片來源'}</Missing>
+            <Missing data-alt>{block.alt || '還沒設定圖片來源'}</Missing>
           )}
-          {onPatch && block.alt && !busy && <Missing>{block.alt}</Missing>}
+          {onPatch && block.alt && !busy && <Missing data-alt>{block.alt}</Missing>}
         </EmptyFrame>
       )}
 
@@ -199,6 +215,7 @@ const EmptyFrame = styled.div`
   position: relative;
   display: grid;
   place-items: center;
+  ${emptyCompactCss}
   border-radius: ${(p) => p.theme.radius.field};
   border: ${(p) => p.theme.border.widthDefault} dashed ${(p) => p.theme.border.default};
   background: ${(p) => p.theme.surface.page};
@@ -269,6 +286,8 @@ const Upload = styled.button`
 
 const Missing = styled.span`
   position: absolute;
+  /* 直排頁裡也橫著寫：檔名、替代文字直排會變成一長條 */
+  writing-mode: horizontal-tb;
   inset-block-end: 8px;
   max-inline-size: calc(100% - 16px);
   overflow: hidden;
