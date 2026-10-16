@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "inspect": "vite-node scripts/inspect.ts",
-    "coverage": "vite-node scripts/coverage.ts"
+    "coverage": "vite-node scripts/coverage.ts",
+    "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
     "pdfjs-dist": "^4.10.38",
