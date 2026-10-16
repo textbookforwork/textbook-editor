@@ -17,7 +17,9 @@ import { ensureUniqueDocIds, oneBlockPerColumn, withoutModules } from '../model/
 import type { Doc } from '../model/types';
 import { footnotesToWordNotes } from '../model/wordNotes';
 
-const DOC_KEY = 'ds-editor:doc';
+// 換範例或拿掉內容時換一個 key：舊版存下的教材（例如已拿掉的〈五柳先生傳〉）不再被讀回來，
+// 打開過舊網址的人也會看到新的預設範例
+const DOC_KEY = 'ds-editor:doc:v2';
 const SHARE_KEY = 'ds-editor:share';
 const AUTOSAVE_DELAY = 1000;
 
