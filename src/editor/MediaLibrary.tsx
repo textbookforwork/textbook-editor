@@ -58,7 +58,7 @@ type UploadRule = {
  * 兩邊各寫一份，提示文字遲早會不一樣。
  */
 export const UPLOAD_RULES: Record<Exclude<AssetKind, 'web' | 'file'>, UploadRule> = {
-  image: { label: '圖片', accept: 'image/jpeg,image/png,image/gif', formats: '.jpg .png .gif', limitMb: 5 },
+  image: { label: '圖片', accept: 'image/jpeg,image/png,image/gif', formats: '.jpg .png .gif', limitMb: 10 },
   video: { label: '影片', accept: 'video/mp4,video/webm', formats: '.mp4 .webm', limitMb: 100 },
   audio: { label: '聲音', accept: 'audio/mpeg,audio/wav,audio/x-wav', formats: '.mp3 .wav', limitMb: 20 },
   pdf: { label: 'PDF', accept: 'application/pdf', formats: '.pdf', limitMb: 50 },
