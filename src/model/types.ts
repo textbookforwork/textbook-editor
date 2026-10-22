@@ -326,6 +326,12 @@ export type ShapeBlock = BlockBase & {
   tail?: { x: number; y: number };
   /** 圖形裡的文字直排。沒設＝橫排（圖形自己的文字方向，不跟整本走）。 */
   textVertical?: boolean;
+  /** 圖形裡的字級，頁座標 px。沒設＝14px。整個圖形的字一起改，不逐字。 */
+  fontSize?: number;
+  /** 圖形裡的字體：CSS font-family，選項同 INLINE_FONTS。沒設＝整本的黑體。 */
+  fontFamily?: string;
+  /** 圖形裡的字色。沒設＝依填色深淺自動選墨色或白色。 */
+  textColor?: string;
 };
 
 /** 線段兩端的樣式。 */

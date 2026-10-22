@@ -7,6 +7,7 @@ import { Icon } from '../components/Icon';
 import { useEditorCtx } from './EditorContext';
 import { DEFAULT_TAIL, SHAPE_STROKE_WIDTH } from '../components/blocks/ShapeBlockView';
 import { LINE_CAP_LABEL, LINE_STROKE_WIDTH } from '../components/blocks/LineBlockView';
+import { FONT_SIZES, INLINE_FONTS } from '../styles/roles';
 import type { LineBlock, LineCap, ShapeBlock, ShapeKind } from '../model/types';
 
 /**
@@ -37,11 +38,12 @@ type ShapeProps = {
 
 export function ShapeTools({ block, blockId }: ShapeProps) {
   const ed = useEditorCtx()!;
-  const [openPopover, setOpenPopover] = useState<'fill' | 'stroke' | 'opacity' | null>(null);
+  const [openPopover, setOpenPopover] = useState<'fill' | 'stroke' | 'opacity' | 'text' | null>(null);
 
   const fillRef = useRef<HTMLButtonElement>(null);
   const strokeRef = useRef<HTMLButtonElement>(null);
   const opacityRef = useRef<HTMLButtonElement>(null);
+  const textRef = useRef<HTMLButtonElement>(null);
 
   const fill = block.fill ?? DEFAULT_FILL;
   const stroke = block.stroke ?? DEFAULT_STROKE;
@@ -157,6 +159,22 @@ export function ShapeTools({ block, blockId }: ShapeProps) {
             value={opacity}
             onChange={(val) => patch({ opacity: val / 100 })}
           />
+        </Popover>
+      )}
+      {/* 圖形裡的字：字體、字級、字色收在一顆按鈕裡，膠囊已經很長，不再各佔一格 */}
+      <ToolBtn
+        ref={textRef}
+        $open={openPopover === 'text'}
+        onClick={() => setOpenPopover(openPopover === 'text' ? null : 'text')}
+        title="文字樣式"
+        aria-label="文字樣式"
+      >
+        文字
+        <Icon name="chevron-down" size={16} />
+      </ToolBtn>
+      {openPopover === 'text' && (
+        <Popover anchor={textRef.current} label="文字樣式" onClose={() => setOpenPopover(null)}>
+          <TextStyleMenu block={block} onPatch={patch} />
         </Popover>
       )}
       {/* 圖形裡的文字直排／橫排。跟段落那顆同一個圖示，按下去底色變灰表示已直排 */}
@@ -392,7 +410,7 @@ function ColorPickerMenu({
         <input
           ref={pickerRef}
           type="color"
-          value={custom ?? '#ffffff'}
+          value={custom || '#ffffff'}
           onChange={(e) => {
             onChange(e.target.value.toUpperCase());
           }}
@@ -401,6 +419,57 @@ function ColorPickerMenu({
         />
       </Custom>
     </SwatchRow>
+  );
+}
+
+/** 圖形沒設字級時的大小，跟 ShapeBlockView 的 TextLayer 同一個 token（body-sm）。 */
+const SHAPE_TEXT_SIZE = 14;
+
+/** 圖形文字的樣式：字體、字級、字色各一排，改的是整個圖形裡的字。 */
+function TextStyleMenu({ block, onPatch }: { block: ShapeBlock; onPatch: (p: Partial<ShapeBlock>) => void }) {
+  const size = block.fontSize ?? SHAPE_TEXT_SIZE;
+  const i = FONT_SIZES.indexOf(size);
+  // 不在清單上的字級（以後匯入的）也要能往上往下走到最近的一格
+  const smaller = i > 0 ? FONT_SIZES[i - 1] : [...FONT_SIZES].reverse().find((s) => s < size);
+  const larger = i >= 0 ? FONT_SIZES[i + 1] : FONT_SIZES.find((s) => s > size);
+  const setSize = (s: number) => onPatch({ fontSize: s === SHAPE_TEXT_SIZE ? undefined : s });
+
+  return (
+    <StyleGrid>
+      <StyleLabel>字體</StyleLabel>
+      <FontRow>
+        {INLINE_FONTS.map((f) => (
+          <ToolBtn
+            key={f.label}
+            type="button"
+            $on={(block.fontFamily ?? null) === f.value}
+            style={f.value ? { fontFamily: f.value } : undefined}
+            onClick={() => onPatch({ fontFamily: f.value ?? undefined })}
+          >
+            {f.label}
+          </ToolBtn>
+        ))}
+      </FontRow>
+
+      <StyleLabel>字級</StyleLabel>
+      <Stepper>
+        <ToolBtn type="button" disabled={smaller === undefined} onClick={() => smaller && setSize(smaller)} aria-label="字級變小" style={{ padding: 0, inlineSize: 36 }}>
+          <Icon name="minus" size={16} />
+        </ToolBtn>
+        <StepVal>{size}</StepVal>
+        <ToolBtn type="button" disabled={larger === undefined} onClick={() => larger && setSize(larger)} aria-label="字級變大" style={{ padding: 0, inlineSize: 36 }}>
+          <Icon name="plus" size={16} />
+        </ToolBtn>
+      </Stepper>
+
+      <StyleLabel>字色</StyleLabel>
+      <ColorPickerMenu
+        value={block.textColor ?? ''}
+        label="字色"
+        onChange={(c) => onPatch({ textColor: c })}
+        onClose={() => {}}
+      />
+    </StyleGrid>
   );
 }
 
@@ -453,6 +522,40 @@ const ToolBtn = styled.button<{ $on?: boolean; $open?: boolean }>`
   &:hover {
     background: ${(p) => (p.$on ? p.theme.surface.muted : p.theme.surface.sunken)};
   }
+`;
+
+const StyleGrid = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
+  padding: 4px 4px 4px 8px;
+`;
+
+/** 跟透明度那排的「透明度」同一個灰 */
+const StyleLabel = styled.span`
+  color: ${(p) => p.theme.text.secondary};
+  white-space: nowrap;
+`;
+
+const FontRow = styled.div`
+  display: flex;
+  gap: 2px;
+`;
+
+const Stepper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  & > button:disabled { opacity: 0.35; cursor: default; background: transparent; }
+`;
+
+const StepVal = styled.span`
+  min-inline-size: 32px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 `;
 
 const ColorCircle = styled.span`

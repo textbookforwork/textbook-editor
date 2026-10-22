@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { EditableText } from '../EditableText';
 import { useEditorCtx } from '../../editor/EditorContext';
@@ -218,7 +218,13 @@ export function ShapeBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
   const spans = spansOfShape(block);
   // 字不跟著淡，所以深色填色調到半透明以下時，底已經接近白紙，字要換回墨色
   const darkBehind = isDarkColor(block.fill) && (block.opacity ?? 1) >= 0.5;
-  const textColor = darkBehind ? theme.text.onInverse : theme.text.primary;
+  const textColor = block.textColor ?? (darkBehind ? theme.text.onInverse : theme.text.primary);
+  const textStyle: CSSProperties = {
+    color: textColor,
+    ...(block.fontFamily ? { fontFamily: block.fontFamily } : {}),
+    // 行高跟著字級等比；token 的行高是寫死給 14px 用的
+    ...(block.fontSize ? { fontSize: block.fontSize, lineHeight: 1.5 } : {}),
+  };
 
   // 取消選取就離開打字狀態，否則外框消失了游標卻還在裡面
   useEffect(() => {
@@ -296,7 +302,7 @@ export function ShapeBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
       </Svg>
 
       {/* 文字層。量測不看它——框的高是固定的，字多了會被裁，不會撐破頁 */}
-      <TextLayer $editing={editing} $vertical={!!block.textVertical} style={{ color: textColor }}>
+      <TextLayer $editing={editing} $vertical={!!block.textVertical} style={textStyle}>
         {onPatch ? (
           <Editable
             className="ds-rich"

@@ -328,10 +328,10 @@ function BlockCapsule() {
         <Btn
           $on={block.popups.length > 0}
           onClick={() => ed.openPopupPanel(id)}
-          title="掛補充內容"
+          title="新增補充資源"
           $icon
         >
-          <Icon name="blocks" size={20} label="補充" />
+          <Icon name="blocks" size={20} label="新增補充資源" />
         </Btn>
       )}
 
@@ -354,7 +354,7 @@ function BlockCapsule() {
           ed.dispatch({ type: 'deleteBlock', blockId: id });
           ed.select(null);
         }}
-        title="刪除（Delete）"
+        title="刪除"
         $icon
       >
         <Icon name="trash" size={20} label="刪除" />
