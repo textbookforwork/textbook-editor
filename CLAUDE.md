@@ -91,8 +91,9 @@ md 匯入只有檔案路徑讀不到尺寸，填的仍是常數，所以**未上
 - **真的儲存與上傳**：目前是 localStorage 與 object URL（見 HANDOVER 第六節）。
 - **國文流式模組**：等設計。匯入與讀回存檔時一律拿掉模組（`withoutModules`），解析器仍認得 `@模組`。
 - **注釋號**：資料照存，畫面先不顯示（`GlobalStyle` 的 `sup[data-fn]`），等有可以點開的地方再打開。
-- **網站標題與能不能嵌入**：要由後端查。前端呼叫 `/api/site-title`（`editor/siteTitle.ts`），
-  開發時由 `vite.config.ts` 代抓；`embeddable` 目前只有範例手動標，正式要由後端填。
+- **網站標題與能不能嵌入**：網頁標籤**預設顯示網站標題，抓不到才顯示網址**（老師可以再自己改名）。
+  標題由 `editor/siteTitle.ts` 去抓：開發時走 `vite.config.ts` 的 `/api/site-title`，線上版暫用 Microlink 公開服務，
+  正式上線換成自己後端的 `/api/site-title`，規則不變。`embeddable` 目前只有範例手動標，正式要由後端填。
 
 ## 直排與橫排：邏輯軸
 

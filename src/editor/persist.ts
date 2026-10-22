@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ensureUniqueDocIds, oneBlockPerColumn, withoutModules } from '../model/document';
 import type { Doc } from '../model/types';
 import { footnotesToWordNotes } from '../model/wordNotes';
+import { withCurrentFonts } from '../model/fonts';
 
 // 換範例或拿掉內容時換一個 key：舊版存下的教材（例如已拿掉的〈五柳先生傳〉）不再被讀回來，
 // 打開過舊網址的人也會看到新的預設範例
@@ -42,7 +43,8 @@ export function loadDoc(): Doc | null {
     if (!doc || typeof doc !== 'object' || !Array.isArray(doc.rows)) return null;
     // 舊存檔裡還沒轉的注釋，讀進來時一併轉成生字詞的註釋
     // 一欄裡擠了兩個元件的舊壞資料也在這裡拆回一個元件一欄（見 oneBlockPerColumn）
-    return oneBlockPerColumn(footnotesToWordNotes(withoutModules(ensureUniqueDocIds({ ...doc, footnotes: doc.footnotes ?? [] }))));
+    // 舊版字型選單存下的字型設定換成現在選單上的那一套（見 model/fonts.ts）
+    return withCurrentFonts(oneBlockPerColumn(footnotesToWordNotes(withoutModules(ensureUniqueDocIds({ ...doc, footnotes: doc.footnotes ?? [] })))));
   } catch {
     return null;
   }
