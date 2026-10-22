@@ -4,6 +4,7 @@ import { loadDoc } from './editor/persist';
 import { Shelf } from './shelf/Shelf';
 import { findTextbook, textbookDoc } from './shelf/catalog';
 import { findBook } from './shelf/library';
+import { sourceDoc } from './shelf/sources';
 import { goShelf, useRoute } from './shelf/nav';
 
 /**
@@ -24,8 +25,7 @@ export function Root() {
   }, [missing, missingTextbook]);
 
   if (book) {
-    const source = findTextbook(book.sourceId);
-    const doc = loadDoc(book.id) ?? (source ? textbookDoc(source) : null);
+    const doc = loadDoc(book.id) ?? sourceDoc(book.sourceId);
     if (!doc) return null;
     return <App key={`${route.page}-${book.id}`} bookId={book.id} initialDoc={doc} startReading={route.page === 'read'} />;
   }

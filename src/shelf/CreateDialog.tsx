@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { Icon } from '../components/Icon';
-import { ESC, Ghost, Head, Pair, Scrim, Secondary, Sheet } from '../editor/ShareDialog';
+import { ESC, Pair, Scrim, Secondary, Sheet } from '../editor/ShareDialog';
 import { chaptersOf, keepSections } from './chapters';
 import type { Doc } from '../model/types';
 
@@ -38,22 +38,20 @@ export function CreateDialog({
       return next;
     });
 
-  const ready = name.trim().length > 0 && keep.size > 0;
+  // 原本還沒有任何節（管理員剛建立的空白本只有課名）：沒得選，整份複製
+  const noSections = allIds.length === 0;
+  const ready = name.trim().length > 0 && (noSections || keep.size > 0);
   const create = () => {
     if (!ready) return;
-    const doc = keepSections(source, keep);
+    const doc = noSections ? source : keepSections(source, keep);
     onCreate(name.trim(), { ...doc, title: name.trim() });
   };
 
   return createPortal(
     <Scrim onClick={onCancel}>
       <Sheet role="dialog" aria-modal="true" aria-label="建立自編" onClick={(e) => e.stopPropagation()}>
-        <Head>
-          <span>建立自編</span>
-          <Ghost type="button" onClick={onCancel} aria-label="關閉" title="關閉">
-            <Icon name="x" size={24} label="關閉" />
-          </Ghost>
-        </Head>
+        {/* 不放 ×：按「取消」或點框外就能關 */}
+        <Title>建立自編</Title>
 
         <Field>
           <span>自編名稱</span>
@@ -66,7 +64,8 @@ export function CreateDialog({
           />
         </Field>
 
-        <Tree role="group" aria-label="要放進自編的章節">
+        {noSections && <NoChapters>這本教材還沒有章節，會整份複製。</NoChapters>}
+        {!noSections && <Tree role="group" aria-label="要放進自編的章節">
           {groups.map((g, gi) => {
             const ids = g.sections.map((s) => s.rowId);
             const on = ids.filter((id) => keep.has(id)).length;
@@ -106,7 +105,7 @@ export function CreateDialog({
               </div>
             );
           })}
-        </Tree>
+        </Tree>}
 
         <Pair>
           <Secondary type="button" onClick={onCancel}>
@@ -139,6 +138,13 @@ function Check({ checked, mixed, label, onChange }: { checked: boolean; mixed?: 
   );
 }
 
+const Title = styled.p`
+  margin: 0;
+  font-size: ${(p) => p.theme.typography.bodyLgSize};
+  line-height: ${(p) => p.theme.typography.bodyLgLineHeight};
+  font-weight: 600;
+`;
+
 const Field = styled.label`
   display: flex;
   flex-direction: column;
@@ -164,6 +170,12 @@ const NameInput = styled.input`
     background: ${(p) => p.theme.surface.raised};
     border-color: ${(p) => p.theme.border.default};
   }
+`;
+
+const NoChapters = styled.p`
+  margin: 0;
+  font-size: ${(p) => p.theme.typography.bodySmSize};
+  color: ${(p) => p.theme.text.secondary};
 `;
 
 const Tree = styled.div`

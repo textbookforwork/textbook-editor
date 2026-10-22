@@ -116,10 +116,10 @@ const Pebble = styled.button<{ $large: boolean }>`
 `;
 
 /** 書櫃分區標題前的科目記號：跟回首頁鈕同一組造型與顏色，24×24。 */
-export function SubjectMark({ subject }: { subject?: string }) {
+export function SubjectMark({ subject, size = 24 }: { subject?: string; size?: number }) {
   const { d, fill } = SHAPES[shapeOf(subject)];
   return (
-    <svg width={24} height={24} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
       <path d={d} fill={fill} />
     </svg>
   );

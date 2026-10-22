@@ -6,12 +6,13 @@ import { ConfirmDialog } from '../editor/ConfirmDialog';
 import { CoverDialog } from '../editor/ShareDialog';
 import { Toaster, toast } from '../editor/Toast';
 import { CreateDialog } from './CreateDialog';
-import { TEXTBOOKS, findTextbook, textbookDoc, type Textbook } from './catalog';
-import { createBook, deleteBook, listBooks, subscribeLibrary, updateBook, type MyBook } from './library';
+import { TEXTBOOKS } from './catalog';
+import { findSource, sourceDoc, type Source } from './sources';
+import { ROLE_NAME, setRole, useRole, type Role } from './role';
+import { BlankDialog } from './BlankDialog';
+import { emptyDoc } from '../model/document';
+import { createBook, deleteBook, findBook, isOriginal, listBooks, subscribeLibrary, updateBook, type MyBook } from './library';
 import { goEdit, goRead, goReadTextbook, goShelf, type ShelfTab } from './nav';
-
-/** 原型沒有帳號，老師名字照 Figma 寫死。 */
-const TEACHER = '方小明';
 
 const TABS: { key: ShelfTab; label: string }[] = [
   { key: 'textbook', label: '數位教科書' },
@@ -24,24 +25,38 @@ const TABS: { key: ShelfTab; label: string }[] = [
  *
  * 三個分頁是同一份教材的三個階段：數位教科書（原本）→ 建立自編（副本）→ 自編教材 → 共享 → 共享教材。
  * 每個分頁依科目分區，一區一排卡片。
+ *
+ * 兩種身分（右上角頭像切換，見 role.ts）：
+ *   老師       在數位教科書按鉛筆＝建立自編（副本），出版社不能改
+ *   系統管理員 多一顆「建立教材」從空白本開始，建的是數位教科書（原本），出版社自己填
  */
 export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
   const books = useSyncExternalStore(subscribeLibrary, listBooks);
-  const [creating, setCreating] = useState<Textbook | null>(null);
+  const role = useRole();
+  const admin = role === 'admin';
+  const [creating, setCreating] = useState<Source | null>(null);
+  const [blank, setBlank] = useState(false);
   const [covering, setCovering] = useState<MyBook | null>(null);
   const [deleting, setDeleting] = useState<MyBook | null>(null);
 
-  const shown = tab === 'textbook' ? null : tab === 'shared' ? books.filter((b) => b.shared) : books;
+  // 數位教科書＝內建的原本＋管理員建立的原本；自編與共享只列副本
+  const sources: Source[] = [
+    ...TEXTBOOKS.map((t) => findSource(t.id)!),
+    ...books.filter(isOriginal).map((b) => findSource(b.id)!),
+  ];
+  const copies = books.filter((b) => !isOriginal(b));
+  const shown = tab === 'textbook' ? null : tab === 'shared' ? copies.filter((b) => b.shared) : copies;
 
   // 依科目分區，順序照數位教科書的順序
-  const sections = TEXTBOOKS.map((t) => t.subject)
+  const sections = sources
+    .map((t) => t.subject)
     .filter((s, i, all) => all.indexOf(s) === i)
     .map((subject) => ({
       subject,
-      textbooks: TEXTBOOKS.filter((t) => t.subject === subject),
-      books: (shown ?? []).filter((b) => findTextbook(b.sourceId)?.subject === subject),
+      sources: sources.filter((t) => t.subject === subject),
+      books: (shown ?? []).filter((b) => findSource(b.sourceId)?.subject === subject),
     }))
-    .filter((s) => (shown ? s.books.length > 0 : s.textbooks.length > 0));
+    .filter((s) => (shown ? s.books.length > 0 : s.sources.length > 0));
 
   return (
     <Page>
@@ -55,10 +70,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
             <BrandEn>Digital Textbook</BrandEn>
           </span>
         </Brand>
-        <User>
-          {TEACHER}
-          <Avatar aria-hidden="true">{TEACHER.slice(0, 1)}</Avatar>
-        </User>
+        <UserMenu role={role} />
       </Top>
 
       {/* 地球大廳、啟航探索是平台的兩個主要區域；這次只做書櫃（地球大廳），另一個先不能點 */}
@@ -74,13 +86,21 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
       </Nav>
 
       <Panel>
-        <Tabs role="tablist" aria-label="教材種類">
-          {TABS.map((t) => (
-            <TabBtn key={t.key} role="tab" aria-selected={tab === t.key} $on={tab === t.key} onClick={() => goShelf(t.key)}>
-              {t.label}
-            </TabBtn>
-          ))}
-        </Tabs>
+        <TabRow>
+          <Tabs role="tablist" aria-label="教材種類">
+            {TABS.map((t) => (
+              <TabBtn key={t.key} role="tab" aria-selected={tab === t.key} $on={tab === t.key} onClick={() => goShelf(t.key)}>
+                {t.label}
+              </TabBtn>
+            ))}
+          </Tabs>
+          {admin && tab === 'textbook' && (
+            <NewBtn type="button" onClick={() => setBlank(true)}>
+              建立教材
+              <Icon name="plus" size={16} />
+            </NewBtn>
+          )}
+        </TabRow>
 
         {sections.length === 0 && (
           <Empty>
@@ -102,12 +122,27 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
                     <BookCard
                       key={b.id}
                       book={b}
+                      source={findSource(b.sourceId)}
                       showTeacher={tab === 'shared'}
                       onCover={() => setCovering(b)}
                       onDelete={() => setDeleting(b)}
                     />
                   ))
-                : s.textbooks.map((t) => <TextbookCard key={t.id} textbook={t} onCreate={() => setCreating(t)} />)}
+                : s.sources.map((t) =>
+                    // 管理員建立的原本：管理員可以直接編、換封面、刪除
+                    !t.builtIn && admin ? (
+                      <BookCard
+                        key={t.id}
+                        book={findBook(t.id)!}
+                        source={t}
+                        showTeacher={false}
+                        onCover={() => setCovering(findBook(t.id))}
+                        onDelete={() => setDeleting(findBook(t.id))}
+                      />
+                    ) : (
+                      <SourceCard key={t.id} source={t} onCreate={() => setCreating(t)} />
+                    )
+                  )}
             </Grid>
           </Section>
         ))}
@@ -115,11 +150,25 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
 
       {creating && (
         <CreateDialog
-          source={textbookDoc(creating)}
+          source={sourceDoc(creating.id)!}
           onCancel={() => setCreating(null)}
           onCreate={(_, doc) => {
-            const book = createBook(creating.id, doc);
+            // 副本的出版社沿用原本（版本管理：副本不能改出版社）
+            const book = createBook(creating.id, { ...doc, meta: { ...doc.meta, publisher: creating.publisher } });
             setCreating(null);
+            goEdit(book.id);
+          }}
+        />
+      )}
+      {blank && (
+        <BlankDialog
+          onCancel={() => setBlank(false)}
+          onCreate={({ name, subject, publisher }) => {
+            const doc = emptyDoc(name);
+            const first = doc.rows[0].columns[0].blocks[0];
+            if (first.type === 'text') first.spans = [{ text: name }];
+            const book = createBook('', { ...doc, meta: { publisher, subject: metaSubject(subject) } }, { subject, publisher });
+            setBlank(false);
             goEdit(book.id);
           }}
         />
@@ -137,7 +186,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
       {deleting && (
         <ConfirmDialog
           title={`刪除「${deleting.title}」？`}
-          message="刪除後無法復原。"
+          message={isOriginal(deleting) ? '這是數位教科書的原本，老師已經建立的自編不會受影響。刪除後無法復原。' : '刪除後無法復原。'}
           confirmLabel="刪除"
           onCancel={() => setDeleting(null)}
           onConfirm={() => {
@@ -152,21 +201,78 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
   );
 }
 
-function TextbookCard({ textbook, onCreate }: { textbook: Textbook; onCreate: () => void }) {
+/** 書櫃分區的科目名稱 → 教材設定裡的科目（決定左上角回首頁鈕的形狀）。 */
+const metaSubject = (subject: string) => ({ 國語文: '國語', 自然科學: '自然' })[subject] ?? subject;
+
+/** 右上角：名字＋頭像，點了切換身分。 */
+function UserMenu({ role }: { role: Role }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener('pointerdown', close, true);
+    return () => window.removeEventListener('pointerdown', close, true);
+  }, [open]);
+  const name = ROLE_NAME[role];
+  return (
+    <UserWrap ref={ref}>
+      <User type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="切換身分">
+        {name}
+        <Avatar aria-hidden="true">{role === 'admin' ? '管' : name.slice(0, 1)}</Avatar>
+      </User>
+      {open && (
+        <Menu role="menu" style={{ insetBlockStart: 52 }}>
+          <MenuHint>切換身分（原型用）</MenuHint>
+          {(['teacher', 'admin'] as Role[]).map((r) => (
+            <MenuItem
+              key={r}
+              role="menuitemradio"
+              aria-checked={role === r}
+              type="button"
+              onClick={() => {
+                setRole(r);
+                setOpen(false);
+              }}
+            >
+              {r === 'teacher' ? '老師' : '系統管理員'}
+              {role === r && <Icon name="check" size={16} />}
+            </MenuItem>
+          ))}
+        </Menu>
+      )}
+    </UserWrap>
+  );
+}
+
+/** 數位教科書的預設封面：管理員剛建立、還沒放封面時，用科目記號加書名。 */
+function CoverImage({ src, title, subject }: { src: string | null | undefined; title: string; subject: string }) {
+  if (src) return <img src={src} alt="" />;
+  return (
+    <Placeholder>
+      <SubjectMark subject={subject} size={64} />
+      <span>{title}</span>
+    </Placeholder>
+  );
+}
+
+function SourceCard({ source, onCreate }: { source: Source; onCreate: () => void }) {
   return (
     <Card>
       <Cover>
-        <img src={textbook.cover} alt="" />
+        <CoverImage src={source.cover} title={source.title} subject={source.subject} />
       </Cover>
       <Body>
-        <Meta>{textbook.edition}</Meta>
-        <Title title={textbook.title}>{textbook.title}</Title>
+        <Meta>{source.edition}</Meta>
+        <Title title={source.title}>{source.title}</Title>
         <Actions>
-          <ReadBtn type="button" onClick={() => goReadTextbook(textbook.id)}>
+          <ReadBtn type="button" onClick={() => (source.builtIn ? goReadTextbook(source.id) : goRead(source.id))}>
             閱讀課本
             <Icon name="arrow-up-right" size={16} />
           </ReadBtn>
-          <EditBtn type="button" onClick={onCreate} title="建立自編" aria-label={`用「${textbook.title}」建立自編`}>
+          <EditBtn type="button" onClick={onCreate} title="建立自編" aria-label={`用「${source.title}」建立自編`}>
             <Icon name="pencil" size={16} />
           </EditBtn>
         </Actions>
@@ -177,16 +283,17 @@ function TextbookCard({ textbook, onCreate }: { textbook: Textbook; onCreate: ()
 
 function BookCard({
   book,
+  source,
   showTeacher,
   onCover,
   onDelete,
 }: {
   book: MyBook;
+  source: Source | null;
   showTeacher: boolean;
   onCover: () => void;
   onDelete: () => void;
 }) {
-  const source = findTextbook(book.sourceId);
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -201,7 +308,7 @@ function BookCard({
   return (
     <Card>
       <Cover $hover $menu={menu}>
-        <img src={book.cover ?? source?.cover} alt="" />
+        <CoverImage src={book.cover ?? source?.cover} title={book.title} subject={source?.subject ?? ''} />
         {book.shared && <Tag>已共享</Tag>}
         {/* 滑過封面：調暗、右上角出現「更多」；點開是編輯封面與刪除（設計稿：維持目前的設計） */}
         <More ref={menuRef}>
@@ -228,7 +335,7 @@ function BookCard({
         {showTeacher && (
           <Teacher>
             <Icon name="user" size={16} />
-            {TEACHER}老師
+            {ROLE_NAME.teacher}老師
           </Teacher>
         )}
         <Actions>
@@ -283,11 +390,75 @@ const BrandEn = styled.span`
   line-height: 1.3;
 `;
 
-const User = styled.div`
+const UserWrap = styled.div`
+  position: relative;
+`;
+
+const User = styled.button`
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 0 0 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
   font-size: ${(p) => p.theme.typography.bodySmSize};
+  color: ${(p) => p.theme.text.primary};
+  cursor: pointer;
+`;
+
+const MenuHint = styled.span`
+  padding: 4px 10px 2px;
+  font-size: ${(p) => p.theme.typography.captionSize};
+  color: ${(p) => p.theme.text.tertiary};
+  white-space: nowrap;
+`;
+
+/** 分頁置中，「建立教材」靠右，兩者同一列 */
+const TabRow = styled.div`
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-block-end: 36px;
+`;
+
+const NewBtn = styled.button`
+  position: absolute;
+  inset-inline-end: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  block-size: 40px;
+  padding: 0 18px 0 20px;
+  border: none;
+  border-radius: 999px;
+  background: ${(p) => p.theme.action.primaryBg};
+  color: ${(p) => p.theme.action.primaryText};
+  font: inherit;
+  font-size: ${(p) => p.theme.typography.bodySmSize};
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover { background: ${(p) => p.theme.action.primaryBgHover}; }
+`;
+
+const Placeholder = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 12px 12px 0 0;
+  background: ${(p) => p.theme.surface.backdrop};
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  padding: 16px;
+  box-sizing: border-box;
 `;
 
 const Avatar = styled.span`
@@ -333,7 +504,6 @@ const Tabs = styled.div`
   display: flex;
   justify-content: center;
   gap: 24px;
-  margin-block-end: 36px;
 `;
 
 const TabBtn = styled.button<{ $on: boolean }>`

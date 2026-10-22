@@ -19,6 +19,7 @@ import { PopupViewerProvider } from './viewer/PopupViewer';
 import { ReaderMode } from './reader/ReaderMode';
 import { TopBar } from './editor/TopBar';
 import { setActiveBook } from './editor/persist';
+import { findBook } from './shelf/library';
 import { PageRail } from './components/PageRail';
 import { useZoom } from './hooks/useZoom';
 import { ImportDialog } from './editor/ImportDialog';
@@ -322,7 +323,7 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
           onMeta={(p) => dispatch({ type: 'setMeta', patch: p })}
           onTitle={(title) => dispatch({ type: 'setTitle', title })}
           onClose={() => setSettingsOpen(false)}
-          publisherLocked={!!bookId}
+          publisherLocked={!!bookId && findBook(bookId)?.kind !== 'original'}
           onImport={() => {
             setSettingsOpen(false);
             setImporting(true);
