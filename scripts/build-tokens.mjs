@@ -58,11 +58,12 @@ for (const t of tokens) {
 }
 
 /*
- * 介面的英文與數字一律 Outfit：它沒有中文字，中文自動落到後面 font-sans 的 Noto Sans TC。
+ * 系統字：介面的英文與數字一律 Lexend，中文是 Noto Sans TC（乙練 2026-10-22 定）。
+ * Lexend 沒有中文字，中文自動落到後面 font-sans 的 Noto Sans TC。
  * 只改 theme（介面元件讀這裡），不改 tokens.css——課本內容直接讀 --ds-typography-font-sans
- * （見 roles.ts），不受影響。Outfit 由 index.html 從 Google Fonts 載入。
+ * （見 roles.ts），不受影響。Lexend 由 index.html 從 Google Fonts 載入。
  */
-const UI_LATIN = '"Outfit"';
+const UI_LATIN = 'Lexend';
 groups.typography.fontSans = `${UI_LATIN}, var(--ds-typography-font-sans)`;
 groups.typography.fontDisplay = `${UI_LATIN}, var(--ds-typography-font-sans)`;
 

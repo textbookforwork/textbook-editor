@@ -415,7 +415,7 @@ const Badge = styled.span`
   font-size: 11px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  /* 數字要看筆畫置中，不是看行框：Outfit 的數字落在行框下半部，不裁的話會比圓心低約 4px。
+  /* 數字要看筆畫置中，不是看行框：英數字型的數字落在行框下半部，不裁的話會比圓心低約 4px。
      text-box 把行框裁到數字的頂（cap）與底（alphabetic），grid 置中的就是筆畫本身 */
   line-height: 1;
   text-box: trim-both cap alphabetic;
