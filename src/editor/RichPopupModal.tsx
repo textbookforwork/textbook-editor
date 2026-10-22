@@ -428,7 +428,7 @@ export function RichPopupModal({ pages: initial, onSave, onClose }: Props) {
                     onResize={(next) => {
                       // 聲音條縮太窄，裡面的播放鈕和上傳鈕會擠出框外：最窄 360px
                       const min = b.type === 'audio' ? Math.ceil((360 / Math.max(1, sizing.inlineSize)) * 100) : 0;
-                      const fixed = { ...next, widthPct: Math.max(min, next.widthPct) };
+                      const fixed = { ...next, widthPct: Math.max(min, next.widthPct ?? b.widthPct ?? 100) };
                       tryPage(blocks.map((x) => (x.id === b.id ? ({ ...x, ...fixed } as Block) : x)));
                     }}
                   />

@@ -21,7 +21,12 @@ export type ResizeMode =
   /** 只能改 inline 軸：橫向的卡片拉寬只是多顯示幾個字，沒有拉高的情境 */
   | 'inline'
   /** 兩軸獨立；拖角落等比 */
-  | 'free';
+  | 'free'
+  /**
+   * 只能改實體的寬，不管書寫方向：網頁標籤是一張永遠橫著的卡片，直排也是左右拉長短。
+   * 橫排時寬就是 inline 軸，跟 'inline' 一樣；直排時寬是 block 軸，改的是 blockSize
+   */
+  | 'width';
 
 export function resizeModeOf(block: Block): ResizeMode | null {
   switch (block.type) {
@@ -32,7 +37,7 @@ export function resizeModeOf(block: Block): ResizeMode | null {
     case 'table':
       return 'inline';
     case 'web':
-      return block.presentation === 'embed' ? 'free' : 'inline';
+      return block.presentation === 'embed' ? 'free' : 'width';
     case 'shape':
     // 線段的框也沒有內在比例：端點是框內的相對座標，框怎麼拉線都跟著
     case 'line':
@@ -55,10 +60,13 @@ type Props = {
   /** 這一欄的 inline 尺寸，百分比以它為分母。 */
   columnInline: number;
   vertical: boolean;
-  onResize: (next: { widthPct: number; blockSize?: number }) => void;
+  /** 沒帶 widthPct 的話，比例維持原樣（直排的標籤拉左右只改 blockSize）。 */
+  onResize: (next: { widthPct?: number; blockSize?: number }) => void;
 };
 
-export function ResizeHandles({ mode, box, columnInline, vertical, onResize }: Props) {
+export function ResizeHandles({ mode: given, box, columnInline, vertical, onResize }: Props) {
+  // 橫排時「寬」就是 inline 軸，照 inline 模式走；只有直排要另外處理
+  const mode: ResizeMode = given === 'width' && !vertical ? 'inline' : given;
   const frameRef = useRef<HTMLDivElement>(null);
 
   // 實體寬高：直排時 inline 軸是垂直的
@@ -68,7 +76,9 @@ export function ResizeHandles({ mode, box, columnInline, vertical, onResize }: P
   // inline 軸在哪個實體方向上，決定 inline-only 模式顯示哪幾個把手
   const inlineIsHorizontal = !vertical;
   const handles: Handle[] =
-    mode === 'inline'
+    mode === 'width'
+      ? ['e', 'w', ...CORNERS]
+      : mode === 'inline'
       ? inlineIsHorizontal
         ? ['e', 'w', ...CORNERS]
         : ['n', 's', ...CORNERS]
@@ -110,6 +120,10 @@ export function ResizeHandles({ mode, box, columnInline, vertical, onResize }: P
         // 角落等比，以寬的變化為準（包含 inline 模式的四角縮放）
         const f = Math.max(0.05, w / width);
         h = height * f;
+      } else if (mode === 'width') {
+        // 直排的標籤拉左右：只改寬（block 軸），高與比例不動
+        onResize({ blockSize: Math.max(24, Math.round(w)) });
+        return;
       } else if (mode === 'inline') {
         // 拉左右側：只改 inline 軸（變寬以顯示更多標題文字），高度原封不動
         if (inlineIsHorizontal) h = height;
@@ -121,7 +135,7 @@ export function ResizeHandles({ mode, box, columnInline, vertical, onResize }: P
       const rawPct = Math.max(10, Math.min(100, (inline / columnInline) * 100));
       const pct = mode === 'free' && onlyBlockEdge ? rawPct : snapPct(rawPct);
 
-      if ((mode === 'free' || mode === 'inline') && corner) {
+      if ((mode === 'free' || mode === 'inline' || mode === 'width') && corner) {
         // 角落等比：以吸附後的 inline 軸為準，正圓拖角落才能維持正圓
         const baseInline = vertical ? height : width;
         const baseBlock = vertical ? width : height;
@@ -130,7 +144,7 @@ export function ResizeHandles({ mode, box, columnInline, vertical, onResize }: P
       }
 
       onResize(
-        mode === 'free' || (mode === 'inline' && corner)
+        mode === 'free' || ((mode === 'inline' || mode === 'width') && corner)
           ? { widthPct: pct, blockSize: Math.max(24, Math.round(block)) }
           : { widthPct: pct }
       );

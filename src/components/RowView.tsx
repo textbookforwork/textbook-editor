@@ -397,7 +397,13 @@ export function RowView({
                         columnInline={colInline}
                         vertical={vertical}
                         onResize={(next) =>
-                          ed.dispatch({ type: 'resizeBlock', blockId: b.id, ...next })
+                          ed.dispatch({
+                            type: 'resizeBlock',
+                            blockId: b.id,
+                            ...next,
+                            // 沒帶比例＝只改 blockSize，比例保留原值（reducer 收到 undefined 會清掉）
+                            widthPct: 'widthPct' in next ? next.widthPct : b.widthPct,
+                          })
                         }
                       />
                     )}
