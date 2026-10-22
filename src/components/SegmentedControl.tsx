@@ -58,7 +58,8 @@ const Track = styled.div<{ $n: number; $gap: number }>`
   gap: ${(p) => p.$gap}px;
   padding: ${PAD}px;
   border-radius: ${(p) => p.theme.radius.control};
-  background: ${(p) => p.theme.surface.sunken};
+  /* 跟畫布底色同一個灰（#F2F2F2），左欄的「頁面／目次」與畫布外的灰才是同一色 */
+  background: ${(p) => p.theme.surface.backdrop};
   writing-mode: horizontal-tb;
 `;
 
