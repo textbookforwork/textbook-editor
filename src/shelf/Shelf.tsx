@@ -24,7 +24,7 @@ const TABS: { key: ShelfTab; label: string }[] = [
  * 書櫃首頁，照 Figma「書櫃首頁」（node 3:2022）。
  *
  * 三個分頁是同一份教材的三個階段：數位教科書（原本）→ 建立自編（副本）→ 自編教材 → 共享 → 共享教材。
- * 每個分頁依科目分區，一區只排一列；放不下的按該區右上「查看全部」，進到那一科的子頁看全部（設計稿「展開更多教科書」3:2021）。
+ * 每個分頁依科目分區，一區只排一列；每一區右上都有「查看全部」，進到那一科的子頁看全部（設計稿「展開更多教科書」3:2021）。
  * 自編教材：未共享的排前面（還在編、比較常進出），同一組裡最近改過的在前。
  *
  * 兩種身分（右上角頭像切換，見 role.ts）：
@@ -147,7 +147,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
             <SectionHead>
               <SubjectMark subject={s.subject} />
               <h2>{s.subject}</h2>
-              {!subject && (shown ? s.books.length : s.sources.length) > limit && (
+              {!subject && (
                 <SeeAll type="button" onClick={() => goShelf(tab, s.subject)}>
                   查看全部
                   <Icon name="chevron-right" size={24} />
