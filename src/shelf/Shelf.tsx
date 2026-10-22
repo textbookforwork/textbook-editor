@@ -96,7 +96,12 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
               </TabBtn>
             ))}
           </Tabs>
-
+          {admin && tab === 'textbook' && (
+            <NewBtn type="button" onClick={() => setBlank('')}>
+              建立教材
+              <Icon name="plus" size={16} />
+            </NewBtn>
+          )}
         </TabRow>
 
         {sections.length === 0 && (
@@ -140,15 +145,6 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
                       <SourceCard key={t.id} source={t} onCreate={() => setCreating(t)} />
                     )
                   )}
-              {/* 管理員：每一區最後一張是「建立教材」，跟左欄的「新增頁面」同一種虛線格 */}
-              {admin && !shown && (
-                <NewCard type="button" onClick={() => setBlank(s.subject)} aria-label={`建立${s.subject}教材`}>
-                  <NewCircle>
-                    <Icon name="plus" size={16} />
-                  </NewCircle>
-                  建立教材
-                </NewCard>
-              )}
             </Grid>
           </Section>
         ))}
@@ -166,9 +162,9 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
           }}
         />
       )}
-      {blank && (
+      {blank !== null && (
         <BlankDialog
-          subject={blank}
+          subject={blank || undefined}
           onCancel={() => setBlank(null)}
           onCreate={({ name, subject, publisher }) => {
             const doc = emptyDoc(name);
@@ -431,41 +427,25 @@ const TabRow = styled.div`
   margin-block-end: 36px;
 `;
 
-/** 「建立教材」卡：跟課本卡同大小的虛線框，中間是跟插入點同款的白色圓鈕 */
-const NewCircle = styled.span`
-  display: grid;
-  place-items: center;
-  inline-size: 36px;
-  block-size: 36px;
-  border-radius: 999px;
-  background: ${(p) => p.theme.surface.raised};
-  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
-  color: ${(p) => p.theme.icon.default};
-  transition: transform 0.15s, border-color 0.15s;
-`;
-
-const NewCard = styled.button`
-  display: flex;
-  flex-direction: column;
+/** 管理員的「建立教材」：分頁列右上角的黑色主要按鈕 */
+const NewBtn = styled.button`
+  position: absolute;
+  inset-inline-end: 0;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-block-size: 413px;
-  border: ${(p) => p.theme.border.widthDefault} dashed ${(p) => p.theme.border.default};
-  border-radius: 12px;
-  background: transparent;
+  gap: 6px;
+  block-size: 40px;
+  padding: 0 18px 0 20px;
+  border: none;
+  border-radius: 999px;
+  background: ${(p) => p.theme.action.primaryBg};
+  color: ${(p) => p.theme.action.primaryText};
   font: inherit;
   font-size: ${(p) => p.theme.typography.bodySmSize};
-  color: ${(p) => p.theme.text.secondary};
+  font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
 
-  &:hover {
-    border-color: ${(p) => p.theme.border.hover};
-    background: ${(p) => p.theme.surface.page};
-    color: ${(p) => p.theme.text.primary};
-  }
-  &:hover ${NewCircle} { transform: scale(1.1); border-color: ${(p) => p.theme.border.hover}; }
+  &:hover { background: ${(p) => p.theme.action.primaryBgHover}; }
 `;
 
 const Placeholder = styled.div`
