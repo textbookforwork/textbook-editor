@@ -68,6 +68,12 @@ const kindOf = (file: File): AssetKind => {
   return 'file';
 };
 
+/**
+ * 原型的上傳是本機檔案、一瞬間就好，看不到載入中；上傳中的樣子（畫布佔位框、媒體庫進度環）至少留這麼久。
+ * 正式版接後端、改讀真的上傳進度就拿掉。
+ */
+export const UPLOAD_MIN_MS = 1200;
+
 /** 這個檔案會進媒體庫的哪一類。拖檔案到畫布時要先知道能不能收。 */
 export const kindOfFile = kindOf;
 

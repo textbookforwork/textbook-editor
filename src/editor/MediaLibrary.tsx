@@ -13,6 +13,7 @@ import { toast } from './Toast';
 import {
   getAsset,
   kindOfFile,
+  UPLOAD_MIN_MS,
   listAssets,
   pickFile,
   putFile,
@@ -548,9 +549,22 @@ function UploadBox({
         void take(e.dataTransfer.files[0] ?? null);
       }}
     >
-      <DropTile $over={over}>{busy ? <Spinner aria-hidden="true" /> : <Icon name="upload" size={20} />}</DropTile>
+      {/* 上傳中：上傳鈕變圓，外圈一道進度環慢慢走滿（跟試聽鍵外圈的進度同一種樣子），格式說明先收起來 */}
+      <DropTile $over={over} $busy={busy}>
+        <Icon name="upload" size={20} />
+        {busy && (
+          <UploadRing viewBox="0 0 36 36" aria-hidden="true">
+            <circle cx="18" cy="18" r="16" pathLength="100" />
+            <circle cx="18" cy="18" r="16" pathLength="100" />
+          </UploadRing>
+        )}
+      </DropTile>
       <DropTitle>{busy ? '上傳中…' : over ? '放開就上傳' : '拖曳或選取檔案'}</DropTitle>
-      <DropHint>{rule.formats}，{rule.limitMb} MB 以內</DropHint>
+      {!busy && (
+        <DropHint>
+          {rule.formats}，{rule.limitMb} MB 以內
+        </DropHint>
+      )}
     </Drop>
   );
 }
@@ -715,7 +729,7 @@ const ListLabel = styled.span`
  *   平常：灰虛線＋淡灰底上傳鈕
  *   滑過：虛線深一階、上傳鈕深一階
  *   拖檔案進來：品牌深綠虛線＋最淡的 Lime 底（不要太黃），上傳鈕換成 Lime 底深色箭頭，標題「放開就上傳」
- *   上傳中：整塊停用變淡，上傳鈕裡轉圈，標題「上傳中…」
+ *   上傳中：整塊停用，上傳鈕變圓、外圈進度環走滿，標題「上傳中…」、格式說明收起來；畫布同時出現載入中的佔位框
  */
 const Drop = styled.button<{ $over: boolean }>`
   display: flex;
@@ -738,10 +752,11 @@ const Drop = styled.button<{ $over: boolean }>`
   transition: border-color 0.15s, background 0.15s;
 
   &:hover:not(:disabled) { border-color: ${(p) => (p.$over ? p.theme.border.accent : p.theme.border.hover)}; }
-  &:disabled { cursor: progress; opacity: 0.7; }
+  &:disabled { cursor: progress; }
 `;
 
-const DropTile = styled.span<{ $over: boolean }>`
+const DropTile = styled.span<{ $over: boolean; $busy?: boolean }>`
+  position: relative;
   flex: none;
   display: grid;
   place-items: center;
@@ -749,23 +764,36 @@ const DropTile = styled.span<{ $over: boolean }>`
   block-size: 40px;
   padding: 0;
   margin-block-end: 12px;
-  border-radius: ${(p) => p.theme.radius.tile};
+  border-radius: ${(p) => (p.$busy ? '999px' : p.theme.radius.tile)};
   background: ${(p) => (p.$over ? p.theme.brand.primary : p.theme.surface.sunken)};
   color: ${(p) => p.theme.text.primary};
   transition: background 0.15s;
   ${Drop}:hover:not(:disabled) & { background: ${(p) => (p.$over ? p.theme.brand.primary : p.theme.surface.muted)}; }
 `;
 
-/** 上傳中的轉圈：在淡灰底的上傳鈕裡，一圈淡灰軌道，上面一段黑色在轉 */
-const Spinner = styled.span`
-  inline-size: 18px;
-  block-size: 18px;
-  border-radius: 999px;
-  border: 2px solid ${(p) => p.theme.border.default};
-  border-top-color: ${(p) => p.theme.text.primary};
-  animation: ds-spin 0.8s linear infinite;
-  @keyframes ds-spin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { animation-duration: 2s; }
+/**
+ * 上傳中的進度環：圓形上傳鈕外圈一道品牌深綠的線，從頂端順時針走滿，像音樂播放的進度。
+ * 原型的上傳是本機檔案，沒有真的進度可讀，所以用固定時間走完（UPLOAD_MIN_MS）；正式版改接上傳進度。
+ */
+const UploadRing = styled.svg`
+  position: absolute;
+  inset: -5px;
+  inline-size: calc(100% + 10px);
+  block-size: calc(100% + 10px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+  circle {
+    fill: none;
+    stroke-width: 2.5;
+    stroke: ${(p) => p.theme.surface.muted};
+  }
+  circle + circle {
+    stroke: ${(p) => p.theme.brand.accentOnLight};
+    stroke-linecap: round;
+    stroke-dasharray: 0 100;
+    animation: ds-upload-progress ${UPLOAD_MIN_MS}ms ease-out forwards;
+  }
+  @keyframes ds-upload-progress { to { stroke-dasharray: 100 100; } }
 `;
 
 const DropTitle = styled.span`

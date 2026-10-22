@@ -3,7 +3,7 @@ import { blockFor, blockFromAsset } from '../components/RowView';
 import { fitTwoPerPage } from '../model/blockSizing';
 import type { BlockPatch, Action } from '../model/actions';
 import type { Doc } from '../model/types';
-import { kindOfFile, type Asset } from './assets';
+import { kindOfFile, UPLOAD_MIN_MS, type Asset } from './assets';
 import { uploadFile } from './MediaLibrary';
 import { toast } from './Toast';
 
@@ -31,8 +31,6 @@ export function useIsUploading(blockId: string): boolean {
   return uploading.has(blockId);
 }
 
-/** 原型的上傳是本機檔案、一瞬間就好，看不到載入中；至少留這麼久讓畫面出得來。正式版接後端就拿掉。 */
-const MIN_VISIBLE_MS = 700;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type Ed = { doc: Doc; dispatch: (a: Action) => void; select: (id: string | null) => void };
@@ -52,7 +50,7 @@ export async function uploadIntoDoc(ed: Ed, file: File, index: number): Promise<
   uploading.add(placeholder.id);
   notify();
   ed.dispatch({ type: 'insertRow', index, blocks: [placeholder] });
-  const [r] = await Promise.all([uploadFile(file), sleep(MIN_VISIBLE_MS)]);
+  const [r] = await Promise.all([uploadFile(file), sleep(UPLOAD_MIN_MS)]);
   uploading.delete(placeholder.id);
   notify();
   if ('error' in r) {
