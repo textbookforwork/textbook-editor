@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import styled from 'styled-components';
 import { Icon } from '../components/Icon';
-import { LIME, PEBBLE_PATH, SubjectMark } from '../editor/HomeButton';
+import { LIME, PEBBLE_PATH, SubjectCover, SubjectMark } from '../editor/HomeButton';
 import { ConfirmDialog } from '../editor/ConfirmDialog';
 import { CoverDialog } from '../editor/ShareDialog';
 import { Toaster, toast } from '../editor/Toast';
@@ -9,7 +9,7 @@ import { CreateDialog } from './CreateDialog';
 import { TEXTBOOKS } from './catalog';
 import { findSource, sourceDoc, type Source } from './sources';
 import { ROLE_NAME, setRole, useRole, type Role } from './role';
-import { BlankDialog } from './BlankDialog';
+import { BlankDialog, SUBJECTS } from './BlankDialog';
 import { emptyDoc } from '../model/document';
 import { createBook, deleteBook, findBook, isOriginal, listBooks, subscribeLibrary, updateBook, type MyBook } from './library';
 import { goEdit, goRead, goReadTextbook, goShelf, type ShelfTab } from './nav';
@@ -49,10 +49,12 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
   const copies = books.filter((b) => !isOriginal(b));
   const shown = tab === 'textbook' ? null : tab === 'shared' ? copies.filter((b) => b.shared) : copies;
 
-  // 依科目分區，順序照數位教科書的順序
+  // 依科目分區，順序照 SUBJECTS（國語文置頂）；不在清單裡的科目排最後
+  const rank = (subject: string) => (SUBJECTS.indexOf(subject) + SUBJECTS.length + 1) % (SUBJECTS.length + 1);
   const sections = sources
     .map((t) => t.subject)
     .filter((s, i, all) => all.indexOf(s) === i)
+    .sort((a, b) => rank(a) - rank(b))
     .map((subject) => ({
       subject,
       sources: sources.filter((t) => t.subject === subject),
@@ -251,12 +253,12 @@ function UserMenu({ role }: { role: Role }) {
 }
 
 /** 數位教科書的預設封面：管理員剛建立、還沒放封面時，用科目記號加書名。 */
-function CoverImage({ src, title, subject }: { src: string | null | undefined; title: string; subject: string }) {
+function CoverImage({ src, subject }: { src: string | null | undefined; title: string; subject: string }) {
   if (src) return <img src={src} alt="" />;
+  // 預設封面：科目淺色底、中間鏤空科目形狀（見 HomeButton 的 SubjectCover）
   return (
     <Placeholder>
-      <SubjectMark subject={subject} size={64} />
-      <span>{title}</span>
+      <SubjectCover subject={subject} />
     </Placeholder>
   );
 }
@@ -451,20 +453,12 @@ const NewBtn = styled.button`
 `;
 
 const Placeholder = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
   inline-size: 100%;
   block-size: 100%;
   border-radius: 12px 12px 0 0;
-  background: ${(p) => p.theme.surface.backdrop};
-  font-size: 20px;
-  font-weight: 700;
-  text-align: center;
-  padding: 16px;
-  box-sizing: border-box;
+  overflow: hidden;
+
+  svg { display: block; }
 `;
 
 const Avatar = styled.span`

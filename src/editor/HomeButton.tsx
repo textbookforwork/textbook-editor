@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import styled from 'styled-components';
 import { goShelf } from '../shelf/nav';
 
@@ -19,13 +20,13 @@ type Shape = 'chinese' | 'english' | 'science' | 'social' | 'math' | 'other';
 /**
  * 科目造型：五個科目各一個幾何形狀與顏色，沒設定科目或不在這五科的維持萊姆鵝卵石（品牌主視覺）。
  * 形狀取自 Figma「色彩與形狀」（node 8:17）那張 60 個形狀的圖，原檔在 design/subject-shapes/。
- *   國語文 B7 方格（轉正）：方塊字一個字一格           Russet
+ *   國語文 B7 方格（轉正）：方塊字一個字一格           Sun
+ *   社會   C9 缺一角：疆界與拼圖，人和群體相接           Violet
  *   英語文 D6 帶尖角的圓：對話框的尾巴，開口說           Amber
  *   自然   E2 近六角：蜂巢、雪花、分子                 Forest
- *   社會   C9 缺一角：疆界與拼圖，人和群體相接           Sun
  *   數學   E7 往下尖的三角：角度、推理                 Sky
  * 顏色分兩種用法（乙練定的）：書櫃的科目標題用深色，閱讀與自編的回首頁鈕用淺色。
- * 淺色目前是深色混 55% 白，正式值待定（2026-10-22 試套，還沒上線）。
+ * 深淺兩色照 Figma「色彩與形狀」的輔助色配對（node 13:500 的 SECONDARY）。2026-10-22 試套，還沒上線。
  */
 const SUBJECTS: Record<Exclude<Shape, 'other'>, string[]> = {
   chinese: ['國語', '國文', '國語文'],
@@ -50,35 +51,35 @@ const SHAPES: Record<Shape, ShapeDef> = {
     d: 'M72.05 77.02C50.63 73.57 26.63 72.79 0 74.69L6.88 0L74.61 0L72.05 77.02Z',
     w: 74.61,
     h: 77.02,
-    light: '#CEBAA7',
-    dark: '#93663C',
+    light: '#FFC2A5',
+    dark: '#FF854A',
   },
   english: {
     d: 'M20.02 0.0032267C29.02 0.143227 45.63 9.14323 52.58 16.8832C59.07 23.7732 75.62 30.8532 74.9501 39.9932C74.16 47.4732 56.88 59.5232 46.69 64.0832C37.89 68.5932 27.63 74.5432 22.27 72.5632C14.79 70.7032 5.59005 64.4832 1.55005 53.4332C-0.499952 44.8232 -0.959953 27.0832 2.94005 15.5632C5.13005 8.94323 12.67 -0.196773 20.02 0.0032267Z',
     w: 74.97,
     h: 72.95,
-    light: '#FAE398',
+    light: '#FCDD9D',
     dark: '#F3C11B',
   },
   science: {
     d: 'M36.2 0L69.89 12.18L85.32 42.7L67.64 65.74L46.26 80.76L18.93 75.47L0 52.1L9.6 13.77L36.2 0Z',
     w: 85.32,
     h: 80.76,
-    light: '#8CD6BE',
+    light: '#66E497',
     dark: '#00A36E',
   },
   social: {
     d: 'M7.94 60.9C6.13 54.77 3.48 45.25 0 32.37C13.54 19.83 22.73 9.04 27.53 0C38.08 7.32 52.53 10.72 70.89 10.19C71.55 21.14 70.75 34.42 68.5 50.05L42.03 71.5C27.6 67.26 16.24 63.72 7.94 60.9Z',
     w: 71.11,
     h: 71.5,
-    light: '#FFC8AE',
-    dark: '#FF854A',
+    light: '#CEA8FF',
+    dark: '#7F6CDF',
   },
   math: {
     d: 'M0 29.72L67.64 0L87.9 55.54L41.96 97.11L0 29.72Z',
     w: 87.9,
     h: 97.11,
-    light: '#8EE5F5',
+    light: '#82E6F8',
     dark: '#03C5E9',
   },
 };
@@ -164,6 +165,31 @@ export function SubjectMark({ subject, size = 24 }: { subject?: string; size?: n
       <g transform={fit(def) || undefined}>
         <path d={def.d} fill={def.dark} />
       </g>
+    </svg>
+  );
+}
+
+/**
+ * 沒有封面時的預設封面：整張鋪科目的淺色，中間挖出科目形狀透出白紙，不放書名（書名在卡片下方）。
+ * 乙練 2026-10-22 從三種做法裡選的 B：淺色底＋鏤空。沒有科目的用萊姆鵝卵石。
+ */
+export function SubjectCover({ subject }: { subject?: string }) {
+  const def = SHAPES[shapeOf(subject)];
+  const id = `cover-${useId().replace(/:/g, '')}`;
+  const W = 228;
+  const H = 283;
+  const k = 120 / Math.max(def.w, def.h);
+  const t = `translate(${(W - def.w * k) / 2} ${(H - def.h * k) / 2}) scale(${k})`;
+  return (
+    <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <defs>
+        <mask id={id}>
+          <rect width={W} height={H} fill="white" />
+          <path d={def.d} transform={t} fill="black" />
+        </mask>
+      </defs>
+      <rect width={W} height={H} fill="#FFFFFF" />
+      <rect width={W} height={H} fill={def.light} mask={`url(#${id})`} />
     </svg>
   );
 }

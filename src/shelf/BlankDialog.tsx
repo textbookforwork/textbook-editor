@@ -4,8 +4,8 @@ import styled from 'styled-components';
 import { ESC, Pair, Scrim, Secondary, Sheet } from '../editor/ShareDialog';
 import { SubjectMark } from '../editor/HomeButton';
 
-/** 書櫃的科目分區。 */
-export const SUBJECTS = ['國語文', '英語', '數學', '自然科學', '社會'];
+/** 書櫃的科目分區，也是書櫃上由上到下的順序（乙練定的：國語文、社會、英語、自然科學、數學）。 */
+export const SUBJECTS = ['國語文', '社會', '英語', '自然科學', '數學'];
 
 /**
  * 系統管理員的「建立教材」：從空白本開始，建的是數位教科書（原本）。
