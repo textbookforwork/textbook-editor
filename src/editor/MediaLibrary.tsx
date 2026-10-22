@@ -559,7 +559,7 @@ function UploadBox({
           </UploadRing>
         )}
       </DropTile>
-      <DropTitle>{busy ? '上傳中…' : over ? '放開就上傳' : '拖曳或選取檔案'}</DropTitle>
+      <DropTitle $busy={busy}>{busy ? '上傳中…' : over ? '放開就上傳' : '拖曳或選取檔案'}</DropTitle>
       {!busy && (
         <DropHint>
           {rule.formats}，{rule.limitMb} MB 以內
@@ -728,7 +728,7 @@ const ListLabel = styled.span`
  * 四種狀態（乙練 2026-10-22：框用虛線；上傳鈕試過黑底太重，改回淡灰底黑箭頭）：
  *   平常：灰虛線＋淡灰底上傳鈕
  *   滑過：虛線深一階、上傳鈕深一階
- *   拖檔案進來：底色不變、虛線變黑變粗，上傳鈕換成 Lime（Lime 只當點綴；乙練 2026-10-22 從五種配色選 B），標題「放開就上傳」
+ *   拖檔案進來：底色不變、虛線變品牌深綠變粗（乙練 2026-10-22），上傳鈕換成 Lime（Lime 只當點綴；乙練 2026-10-22 從五種配色選 B），標題「放開就上傳」
  *   上傳中：整塊停用，上傳鈕變圓、外圈進度環走滿，標題「上傳中…」、格式說明收起來；畫布同時出現載入中的佔位框
  */
 const Drop = styled.button<{ $over: boolean }>`
@@ -743,7 +743,8 @@ const Drop = styled.button<{ $over: boolean }>`
   block-size: 128px;
   padding: ${(p) => p.theme.space.insetMd};
   box-sizing: border-box;
-  border: ${(p) => (p.$over ? '2px' : '1.5px')} dashed ${(p) => (p.$over ? p.theme.text.primary : p.theme.border.default)};
+  /* 拖檔進來（放開就上傳）：虛線變粗、變品牌深綠 */
+  border: ${(p) => (p.$over ? '2px' : '1.5px')} dashed ${(p) => (p.$over ? p.theme.brand.accentOnLight : p.theme.border.default)};
   border-radius: ${(p) => p.theme.radius.card};
   background: ${(p) => p.theme.surface.raised};
   font: inherit;
@@ -751,7 +752,7 @@ const Drop = styled.button<{ $over: boolean }>`
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 
-  &:hover:not(:disabled) { border-color: ${(p) => (p.$over ? p.theme.text.primary : p.theme.border.hover)}; }
+  &:hover:not(:disabled) { border-color: ${(p) => (p.$over ? p.theme.brand.accentOnLight : p.theme.border.hover)}; }
   &:disabled { cursor: progress; }
 `;
 
@@ -796,10 +797,11 @@ const UploadRing = styled.svg`
   @keyframes ds-upload-progress { to { stroke-dasharray: 100 100; } }
 `;
 
-const DropTitle = styled.span`
+/** 標題；上傳中只是狀態說明，不加粗 */
+const DropTitle = styled.span<{ $busy?: boolean }>`
   font-size: var(--ds-typography-body-sm-size);
   line-height: 1.4;
-  font-weight: 500;
+  font-weight: ${(p) => (p.$busy ? 400 : 500)};
   color: ${(p) => p.theme.text.primary};
 `;
 
