@@ -35,7 +35,8 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
   const role = useRole();
   const admin = role === 'admin';
   const [creating, setCreating] = useState<Source | null>(null);
-  const [blank, setBlank] = useState(false);
+  // 管理員按了哪一區的「建立教材」：科目先帶入那一區
+  const [blank, setBlank] = useState<string | null>(null);
   const [covering, setCovering] = useState<MyBook | null>(null);
   const [deleting, setDeleting] = useState<MyBook | null>(null);
 
@@ -95,12 +96,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
               </TabBtn>
             ))}
           </Tabs>
-          {admin && tab === 'textbook' && (
-            <NewBtn type="button" onClick={() => setBlank(true)}>
-              建立教材
-              <Icon name="plus" size={16} />
-            </NewBtn>
-          )}
+
         </TabRow>
 
         {sections.length === 0 && (
@@ -144,6 +140,15 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
                       <SourceCard key={t.id} source={t} onCreate={() => setCreating(t)} />
                     )
                   )}
+              {/* 管理員：每一區最後一張是「建立教材」，跟左欄的「新增頁面」同一種虛線格 */}
+              {admin && !shown && (
+                <NewCard type="button" onClick={() => setBlank(s.subject)} aria-label={`建立${s.subject}教材`}>
+                  <NewCircle>
+                    <Icon name="plus" size={16} />
+                  </NewCircle>
+                  建立教材
+                </NewCard>
+              )}
             </Grid>
           </Section>
         ))}
@@ -163,13 +168,14 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
       )}
       {blank && (
         <BlankDialog
-          onCancel={() => setBlank(false)}
+          subject={blank}
+          onCancel={() => setBlank(null)}
           onCreate={({ name, subject, publisher }) => {
             const doc = emptyDoc(name);
             const first = doc.rows[0].columns[0].blocks[0];
             if (first.type === 'text') first.spans = [{ text: name }];
             const book = createBook('', { ...doc, meta: { publisher, subject: metaSubject(subject) } }, { subject, publisher });
-            setBlank(false);
+            setBlank(null);
             goEdit(book.id);
           }}
         />
@@ -425,24 +431,41 @@ const TabRow = styled.div`
   margin-block-end: 36px;
 `;
 
-const NewBtn = styled.button`
-  position: absolute;
-  inset-inline-end: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  block-size: 40px;
-  padding: 0 18px 0 20px;
-  border: none;
+/** 「建立教材」卡：跟課本卡同大小的虛線框，中間是跟插入點同款的白色圓鈕 */
+const NewCircle = styled.span`
+  display: grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
   border-radius: 999px;
-  background: ${(p) => p.theme.action.primaryBg};
-  color: ${(p) => p.theme.action.primaryText};
+  background: ${(p) => p.theme.surface.raised};
+  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
+  color: ${(p) => p.theme.icon.default};
+  transition: transform 0.15s, border-color 0.15s;
+`;
+
+const NewCard = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-block-size: 413px;
+  border: ${(p) => p.theme.border.widthDefault} dashed ${(p) => p.theme.border.default};
+  border-radius: 12px;
+  background: transparent;
   font: inherit;
   font-size: ${(p) => p.theme.typography.bodySmSize};
-  font-weight: 500;
+  color: ${(p) => p.theme.text.secondary};
   cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
 
-  &:hover { background: ${(p) => p.theme.action.primaryBgHover}; }
+  &:hover {
+    border-color: ${(p) => p.theme.border.hover};
+    background: ${(p) => p.theme.surface.page};
+    color: ${(p) => p.theme.text.primary};
+  }
+  &:hover ${NewCircle} { transform: scale(1.1); border-color: ${(p) => p.theme.border.hover}; }
 `;
 
 const Placeholder = styled.div`
@@ -504,13 +527,15 @@ const Panel = styled.main`
 const Tabs = styled.div`
   display: flex;
   justify-content: center;
-  gap: 24px;
+  gap: 8px;
 `;
 
+/** 分頁：選中的品牌深綠加底線（底線另外畫，不用框線，圓角才不會把線兩端彎起來），跟媒體庫的分頁同一款 */
 const TabBtn = styled.button<{ $on: boolean }>`
-  padding: 6px 0;
+  position: relative;
+  padding: 6px 8px 10px;
   border: none;
-  border-block-end: 2px solid ${(p) => (p.$on ? p.theme.brand.accentOnLight : 'transparent')};
+  border-radius: 8px;
   background: none;
   font: inherit;
   font-size: ${(p) => p.theme.typography.bodySize};
@@ -518,8 +543,19 @@ const TabBtn = styled.button<{ $on: boolean }>`
   color: ${(p) => (p.$on ? p.theme.text.accent : p.theme.text.secondary)};
   cursor: pointer;
 
+  &::after {
+    content: '';
+    position: absolute;
+    inset: auto 8px 0;
+    block-size: 2px;
+    border-radius: 2px;
+    background: ${(p) => p.theme.brand.accentOnLight};
+    transform: scaleX(${(p) => (p.$on ? 1 : 0)});
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
   &:hover { color: ${(p) => (p.$on ? p.theme.text.accent : p.theme.text.primary)}; }
-  &:focus-visible { outline-offset: 4px; border-radius: 8px; }
+  /* 鍵盤選到：不畫框，字底下鋪一塊淡灰圓角 */
+  &:focus-visible { outline: none; background: ${(p) => p.theme.surface.sunken}; }
 `;
 
 const Empty = styled.p`

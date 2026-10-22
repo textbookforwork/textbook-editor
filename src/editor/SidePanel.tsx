@@ -126,12 +126,9 @@ export const PanelTab = styled.button<{ $on: boolean }>`
   white-space: nowrap;
   transition: color 0.15s;
   &:hover { color: ${(p) => (p.$on ? p.theme.brand.accentOnLight : p.theme.text.primary)}; }
-  /* 鍵盤選到時：全站共用的方框貼著字太擠，換成圓角的焦點環（同一個顏色），往外留一點空間 */
+  /* 鍵盤選到：不畫框（會把底線框進去），字底下鋪一塊淡灰圓角；跟書櫃的分頁同一款 */
   border-radius: 8px;
-  &:focus-visible {
-    outline: ${(p) => p.theme.border.widthFocus} solid ${(p) => p.theme.action.ghostFocusRing};
-    outline-offset: 2px;
-  }
+  &:focus-visible { outline: none; background: ${(p) => p.theme.surface.muted}; }
 `;
 
 /**

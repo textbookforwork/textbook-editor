@@ -13,14 +13,17 @@ export const SUBJECTS = ['國語文', '英語', '數學', '自然科學', '社�
  * 出版社只有原本能填，老師的副本沿用它、不能改（版本管理）。
  */
 export function BlankDialog({
+  subject: initialSubject,
   onCancel,
   onCreate,
 }: {
+  /** 從哪一區按的：科目先帶入，還是可以改。 */
+  subject?: string;
   onCancel: () => void;
   onCreate: (v: { name: string; subject: string; publisher: string }) => void;
 }) {
   const [name, setName] = useState('');
-  const [subject, setSubject] = useState(SUBJECTS[0]);
+  const [subject, setSubject] = useState(initialSubject && SUBJECTS.includes(initialSubject) ? initialSubject : SUBJECTS[0]);
   const [publisher, setPublisher] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => ESC(onCancel), [onCancel]);
