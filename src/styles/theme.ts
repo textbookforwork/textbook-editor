@@ -110,6 +110,7 @@ export const theme = {
   shadow: {
     card: 'var(--ds-shadow-card)',
     float: 'var(--ds-shadow-float)',
+    popover: 'var(--ds-shadow-popover)',
   },
   size: {
     iconLg: 'var(--ds-size-icon-lg)',

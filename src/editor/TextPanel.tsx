@@ -586,8 +586,8 @@ const Pop = styled.div`
   border-radius: ${(p) => p.theme.radius.panel};
   /* 浮層一律用淡白底（#FAFAFA），跟設定面板、共享對話框同一色 */
   background: ${(p) => p.theme.surface.page};
-  /* 跟 Dropdown 的選單同一款：白底圓角、只靠陰影，不畫框 */
-  box-shadow: ${(p) => p.theme.shadow.card};
+  /* 跟 Dropdown 的選單同一款：白底圓角、用選單共用的浮層陰影（細線＋兩層陰影） */
+  box-shadow: ${(p) => p.theme.shadow.popover};
   writing-mode: horizontal-tb;
   /* 跟工具列同字級 */
   font-size: ${(p) => p.theme.typography.bodySmSize};

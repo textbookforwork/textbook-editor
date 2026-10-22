@@ -520,7 +520,7 @@ const Pop = styled.div`
   border-radius: ${(p) => p.theme.radius.panel};
   /* 浮層一律用淡白底（#FAFAFA），跟設定面板、共享對話框同一色 */
   background: ${(p) => p.theme.surface.page};
-  box-shadow: ${(p) => p.theme.shadow.card};
+  box-shadow: ${(p) => p.theme.shadow.popover};
   writing-mode: horizontal-tb;
   /* 跟工具列同字級 */
   font-size: ${(p) => p.theme.typography.bodySmSize};

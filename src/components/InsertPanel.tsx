@@ -201,9 +201,9 @@ const Panel = styled.div`
   inline-size: ${PANEL_INLINE}px;
   /* 浮層一律用淡白底（#FAFAFA），跟設定面板、共享對話框同一色 */
   background: ${(p) => p.theme.surface.page};
-  /* 跟其他選單、彈窗同一款：白底圓角、只靠陰影，不畫框 */
+  /* 選單共用的浮層陰影：一圈淡灰細線＋貼身與擴散兩層陰影，白紙上才分得出邊界 */
   border-radius: ${(p) => p.theme.radius.panel};
-  box-shadow: ${(p) => p.theme.shadow.card};
+  box-shadow: ${(p) => p.theme.shadow.popover};
   padding: ${(p) => p.theme.space.gapSm};
   writing-mode: horizontal-tb;
 `;

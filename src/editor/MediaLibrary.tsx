@@ -908,7 +908,7 @@ const MoreBtn = styled.button<{ $layout: 'row' | 'tile' }>`
   &:hover { background: ${(p) => p.theme.surface.muted}; color: ${(p) => p.theme.icon.default}; }
 `;
 
-/** 「⋮」展開的小選單：淡白底、只靠陰影；刪除用紅字 */
+/** 「⋮」展開的小選單：淡白底、用選單共用的浮層陰影；刪除用紅字 */
 const MoreMenu = styled.div<{ $layout: 'row' | 'tile' }>`
   position: absolute;
   z-index: 5;
@@ -920,7 +920,7 @@ const MoreMenu = styled.div<{ $layout: 'row' | 'tile' }>`
   padding: 6px;
   border-radius: ${(p) => p.theme.radius.card};
   background: ${(p) => p.theme.surface.page};
-  box-shadow: ${(p) => p.theme.shadow.card};
+  box-shadow: ${(p) => p.theme.shadow.popover};
 `;
 
 const MoreItem = styled.button<{ $danger?: boolean }>`

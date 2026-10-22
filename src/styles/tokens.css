@@ -1,5 +1,5 @@
 /* 由 scripts/build-tokens.mjs 產生，請勿手動編輯。 */
-/* 來源：design/tokens.raw.txt（Figma「2. Semantic」collection，182 個變數） */
+/* 來源：design/tokens.raw.txt（Figma「2. Semantic」collection，183 個變數） */
 
 :root {
   --ds-action-accent-bg: #F0FF62;
@@ -94,6 +94,7 @@
   --ds-radius-tile: 12px;
   --ds-shadow-card: 0 4px 20px rgba(26, 25, 23, 0.07);
   --ds-shadow-float: 0 28px 80px rgba(26, 25, 23, 0.22);
+  --ds-shadow-popover: 0 0 0 1px #E5E5E5, 0 2px 6px rgba(26, 25, 23, 0.06), 0 12px 32px rgba(26, 25, 23, 0.14);
   --ds-size-icon-lg: 24px;
   --ds-size-icon-md: 20px;
   --ds-size-icon-sm: 16px;
