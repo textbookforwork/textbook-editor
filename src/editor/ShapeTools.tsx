@@ -428,23 +428,44 @@ function TextStyleMenu({ block, onPatch }: { block: ShapeBlock; onPatch: (p: Par
   const smaller = i > 0 ? FONT_SIZES[i - 1] : [...FONT_SIZES].reverse().find((s) => s < size);
   const larger = i >= 0 ? FONT_SIZES[i + 1] : FONT_SIZES.find((s) => s > size);
   const setSize = (s: number) => onPatch({ fontSize: s === SHAPE_TEXT_SIZE ? undefined : s });
+  const [fontOpen, setFontOpen] = useState(false);
+  // 存的值對不到選項（舊版存下的字體）就當成預設
+  const current = INLINE_FONTS.find((f) => f.value === (block.fontFamily ?? null)) ?? INLINE_FONTS.find((f) => f.value === null)!;
 
   return (
     <StyleGrid>
       <StyleLabel>字體</StyleLabel>
-      <FontRow>
-        {INLINE_FONTS.map((f) => (
-          <ToolBtn
-            key={f.label}
-            type="button"
-            $on={(block.fontFamily ?? null) === f.value}
-            style={f.value ? { fontFamily: f.value } : undefined}
-            onClick={() => onPatch({ fontFamily: f.value ?? undefined })}
-          >
-            {f.label}
-          </ToolBtn>
-        ))}
-      </FontRow>
+      {/* 字體有七種、名稱長短不一，排成一排放不下：平常只顯示目前的字，點開才列出全部（在面板裡展開，不再疊一層浮層） */}
+      <ToolBtn
+        type="button"
+        $open={fontOpen}
+        onClick={() => setFontOpen((o) => !o)}
+        style={{ justifySelf: 'start', ...(current.value ? { fontFamily: current.value } : {}) }}
+        aria-expanded={fontOpen}
+      >
+        {current.label}
+        <Icon name={fontOpen ? 'chevron-up' : 'chevron-down'} size={16} />
+      </ToolBtn>
+      {fontOpen && (
+        <FontList role="listbox" aria-label="字體">
+          {INLINE_FONTS.map((f) => (
+            <FontItem
+              key={f.label}
+              type="button"
+              role="option"
+              aria-selected={current === f}
+              $on={current === f}
+              style={f.value ? { fontFamily: f.value } : undefined}
+              onClick={() => {
+                onPatch({ fontFamily: f.value ?? undefined });
+                setFontOpen(false);
+              }}
+            >
+              {f.label}
+            </FontItem>
+          ))}
+        </FontList>
+      )}
 
       <StyleLabel>字級</StyleLabel>
       <Stepper>
@@ -548,6 +569,31 @@ const StyleLabel = styled.span`
 const FontRow = styled.div`
   display: flex;
   gap: 2px;
+`;
+
+const FontList = styled.div`
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  margin-block: -4px 4px;
+`;
+
+/** 跟段落字型選單的選項同一款：選中的品牌深綠粗體，滑過深一階灰 */
+const FontItem = styled.button<{ $on: boolean }>`
+  display: flex;
+  align-items: center;
+  min-block-size: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: ${(p) => p.theme.radius.field};
+  background: transparent;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  color: ${(p) => (p.$on ? p.theme.brand.accentOnLight : p.theme.text.primary)};
+  font-weight: ${(p) => (p.$on ? 700 : 400)};
+
+  &:hover { background: ${(p) => p.theme.surface.muted}; }
 `;
 
 const Stepper = styled.div`

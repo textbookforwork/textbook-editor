@@ -27,6 +27,21 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
     />
+    <!--
+      老師在字型選單可選的字（styles/roles.ts 的 INLINE_FONTS），各載 400 與 700（粗體）。
+      Google Fonts 有的直接掛：思源宋體（Noto Serif TC）、Lexend、Tinos。
+      Tinos 是 Times New Roman 的替身：字寬相同，沒裝 Times 的 Android 平板排版不會跑掉。
+      Google 沒有的自己架在 public/fonts/（源泉圓體、Lesson One、品牌字繁 Think 黑），
+      中文切成小塊，畫面用到哪些字才下載哪幾塊（scripts/build-webfonts.py）。
+      標楷體不架：教育部授權不允許改字型檔，只用裝置本來就有的。
+    -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Lexend:wght@400;700&family=Tinos:wght@400;700&display=swap"
+    />
+    <link rel="stylesheet" href="/fonts/gensen-rounded.css" />
+    <link rel="stylesheet" href="/fonts/lesson-one.css" />
+    <link rel="stylesheet" href="/fonts/fanthink.css" />
 
     <title>數位教科書 · 自編編輯器</title>
   </head>

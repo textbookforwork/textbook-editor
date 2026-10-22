@@ -348,7 +348,7 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
       </ToolBtn>
       {fontOpen && (
         <Popover anchor={fontRef.current} label="字型" onClose={() => setFontOpen(false)}>
-          <Menu $compact>
+          <Menu>
             {INLINE_FONTS.map((f) => (
               <MenuItem
                 key={f.label}

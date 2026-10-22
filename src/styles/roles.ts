@@ -149,22 +149,22 @@ export const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 56, 64, 72, 9
 
 /**
  * 行內可選的字體。value 是 CSS 的 font-family 值，直接存進 InlineSpan.fontFamily。
- * null 代表整本預設的黑體（不存欄位）。
+ * null 代表整本預設的思源黑體（不存欄位）。順序照設計稿。
  *
- * 字族名先列平板與桌機常見的系統字，再列開源字（教育部標楷、源泉圓體）；
- * 一台都沒有就退回黑體，不會變成空白。
+ * 載入方式見 index.html：Google Fonts 有的直接掛，沒有的自架在 public/fonts/。
+ * 標楷體只用裝置本來就有的（授權不允許改字型檔），沒有就退回思源宋體，不會變成空白。
  */
 export const INLINE_FONTS: { label: string; value: string | null }[] = [
-  { label: '黑體', value: null },
+  { label: '源泉圓體', value: '"GenSenRounded TW", "Noto Sans TC", sans-serif' },
+  { label: 'Noto Sans TC 思源黑體', value: null },
+  { label: '思源宋體', value: '"Noto Serif TC", serif' },
+  { label: 'Times New Roman', value: '"Times New Roman", Tinos, "Noto Serif TC", serif' },
+  { label: 'Lesson One', value: '"Lesson One", "Noto Sans TC", sans-serif' },
   {
-    label: '楷體',
-    value: '"Kaiti TC", "BiauKai", "TW-MOE-Std-Kai", "DFKai-SB", "TW-Kai", "Noto Serif TC", serif',
+    label: '標楷體',
+    value: '"BiauKai", "DFKai-SB", "TW-MOE-Std-Kai", "TW-Kai", "Kaiti TC", "Noto Serif TC", serif',
   },
-  {
-    label: '圓體',
-    value:
-      '"GenSenRounded TW", "Yuanti TC", "YuanTi TC", "Hiragino Maru Gothic ProN", "jf-openhuninn", "Noto Sans TC", sans-serif',
-  },
+  { label: 'Lexend', value: 'Lexend, "Noto Sans TC", sans-serif' },
 ];
 
 /** 跟整本不同向的段落，預設佔頁面 block 軸的多少。跟圖片的預設上限同一個數字。 */
