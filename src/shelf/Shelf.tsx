@@ -113,9 +113,17 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
 
         {sections.length === 0 && (
           <Empty>
-            {tab === 'shared'
-              ? '還沒有共享的教材。在自編教材裡按「共享」，就會出現在這裡。'
-              : '還沒有自編教材。到「數位教科書」按課本右下角的鉛筆，就能建立一份。'}
+            <EmptyIcon>
+              <Icon name="ghost" size={24} />
+            </EmptyIcon>
+            <EmptyTitle>
+              這裡還沒有<mark>{tab === 'shared' ? '共享教材' : '自編教材'}</mark>
+            </EmptyTitle>
+            <EmptyHint>
+              {tab === 'shared'
+                ? '在自編教材按「共享」，就會出現在這裡'
+                : '到數位教科書，按課本右下角的鉛筆就能建立一份'}
+            </EmptyHint>
           </Empty>
         )}
 
@@ -565,9 +573,43 @@ const TabBtn = styled.button<{ $on: boolean }>`
   &:focus-visible { outline: none; background: ${(p) => p.theme.surface.sunken}; }
 `;
 
-const Empty = styled.p`
-  margin: 64px 0;
+/** 書櫃分頁沒有教材時：灰圓裡一個小幽靈，主句的教材名用品牌螢光標出來。 */
+const Empty = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: clamp(40px, 10vh, 96px) 0;
   text-align: center;
+`;
+
+const EmptyIcon = styled.span`
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin-block-end: 8px;
+  border-radius: 50%;
+  background: ${(p) => p.theme.surface.sunken};
+  color: ${(p) => p.theme.text.tertiary};
+  svg { width: 40px; height: 40px; }
+`;
+
+const EmptyTitle = styled.p`
+  margin: 0;
+  color: ${(p) => p.theme.text.secondary};
+  font-size: ${(p) => p.theme.typography.bodySize};
+  font-weight: 500;
+  mark {
+    padding: 0 4px;
+    border-radius: 4px;
+    background: ${(p) => p.theme.brand.primary};
+    color: ${(p) => p.theme.text.primary};
+  }
+`;
+
+const EmptyHint = styled.p`
+  margin: 0;
   color: ${(p) => p.theme.text.tertiary};
   font-size: ${(p) => p.theme.typography.bodySmSize};
 `;
