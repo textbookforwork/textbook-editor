@@ -9,5 +9,6 @@ describe('parseRoute', () => {
     expect(parseRoute('#/read/book/mulan')).toEqual({ page: 'readTextbook', id: 'mulan' });
     expect(parseRoute('#/read/book-1')).toEqual({ page: 'read', id: 'book-1' });
     expect(parseRoute('#/shelf/亂寫')).toEqual({ page: 'shelf', tab: undefined });
+    expect(parseRoute('#/shelf/mine/%E7%A4%BE%E6%9C%83')).toEqual({ page: 'shelf', tab: 'mine', subject: '社會' });
   });
 });

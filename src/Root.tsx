@@ -33,5 +33,5 @@ export function Root() {
     return <App key={`book-${textbook.id}`} bookId={null} initialDoc={textbookDoc(textbook)} readOnly />;
   }
   if (route.page !== 'shelf') return null;
-  return <Shelf tab={route.tab} />;
+  return <Shelf tab={route.tab} subject={route.subject} />;
 }

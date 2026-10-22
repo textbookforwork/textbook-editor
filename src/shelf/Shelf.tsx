@@ -24,7 +24,8 @@ const TABS: { key: ShelfTab; label: string }[] = [
  * 書櫃首頁，照 Figma「書櫃首頁」（node 3:2022）。
  *
  * 三個分頁是同一份教材的三個階段：數位教科書（原本）→ 建立自編（副本）→ 自編教材 → 共享 → 共享教材。
- * 每個分頁依科目分區，一區一排卡片。
+ * 每個分頁依科目分區，一區只排一列；放不下的按該區右上「查看全部」，進到那一科的子頁看全部（設計稿「展開更多教科書」3:2021）。
+ * 自編教材：未共享的排前面（還在編、比較常進出），同一組裡最近改過的在前。
  *
  * 兩種身分（右上角頭像切換，見 role.ts）：
  *   老師       在數位教科書按鉛筆＝建立自編（副本），出版社不能改
@@ -32,7 +33,7 @@ const TABS: { key: ShelfTab; label: string }[] = [
  *              只有已發布的數位教科書能建立自編，老師和管理員都可以（管理員自己建的，從「更多」選單建）；
  *              已發布的原本不能刪（老師可能已經在用，由後端刪，避免手殘）；未發布的草稿可以刪
  */
-export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
+export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?: string }) {
   const books = useSyncExternalStore(subscribeLibrary, listBooks);
   const role = useRole();
   const admin = role === 'admin';
@@ -48,7 +49,11 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
     // 管理員建立的原本：發布了（shared）才上架給老師；管理員看得到全部
     ...books.filter((b) => isOriginal(b) && (admin || b.shared)).map((b) => findSource(b.id)!),
   ];
-  const copies = books.filter((b) => !isOriginal(b));
+  // 未共享的排前面，同一組裡最近改過的在前
+  const copies = books
+    .filter((b) => !isOriginal(b))
+    .sort((a, b) => Number(a.shared) - Number(b.shared) || b.updatedAt - a.updatedAt);
+  const [measureRef, columns] = useGridColumns();
   const shown = tab === 'textbook' ? null : tab === 'shared' ? copies.filter((b) => b.shared) : copies;
 
   const published = (t: Source) => t.builtIn || !!findBook(t.id)?.shared;
@@ -66,7 +71,10 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
         .sort((a, b) => Number(!published(a)) - Number(!published(b))),
       books: (shown ?? []).filter((b) => findSource(b.sourceId)?.subject === subject),
     }))
-    .filter((s) => (shown ? s.books.length > 0 : s.sources.length > 0));
+    .filter((s) => (shown ? s.books.length > 0 : s.sources.length > 0))
+    .filter((s) => !subject || s.subject === subject);
+  // 主頁每科只排一列；子頁（查看全部）不限
+  const limit = subject ? Infinity : columns;
 
   return (
     <Page>
@@ -95,7 +103,8 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
       </Top>
 
       <Panel>
-        <TabRow>
+        {/* 子頁（查看全部）照設計稿：不放分頁列，只有左上的返回鈕 */}
+        {!subject && <TabRow>
           <Tabs role="tablist" aria-label="教材種類">
             {TABS.map((t) => (
               <TabBtn key={t.key} role="tab" aria-selected={tab === t.key} $on={tab === t.key} onClick={() => goShelf(t.key)}>
@@ -109,7 +118,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
               <Icon name="plus" size={16} />
             </NewBtn>
           )}
-        </TabRow>
+        </TabRow>}
 
         {sections.length === 0 && (
           <Empty>
@@ -127,15 +136,27 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
           </Empty>
         )}
 
+        <Grid ref={measureRef} aria-hidden="true" style={{ blockSize: 0, overflow: 'hidden' }} />
+        {subject && (
+          <Back type="button" aria-label="回書櫃" title="回書櫃" onClick={() => goShelf(tab)}>
+            <Icon name="arrow-left" size={24} />
+          </Back>
+        )}
         {sections.map((s) => (
           <Section key={s.subject}>
             <SectionHead>
               <SubjectMark subject={s.subject} />
               <h2>{s.subject}</h2>
+              {!subject && (shown ? s.books.length : s.sources.length) > limit && (
+                <SeeAll type="button" onClick={() => goShelf(tab, s.subject)}>
+                  查看全部
+                  <Icon name="chevron-right" size={24} />
+                </SeeAll>
+              )}
             </SectionHead>
             <Grid>
               {shown
-                ? s.books.map((b) => (
+                ? s.books.slice(0, limit).map((b) => (
                     <BookCard
                       key={b.id}
                       book={b}
@@ -145,7 +166,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
                       onDelete={() => setDeleting(b)}
                     />
                   ))
-                : s.sources.map((t) =>
+                : s.sources.slice(0, limit).map((t) =>
                     // 管理員建立的原本：可以直接編、換封面；已發布的不能刪（老師可能已經在用，由後端刪），未發布的草稿可以刪
                     !t.builtIn && admin ? (
                       <BookCard
@@ -645,6 +666,60 @@ const SectionHead = styled.div`
     line-height: 35px;
     font-weight: 700;
   }
+`;
+
+/**
+ * 一列放得下幾張卡：直接讀格線算出來的欄數（auto-fill 沒放東西也會保留空欄），
+ * 卡片寬度跟著視窗高度縮放，所以視窗大小一變就重讀。
+ */
+function useGridColumns() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [columns, setColumns] = useState(5);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const read = () => setColumns(Math.max(1, getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length));
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    window.addEventListener('resize', read);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', read);
+    };
+  }, []);
+  return [ref, columns] as const;
+}
+
+const SeeAll = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
+  block-size: 44px;
+  padding: 0 12px 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: ${(p) => p.theme.text.primary};
+  font: inherit;
+  font-size: ${(p) => p.theme.typography.bodySize};
+  cursor: pointer;
+  &:hover { background: ${(p) => p.theme.action.ghostBgHover}; }
+`;
+
+const Back = styled.button`
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  margin-block-end: clamp(16px, 3vh, 32px);
+  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
+  border-radius: 50%;
+  background: ${(p) => p.theme.surface.raised};
+  color: ${(p) => p.theme.text.primary};
+  cursor: pointer;
+  &:hover { background: ${(p) => p.theme.action.ghostBgHover}; }
 `;
 
 const Grid = styled.div`
