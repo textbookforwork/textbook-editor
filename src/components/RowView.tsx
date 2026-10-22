@@ -7,7 +7,7 @@ import { InsertPoint } from './InsertPoint';
 import { InsertPanel, type InsertKey } from './InsertPanel';
 import type { Asset } from '../editor/assets';
 import { useEditorCtx } from '../editor/EditorContext';
-import { FlowResizeHandle, ResizeHandles, resizeModeOf } from '../editor/ResizeHandles';
+import { FlowResizeHandle, ResizeHandles, resizeModeOf, type Handle } from '../editor/ResizeHandles';
 import { textFlowStyle, FLOW_SHARE_OF_PAGE } from '../styles/roles';
 import { usePopupViewer } from '../viewer/PopupViewer';
 import { readyElementPopups, readyPopups } from '../model/popups';
@@ -393,6 +393,11 @@ export function RowView({
                     )}
                     {ed && mode && box && (
                       <ResizeHandles
+                        /* 多欄：跟隔壁欄交界的那一邊交給「調整欄寬」把手，這裡不再畫一顆疊在上面 */
+                        omit={[
+                          ...(ci > 0 ? [vertical ? 'n' : 'w'] : []),
+                          ...(ci < row.columns.length - 1 ? [vertical ? 's' : 'e'] : []),
+                        ] as Handle[]}
                         mode={mode}
                         box={box}
                         columnInline={colInline}

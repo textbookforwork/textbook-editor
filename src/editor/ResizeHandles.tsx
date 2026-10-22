@@ -52,7 +52,7 @@ export function resizeModeOf(block: Block): ResizeMode | null {
   }
 }
 
-type Handle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+export type Handle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 const CORNERS: Handle[] = ['ne', 'nw', 'se', 'sw'];
 
 type Props = {
@@ -64,9 +64,11 @@ type Props = {
   vertical: boolean;
   /** 沒帶 widthPct 的話，比例維持原樣（直排的標籤拉左右只改 blockSize）。 */
   onResize: (next: { widthPct?: number; blockSize?: number }) => void;
+  /** 不畫的邊：多欄時跟隔壁欄交界的那一邊已經有「調整欄寬」的把手，兩顆疊在一起分不清 */
+  omit?: Handle[];
 };
 
-export function ResizeHandles({ mode: given, box, columnInline, vertical, onResize }: Props) {
+export function ResizeHandles({ mode: given, box, columnInline, vertical, onResize, omit }: Props) {
   // 橫排時「寬」就是 inline 軸，照 inline 模式走；只有直排要另外處理
   const mode: ResizeMode = given === 'width' && !vertical ? 'inline' : given;
   const frameRef = useRef<HTMLDivElement>(null);
@@ -77,7 +79,7 @@ export function ResizeHandles({ mode: given, box, columnInline, vertical, onResi
 
   // inline 軸在哪個實體方向上，決定 inline-only 模式顯示哪幾個把手
   const inlineIsHorizontal = !vertical;
-  const handles: Handle[] =
+  const all: Handle[] =
     mode === 'width'
       ? ['e', 'w', ...CORNERS]
       : mode === 'inline'
@@ -85,6 +87,7 @@ export function ResizeHandles({ mode: given, box, columnInline, vertical, onResi
         ? ['e', 'w', ...CORNERS]
         : ['n', 's', ...CORNERS]
       : ['n', 's', 'e', 'w', ...CORNERS];
+  const handles = omit ? all.filter((h) => !omit.includes(h)) : all;
 
   const start = (hd: Handle) => (e: React.PointerEvent) => {
     e.preventDefault();
