@@ -472,11 +472,10 @@ function AssetCard({
           </MoreItem>
         </MoreMenu>
       )}
-      {/* 刪除媒體資源先確認：刪了就從媒體庫拿掉，要用得重新上傳；已經放進頁面的不受影響 */}
+      {/* 刪除媒體資源先確認 */}
       {confirmDelete && (
         <ConfirmDialog
-          title="刪除這個媒體資源？"
-          message={`「${name}」會從媒體庫刪除，之後要用得重新上傳。已經放進頁面的不受影響。`}
+          title={`刪除「${name}」？`}
           confirmLabel="刪除"
           onConfirm={() => {
             if (previewing) preview?.stop();
@@ -923,10 +922,16 @@ const CardShell = styled.div<{ $layout: 'row' | 'tile'; $selected: boolean }>`
   padding: ${(p) => (p.$layout === 'row' ? p.theme.space.insetXs : '6px')};
   border-radius: ${(p) => p.theme.radius.card};
   background: ${(p) => p.theme.surface.raised};
+  /* 平常就留一圈透明框，滑過時框線變灰才不會推動版面 */
+  border: ${(p) => p.theme.border.widthDefault} solid transparent;
   outline: 2px solid ${(p) => (p.$selected ? p.theme.brand.accentOnLight : 'transparent')};
-  transition: background 0.12s, outline-color 0.12s;
+  transition: border-color 0.12s, box-shadow 0.12s, outline-color 0.12s;
 
-  &:hover { background: ${(p) => p.theme.surface.sunken}; }
+  /* 滑過：維持白底，加灰框與淡陰影浮起來（乙練 2026-10-22 選 B；淡灰底跟面板 #FAFAFA 分不出來） */
+  &:hover {
+    border-color: ${(p) => p.theme.border.default};
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  }
   &:has(> button:first-child:active) { outline-color: ${(p) => p.theme.brand.accentOnLight}; }
 `;
 
