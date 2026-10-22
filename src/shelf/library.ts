@@ -100,21 +100,23 @@ export function loadBookDoc(id: string): Doc | null {
   }
 }
 
-/** 存內容，順手把書名與更新時間同步到清單（書櫃卡片顯示的是清單裡的書名）。 */
-export function saveBookDoc(id: string, doc: Doc) {
+/** 存內容，順手把書名與更新時間同步到清單（書櫃卡片顯示的是清單裡的書名）。存不進去（空間滿了）回傳 false。 */
+export function saveBookDoc(id: string, doc: Doc): boolean {
+  let ok = true;
   try {
     localStorage.setItem(bookKey(id), JSON.stringify(doc));
   } catch {
-    // 同 write
+    ok = false;
   }
   const list = listBooks();
   const i = list.findIndex((b) => b.id === id);
-  if (i < 0) return;
+  if (i < 0) return ok;
   // 原本（管理員建立的）在教材設定改了出版社，書櫃卡片上的「115 南一」也要跟著變
   const publisher = list[i].kind === 'original' ? doc.meta.publisher ?? '' : list[i].publisher;
   if (list[i].title !== doc.title || list[i].publisher !== publisher || Date.now() - list[i].updatedAt > 5000) {
     write(list.map((b, j) => (j === i ? { ...b, title: doc.title, publisher, updatedAt: Date.now() } : b)));
   }
+  return ok;
 }
 
 export const isOriginal = (b: MyBook) => b.kind === 'original';

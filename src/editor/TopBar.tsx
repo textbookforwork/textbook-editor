@@ -159,6 +159,7 @@ export function TopBar({
  */
 function TitleField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
+    <TitleHover>
     <TitleFit data-value={value || '未命名教材'}>
       <Title
         /* size=1：拿掉輸入框自帶的約 20 字寬，寬度只由名稱長度決定 */
@@ -173,6 +174,11 @@ function TitleField({ value, onChange }: { value: string; onChange: (v: string) 
         title="教材名稱，點一下就能改"
       />
     </TitleFit>
+      {/* 滑過時出現鉛筆，提示名稱可以改；正在打字時收起來 */}
+      <TitlePencil aria-hidden="true">
+        <Icon name="pencil" size={16} />
+      </TitlePencil>
+    </TitleHover>
   );
 }
 
@@ -183,6 +189,24 @@ function TitleField({ value, onChange }: { value: string; onChange: (v: string) 
  * <input> 不會隨內容變寬，所以用一個看不見的同字副本（::after）撐出寬度，
  * 輸入框疊在同一格裡填滿它。副本與輸入框必須同字型、同內距，寬度才會剛好。
  */
+const TitlePencil = styled.span`
+  display: inline-flex;
+  color: ${(p) => p.theme.text.secondary};
+  opacity: 0;
+  transition: opacity 0.12s;
+  pointer-events: none;
+`;
+
+const TitleHover = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 1 auto;
+  min-inline-size: 0;
+  &:hover ${TitlePencil} { opacity: 1; }
+  &:focus-within ${TitlePencil} { opacity: 0; }
+`;
+
 const TitleFit = styled.div`
   display: inline-grid;
   flex: 0 1 auto;

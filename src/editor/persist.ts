@@ -18,6 +18,7 @@ import type { Doc } from '../model/types';
 import { footnotesToWordNotes } from '../model/wordNotes';
 import { withCurrentFonts } from '../model/fonts';
 import { findBook, loadBookDoc, saveBookDoc, updateBook } from '../shelf/library';
+import { toast } from './Toast';
 
 const AUTOSAVE_DELAY = 1000;
 
@@ -36,9 +37,16 @@ export function setActiveBook(id: string | null) {
  */
 export const isActiveOriginal = () => (activeBookId ? findBook(activeBookId)?.kind === 'original' : false);
 
-/** 存整份教材。localStorage 滿了或被關掉（隱私模式）就靜靜略過，不中斷編輯。 */
+/**
+ * 存整份教材。localStorage 滿了或被關掉（隱私模式）不中斷編輯，但要讓老師知道：
+ * 跳一次提示，存回來之前不重複跳。正式版改成存到後端、網路回來後補存。
+ */
+let failed = false;
 export function saveDoc(doc: Doc): void {
-  if (activeBookId) saveBookDoc(activeBookId, doc);
+  if (!activeBookId) return;
+  const ok = saveBookDoc(activeBookId, doc);
+  if (!ok && !failed) toast('存不進去：這台瀏覽器的空間滿了。刪掉用不到的教材或大圖，下次修改時會再存');
+  failed = !ok;
 }
 
 /** 讀回這一本存的內容；沒有或壞掉就回 null。 */

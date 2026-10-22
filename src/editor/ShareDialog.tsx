@@ -46,7 +46,7 @@ export function SharedDialog({ onClose, onUpload, published }: { onClose: () => 
 }
 
 /** 封面格式與大小上限，照 Figma 的提示文字。 */
-const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_BYTES = 10 * 1024 * 1024;
 const TYPES = ['image/jpeg', 'image/png', 'image/gif'];
 
 export function CoverDialog({
@@ -70,7 +70,7 @@ export function CoverDialog({
   const accept = (file: File | null) => {
     if (!file) return;
     if (!TYPES.includes(file.type)) return setError('只支援 JPG、PNG、GIF');
-    if (file.size > MAX_BYTES) return setError('檔案不可超過 5MB');
+    if (file.size > MAX_BYTES) return setError('檔案不可超過 10MB');
     setSrc(URL.createObjectURL(file));
     setCropped(null);
     setError(null);
@@ -118,7 +118,7 @@ export function CoverDialog({
             拖四個角調整範圍、按住圖片移動位置・<Relink type="button" onClick={pick}>換一張</Relink>
           </Format>
         ) : (
-          <Format $bad={!!error}>{error ?? '支援 JPG、PNG、GIF 格式，檔案大小不超過 5MB'}</Format>
+          <Format $bad={!!error}>{error ?? '支援 JPG、PNG、GIF 格式，檔案大小不超過 10MB'}</Format>
         )}
 
         <Pair>

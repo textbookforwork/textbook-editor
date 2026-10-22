@@ -45,16 +45,21 @@ export const EditStage = forwardRef<HTMLElement, { children: ReactNode }>(functi
   const dropFiles = async (files: File[], x: number, y: number) => {
     if (!ed) return;
     let index = nearestGap(x, y);
+    let last: string | null = null;
     for (const file of files) {
       const r = await uploadFile(file);
       if ('error' in r) {
         toast(r.error);
         continue;
       }
-      ed.dispatch({ type: 'insertRow', index, blocks: [fitTwoPerPage(blockFromAsset(r.asset), ed.doc.settings)] });
+      const block = fitTwoPerPage(blockFromAsset(r.asset), ed.doc.settings);
+      ed.dispatch({ type: 'insertRow', index, blocks: [block] });
+      last = block.id;
       // 一次拖好幾個：照拖進來的順序排在一起，不要全部擠到同一個縫隙倒著放
       index += 1;
     }
+    // 放好後選取最後一個，膠囊直接浮出來，可以接著調大小、掛補充
+    if (last) ed.select(last);
   };
 
   return (
