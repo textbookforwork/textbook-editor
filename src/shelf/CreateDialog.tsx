@@ -38,7 +38,7 @@ export function CreateDialog({
       return next;
     });
 
-  // 原本還沒有任何節（管理員剛建立的空白本只有課名）：沒得選，整份複製
+  // 原本還沒有任何節（管理員剛建立的空白本只有課名）：不列章節，直接整份複製
   const noSections = allIds.length === 0;
   const ready = name.trim().length > 0 && (noSections || keep.size > 0);
   const create = () => {
@@ -64,7 +64,6 @@ export function CreateDialog({
           />
         </Field>
 
-        {noSections && <NoChapters>這本教材還沒有章節，會整份複製。</NoChapters>}
         {!noSections && <Tree role="group" aria-label="要放進自編的章節">
           {groups.map((g, gi) => {
             const ids = g.sections.map((s) => s.rowId);
@@ -170,12 +169,6 @@ const NameInput = styled.input`
     background: ${(p) => p.theme.surface.raised};
     border-color: ${(p) => p.theme.border.default};
   }
-`;
-
-const NoChapters = styled.p`
-  margin: 0;
-  font-size: ${(p) => p.theme.typography.bodySmSize};
-  color: ${(p) => p.theme.text.secondary};
 `;
 
 const Tree = styled.div`
