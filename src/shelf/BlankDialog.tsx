@@ -57,7 +57,7 @@ export function BlankDialog({
 
         <Field>
           <span>出版社</span>
-          <Input value={publisher} placeholder="例：南一" onChange={(e) => setPublisher(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} />
+          <Input value={publisher} placeholder="請輸入出版社名稱" onChange={(e) => setPublisher(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} />
         </Field>
 
         <Pair>
