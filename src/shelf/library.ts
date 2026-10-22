@@ -2,8 +2,8 @@
  * 老師的自編教材清單（書櫃的「自編教材」與「共享教材」）。
  *
  * 書櫃有三種教材，是同一份教材在不同階段的樣子（規則寫在 Notion PRD「書櫃｜三種教材的關係與版本管理」）：
- *   數位教科書  出版社／系統管理員上稿的原本（catalog.ts，唯讀）
- *   自編教材    老師從數位教科書建立的副本，存在這裡
+ *   數位教科書  出版社／系統管理員上稿的原本：內建的在 catalog.ts；管理員從空白本建立的存在這裡（kind = original）
+ *   自編教材    老師從數位教科書建立的副本，存在這裡（kind = copy）
  *   共享教材    自編教材按了「共享」（shared = true）
  *
  * 原型沒有後端：清單一個 key，每本的內容各一個 key，都在 localStorage。
@@ -14,8 +14,13 @@ import type { Doc } from '../model/types';
 
 export type MyBook = {
   id: string;
-  /** 從哪一本數位教科書建立的（catalog.ts 的 id）。出版社沿用原本、不能改，靠這個欄位判斷是副本。 */
+  /** original＝管理員從空白本建立的數位教科書；copy＝老師的自編（副本）。舊資料沒有這個欄位，一律當副本。 */
+  kind?: 'original' | 'copy';
+  /** 副本：從哪一本數位教科書建立的（catalog.ts 或 original 的 id）。原本：空字串。 */
   sourceId: string;
+  /** 原本才有：書櫃分區的科目與出版社。副本跟著原本走。 */
+  subject?: string;
+  publisher?: string;
   title: string;
   /** 老師上傳並裁切過的封面；沒有就用原本的封面。 */
   cover: string | null;
@@ -104,15 +109,22 @@ export function saveBookDoc(id: string, doc: Doc) {
   }
   const list = listBooks();
   const i = list.findIndex((b) => b.id === id);
-  if (i >= 0 && (list[i].title !== doc.title || Date.now() - list[i].updatedAt > 5000)) {
-    write(list.map((b, j) => (j === i ? { ...b, title: doc.title, updatedAt: Date.now() } : b)));
+  if (i < 0) return;
+  // 原本（管理員建立的）在教材設定改了出版社，書櫃卡片上的「115 南一」也要跟著變
+  const publisher = list[i].kind === 'original' ? doc.meta.publisher ?? '' : list[i].publisher;
+  if (list[i].title !== doc.title || list[i].publisher !== publisher || Date.now() - list[i].updatedAt > 5000) {
+    write(list.map((b, j) => (j === i ? { ...b, title: doc.title, publisher, updatedAt: Date.now() } : b)));
   }
 }
 
-export function createBook(sourceId: string, doc: Doc): MyBook {
+export const isOriginal = (b: MyBook) => b.kind === 'original';
+
+export function createBook(sourceId: string, doc: Doc, original?: { subject: string; publisher: string }): MyBook {
   const now = Date.now();
   const book: MyBook = {
     id: `book-${now.toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    kind: original ? 'original' : 'copy',
+    ...original,
     sourceId,
     title: doc.title,
     cover: null,
@@ -129,7 +141,7 @@ export function createBook(sourceId: string, doc: Doc): MyBook {
   return book;
 }
 
-export function updateBook(id: string, patch: Partial<Pick<MyBook, 'title' | 'cover' | 'shared'>>) {
+export function updateBook(id: string, patch: Partial<Pick<MyBook, 'title' | 'cover' | 'shared' | 'publisher' | 'subject'>>) {
   write(listBooks().map((b) => (b.id === id ? { ...b, ...patch, updatedAt: Date.now() } : b)));
 }
 

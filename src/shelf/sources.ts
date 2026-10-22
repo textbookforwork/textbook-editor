@@ -1,0 +1,49 @@
+import { findTextbook, textbookDoc } from './catalog';
+import { findBook, isOriginal, loadBookDoc } from './library';
+import type { Doc } from '../model/types';
+
+/**
+ * 一本數位教科書（原本）在書櫃上要顯示的東西。原本有兩種來源：
+ * 內建的（catalog.ts，出版社上稿的範例）與管理員從空白本建立的（library.ts 的 original）。
+ * 副本只記 sourceId，要顯示科目、出版社、預設封面時都回來這裡查。
+ */
+export type Source = {
+  id: string;
+  subject: string;
+  edition: string;
+  publisher: string;
+  title: string;
+  /** 沒有封面（管理員剛建立的空白本）時，書櫃用科目色的預設封面。 */
+  cover: string | null;
+  /** 內建的原本不能直接改；管理員建立的可以。 */
+  builtIn: boolean;
+};
+
+/** 民國學年度：卡片左上「115 南一」那一個數字。 */
+export const rocYear = () => new Date().getFullYear() - 1911;
+
+export function findSource(id: string): Source | null {
+  const t = findTextbook(id);
+  if (t) return { id: t.id, subject: t.subject, edition: t.edition, publisher: t.publisher, title: t.title, cover: t.cover, builtIn: true };
+  const b = findBook(id);
+  if (b && isOriginal(b)) {
+    return {
+      id: b.id,
+      subject: b.subject ?? '其他',
+      edition: `${new Date(b.createdAt).getFullYear() - 1911} ${b.publisher ?? ''}`.trim(),
+      publisher: b.publisher ?? '',
+      title: b.title,
+      cover: b.cover,
+      builtIn: false,
+    };
+  }
+  return null;
+}
+
+/** 原本的內容：建立副本時從這裡拿一份乾淨的。 */
+export function sourceDoc(id: string): Doc | null {
+  const t = findTextbook(id);
+  if (t) return textbookDoc(t);
+  const doc = loadBookDoc(id);
+  return doc ? { ...doc, rows: doc.rows } : null;
+}

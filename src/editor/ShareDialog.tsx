@@ -28,12 +28,8 @@ export function SharedDialog({ onClose, onUpload }: { onClose: () => void; onUpl
   return createPortal(
     <Scrim onClick={onClose}>
       <Sheet role="dialog" aria-modal="true" aria-label="自編教材已共享" $narrow onClick={(e) => e.stopPropagation()}>
-        <Head>
-          <Heading>自編教材已共享</Heading>
-          <Ghost type="button" onClick={onClose} aria-label="關閉" title="關閉">
-            <Icon name="x" size={24} label="關閉" />
-          </Ghost>
-        </Head>
+        {/* 不放 ×：按「取消」或點框外就能關，多一顆只是重複 */}
+        <Heading>自編教材已共享</Heading>
         <Lead>放上一張封面，讓教材變完整吧！</Lead>
         <Pair>
           <Secondary type="button" onClick={onClose}>
