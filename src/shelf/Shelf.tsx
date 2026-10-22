@@ -348,7 +348,7 @@ const TabBtn = styled.button<{ $on: boolean }>`
   cursor: pointer;
 
   &:hover { color: ${(p) => (p.$on ? p.theme.text.accent : p.theme.text.primary)}; }
-  &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: 4px; border-radius: 4px; }
+  &:focus-visible { outline-offset: 4px; border-radius: 8px; }
 `;
 
 const Empty = styled.p`

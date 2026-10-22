@@ -493,11 +493,21 @@ function UploadBox({ kind, onUploaded }: { kind: Exclude<Tab, 'web'>; onUploaded
     }
   };
 
+  const pick = async () => {
+    if (!busy) await take(await pickFile(rule.accept));
+  };
+
+  // 整塊都是按鈕：點一下開檔案選擇，拖檔案進來也行。上傳中停用，圖示換成轉圈
   return (
     <Drop
+      type="button"
       $over={over}
+      disabled={busy}
+      aria-busy={busy}
+      aria-label={`上傳${rule.label}：拖曳或點選檔案`}
+      onClick={pick}
       onDragOver={(e) => {
-        if (!e.dataTransfer.types.includes('Files')) return;
+        if (busy || !e.dataTransfer.types.includes('Files')) return;
         e.preventDefault();
         setOver(true);
       }}
@@ -508,11 +518,8 @@ function UploadBox({ kind, onUploaded }: { kind: Exclude<Tab, 'web'>; onUploaded
         void take(e.dataTransfer.files[0] ?? null);
       }}
     >
-      {/* 按鈕本身就寫「上傳圖片」，上面不再重複一行標題；只留格式與大小 */}
-      <Primary type="button" disabled={busy} onClick={async () => take(await pickFile(rule.accept))}>
-        {busy ? '讀取中…' : `上傳${rule.label}`}
-        <Icon name={busy ? 'loader' : 'upload'} size={16} />
-      </Primary>
+      <DropTile $over={over}>{busy ? <Spinner aria-hidden="true" /> : <Icon name="upload" size={20} />}</DropTile>
+      <DropTitle>{busy ? '上傳中…' : over ? '放開就上傳' : '拖曳或點選檔案'}</DropTitle>
       <DropHint>{rule.formats}，{rule.limitMb} MB 以內</DropHint>
     </Drop>
   );
@@ -672,21 +679,65 @@ const ListLabel = styled.span`
   color: ${(p) => p.theme.text.secondary};
 `;
 
-const Drop = styled.div<{ $over: boolean }>`
+/**
+ * 上傳框：白色圓角卡片，中間一塊淡灰圓角方塊放上傳圖示，下面一行標題、一行格式。
+ * 面板是 #FAFAFA，白卡加一圈淡灰細線才分得出邊；滑過框線深一階；拖檔案進來換成品牌深綠虛線（不鋪底色）。
+ */
+const Drop = styled.button<{ $over: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: ${(p) => p.theme.space.gapSm};
-  padding: ${(p) => p.theme.space.insetMd};
-  border: ${(p) => p.theme.border.widthDefault} dashed
-    ${(p) => (p.$over ? p.theme.border.hover : p.theme.border.default)};
-  border-radius: ${(p) => p.theme.radius.card};
+  justify-content: center;
+  gap: 4px;
+  inline-size: 100%;
   /* 跟下面的「描述要生成的圖片」框同高、同圓角，上下兩塊對齊 */
   block-size: 128px;
+  padding: ${(p) => p.theme.space.insetMd};
   box-sizing: border-box;
-  justify-content: center;
-  background: ${(p) => (p.$over ? p.theme.surface.sunken : p.theme.surface.raised)};
+  border: ${(p) => (p.$over ? '1.5px dashed' : `${p.theme.border.widthDefault} solid`)}
+    ${(p) => (p.$over ? p.theme.border.accent : p.theme.border.subtle)};
+  border-radius: ${(p) => p.theme.radius.card};
+  background: ${(p) => p.theme.surface.raised};
+  font: inherit;
   text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &:hover:not(:disabled) { border-color: ${(p) => (p.$over ? p.theme.border.accent : p.theme.border.default)}; }
+  &:disabled { cursor: progress; }
+`;
+
+const DropTile = styled.span<{ $over: boolean }>`
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  padding: 0;
+  margin-block-end: 6px;
+  border-radius: ${(p) => p.theme.radius.tile};
+  background: ${(p) => p.theme.surface.sunken};
+  color: ${(p) => (p.$over ? p.theme.text.accent : p.theme.icon.default)};
+  transition: background 0.15s, color 0.15s;
+  ${Drop}:hover:not(:disabled) & { background: ${(p) => p.theme.surface.muted}; }
+`;
+
+/** 上傳中的轉圈：一圈淡灰軌道，上面一段品牌深綠在轉 */
+const Spinner = styled.span`
+  inline-size: 18px;
+  block-size: 18px;
+  border-radius: 999px;
+  border: 2px solid ${(p) => p.theme.border.subtle};
+  border-top-color: ${(p) => p.theme.brand.accentOnLight};
+  animation: ds-spin 0.8s linear infinite;
+  @keyframes ds-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { animation-duration: 2s; }
+`;
+
+const DropTitle = styled.span`
+  font-size: var(--ds-typography-body-sm-size);
+  font-weight: 500;
+  color: ${(p) => p.theme.text.primary};
 `;
 
 const DropHint = styled.span`
