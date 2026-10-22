@@ -29,6 +29,7 @@ const TABS: { key: ShelfTab; label: string }[] = [
  * 兩種身分（右上角頭像切換，見 role.ts）：
  *   老師       在數位教科書按鉛筆＝建立自編（副本），出版社不能改
  *   系統管理員 多一顆「建立教材」從空白本開始，建的是數位教科書（原本），出版社自己填；
+ *              只有已發布的數位教科書能建立自編，老師和管理員都可以（管理員自己建的，從「更多」選單建）；
  *              已發布的原本不能刪（老師可能已經在用，由後端刪，避免手殘）；未發布的草稿可以刪
  */
 export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
@@ -153,6 +154,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
                         source={t}
                         showTeacher={false}
                         onCover={() => setCovering(findBook(t.id))}
+                        onCopy={findBook(t.id)?.shared ? () => setCreating(t) : undefined}
                         onDelete={findBook(t.id)?.shared ? undefined : () => setDeleting(findBook(t.id))}
                       />
                     ) : (
@@ -321,6 +323,7 @@ function BookCard({
   source,
   showTeacher,
   onCover,
+  onCopy,
   onDelete,
 }: {
   book: MyBook;
@@ -328,6 +331,8 @@ function BookCard({
   /** 在共享教材分頁：顯示老師名字、不掛「已共享」標籤。 */
   showTeacher: boolean;
   onCover: () => void;
+  /** 管理員已發布的原本才有：建立自編（副本）。未發布的不能建。 */
+  onCopy?: () => void;
   /** 不給就沒有「刪除」：數位教科書（原本）在前台不能刪，只能由後端刪。 */
   onDelete?: () => void;
 }) {
@@ -359,6 +364,12 @@ function BookCard({
                 <Icon name="pencil" size={16} />
                 編輯封面
               </MenuItem>
+              {onCopy && (
+                <MenuItem role="menuitem" type="button" onClick={() => (setMenu(false), onCopy())}>
+                  <Icon name="copy" size={16} />
+                  建立自編
+                </MenuItem>
+              )}
               {onDelete && (
                 <MenuItem role="menuitem" type="button" $danger onClick={() => (setMenu(false), onDelete())}>
                   <Icon name="trash" size={16} />
