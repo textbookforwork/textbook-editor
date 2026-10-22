@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import { Dropdown } from './Dropdown';
 import { Icon } from '../components/Icon';
 import { useEditorCtx } from './EditorContext';
-import { DEFAULT_TAIL, SHAPE_STROKE_WIDTH } from '../components/blocks/ShapeBlockView';
+import { DEFAULT_TAIL, SHAPE_STROKE_WIDTH, isDarkColor } from '../components/blocks/ShapeBlockView';
 import { LINE_CAP_LABEL, LINE_STROKE_WIDTH } from '../components/blocks/LineBlockView';
 import { FONT_SIZES, INLINE_FONTS } from '../styles/roles';
 import type { LineBlock, LineCap, ShapeBlock, ShapeKind } from '../model/types';
@@ -161,7 +161,7 @@ export function ShapeTools({ block, blockId }: ShapeProps) {
           />
         </Popover>
       )}
-      {/* 圖形裡的字：字體、字級、字色收在一顆按鈕裡，膠囊已經很長，不再各佔一格 */}
+      {/* 圖形裡的字：字體、字級、顏色、方向收在一顆按鈕裡，膠囊已經很長，不再各佔一格 */}
       <ToolBtn
         ref={textRef}
         $open={openPopover === 'text'}
@@ -177,16 +177,6 @@ export function ShapeTools({ block, blockId }: ShapeProps) {
           <TextStyleMenu block={block} onPatch={patch} />
         </Popover>
       )}
-      {/* 圖形裡的文字直排／橫排。跟段落那顆同一個圖示，按下去底色變灰表示已直排 */}
-      <ToolBtn
-        $on={!!block.textVertical}
-        onClick={() => patch({ textVertical: block.textVertical ? undefined : true })}
-        title={block.textVertical ? '文字改回橫排' : '文字改成直排'}
-        aria-label={block.textVertical ? '文字改回橫排' : '文字改成直排'}
-        style={{ padding: 0, inlineSize: 36 }}
-      >
-        <Icon name="writing-vertical" size={20} />
-      </ToolBtn>
     </>
   );
 }
@@ -422,10 +412,15 @@ function ColorPickerMenu({
   );
 }
 
+/** 沒設字色時畫面上的字色，跟 ShapeBlockView 的判斷同一條：深色填色且不到半透明才是白字。 */
+function autoTextColor(block: ShapeBlock): string {
+  return isDarkColor(block.fill) && (block.opacity ?? 1) >= 0.5 ? '#FFFFFF' : DEFAULT_STROKE;
+}
+
 /** 圖形沒設字級時的大小，跟 ShapeBlockView 的 TextLayer 同一個 token（body-sm）。 */
 const SHAPE_TEXT_SIZE = 14;
 
-/** 圖形文字的樣式：字體、字級、字色各一排，改的是整個圖形裡的字。 */
+/** 圖形文字的樣式：字體、字級、顏色、方向各一排，改的是整個圖形裡的字。 */
 function TextStyleMenu({ block, onPatch }: { block: ShapeBlock; onPatch: (p: Partial<ShapeBlock>) => void }) {
   const size = block.fontSize ?? SHAPE_TEXT_SIZE;
   const i = FONT_SIZES.indexOf(size);
@@ -462,13 +457,24 @@ function TextStyleMenu({ block, onPatch }: { block: ShapeBlock; onPatch: (p: Par
         </ToolBtn>
       </Stepper>
 
-      <StyleLabel>字色</StyleLabel>
+      <StyleLabel>顏色</StyleLabel>
+      {/* 沒設過時圈住目前看到的那個顏色（跟著填色自動選墨或白），老師才知道現在是哪一色 */}
       <ColorPickerMenu
-        value={block.textColor ?? ''}
-        label="字色"
+        value={block.textColor ?? autoTextColor(block)}
+        label="文字顏色"
         onChange={(c) => onPatch({ textColor: c })}
         onClose={() => {}}
       />
+
+      <StyleLabel>方向</StyleLabel>
+      <FontRow>
+        <ToolBtn type="button" $on={!block.textVertical} onClick={() => onPatch({ textVertical: undefined })}>
+          橫排
+        </ToolBtn>
+        <ToolBtn type="button" $on={!!block.textVertical} onClick={() => onPatch({ textVertical: true })}>
+          直排
+        </ToolBtn>
+      </FontRow>
     </StyleGrid>
   );
 }
