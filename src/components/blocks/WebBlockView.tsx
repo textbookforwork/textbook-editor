@@ -106,8 +106,14 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
         // 直排的標籤不給比例，交給 blockSizing 給一張橫卡的大小
         widthPct: presentation === 'embed' ? 100 : vertical ? undefined : 100 / 3,
         blockSize: undefined,
-        ...(v ? { url: v, ...(block.title ? {} : { title: hostOf(v) || '連結標題' }) } : {}),
+        // 先顯示連結，抓到網站標題再換上（跟「更改網址」同一條路）
+        ...(v ? { url: v, ...(block.title ? {} : { title: linkLabel(v) }) } : {}),
       });
+      if (v && !block.title) {
+        void fetchSiteTitle(v).then((t) => {
+          if (t) onPatch({ title: t });
+        });
+      }
     };
     return (
       <EmptyFrame style={boxStyle} onPointerDown={onSelect}>
