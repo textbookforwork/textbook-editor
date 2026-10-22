@@ -125,7 +125,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
                       key={b.id}
                       book={b}
                       source={findSource(b.sourceId)}
-                      showTeacher={tab === 'shared'}
+                      showTeacher
                       onCover={() => setCovering(b)}
                       onDelete={() => setDeleting(b)}
                     />
@@ -337,8 +337,10 @@ function BookCard({
         <Title title={book.title}>{book.title}</Title>
         {showTeacher && (
           <Teacher>
-            <Icon name="user" size={16} />
-            {ROLE_NAME.teacher}老師
+            <TeacherAvatar>
+              <Icon name="user" size={16} />
+            </TeacherAvatar>
+            <span>{ROLE_NAME.teacher}老師</span>
           </Teacher>
         )}
         <Actions>
@@ -706,12 +708,38 @@ const Title = styled.h3`
   white-space: nowrap;
 `;
 
+// 發布者：自編與共享分頁都顯示（Figma 3:1909）
 const Teacher = styled.span`
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  min-inline-size: 0;
   font-size: ${(p) => p.theme.typography.captionSize};
+  line-height: ${(p) => p.theme.typography.captionLineHeight};
+  font-weight: 500;
   color: ${(p) => p.theme.text.secondary};
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`;
+
+const TeacherAvatar = styled.span`
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 20px;
+  block-size: 20px;
+  border-radius: ${(p) => p.theme.radius.control};
+  background: ${(p) => p.theme.surface.sunken};
+
+  /* Figma 這裡的頭像圖示是 12px，比設計系統最小的 16 還小，只在這裡縮 */
+  svg {
+    inline-size: 12px;
+    block-size: 12px;
+  }
 `;
 
 const Actions = styled.div`

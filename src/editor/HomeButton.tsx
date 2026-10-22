@@ -14,52 +14,92 @@ export const LIME = '#F0FF62';
 export const PEBBLE_PATH =
   'M 11.2 3.0 C 12.66 2.81, 14.21 2.81, 15.72 3.0 C 17.23 3.19, 18.73 3.38, 20.24 4.13 C 21.75 4.88, 23.54 6.2, 24.76 7.52 C 25.99 8.84, 26.98 10.53, 27.59 12.04 C 28.2 13.55, 28.62 15.02, 28.43 16.57 C 28.24 18.12, 27.4 19.82, 26.46 21.37 C 25.52 22.92, 24.15 24.62, 22.78 25.89 C 21.41 27.16, 19.77 28.58, 18.26 29.0 C 16.75 29.42, 15.25 28.85, 13.74 28.43 C 12.23 28.01, 10.73 27.5, 9.22 26.46 C 7.71 25.43, 5.64 23.68, 4.7 22.22 C 3.76 20.76, 3.71 19.21, 3.57 17.7 C 3.43 16.19, 3.71 14.72, 3.85 13.17 C 3.99 11.62, 3.89 9.88, 4.41 8.37 C 4.93 6.86, 5.83 5.02, 6.96 4.13 C 8.09 3.23, 9.74 3.19, 11.2 3.0 Z';
 
-type Shape = 'language' | 'stem' | 'social' | 'other';
+type Shape = 'chinese' | 'english' | 'science' | 'social' | 'math' | 'other';
 
 /**
- * 依科目換左上角的造型與顏色。三大類：語文、數理、社會；沒設定科目或不在這三類的維持萊姆鵝卵石。
- * 形狀照設計給的三張參考圖描成 32×32 的路徑（不是 Figma 原檔，邊角是目測的）。
+ * 科目造型：五個科目各一個幾何形狀與顏色，沒設定科目或不在這五科的維持萊姆鵝卵石（品牌主視覺）。
+ * 形狀取自 Figma「色彩與形狀」（node 8:17）那張 60 個形狀的圖，原檔在 design/subject-shapes/。
+ *   國語文 B7 方格（轉正）：方塊字一個字一格           Russet
+ *   英語文 D6 帶尖角的圓：對話框的尾巴，開口說           Amber
+ *   自然   E2 近六角：蜂巢、雪花、分子                 Forest
+ *   社會   C9 缺一角：疆界與拼圖，人和群體相接           Sun
+ *   數學   E7 往下尖的三角：角度、推理                 Sky
+ * 顏色分兩種用法（乙練定的）：書櫃的科目標題用深色，閱讀與自編的回首頁鈕用淺色。
+ * 淺色目前是深色混 55% 白，正式值待定（2026-10-22 試套，還沒上線）。
  */
-const LANGUAGE = ['國語', '英語', '國文', '英文', '國語文'];
-const STEM = ['數學', '自然', '自然科學'];
-const SOCIAL = ['社會', '歷史', '地理'];
+const SUBJECTS: Record<Exclude<Shape, 'other'>, string[]> = {
+  chinese: ['國語', '國文', '國語文'],
+  english: ['英語', '英文', '英語文'],
+  science: ['自然', '自然科學'],
+  social: ['社會', '歷史', '地理'],
+  math: ['數學'],
+};
 
 export function shapeOf(subject?: string): Shape {
   if (!subject) return 'other';
-  if (LANGUAGE.includes(subject)) return 'language';
-  if (STEM.includes(subject)) return 'stem';
-  if (SOCIAL.includes(subject)) return 'social';
-  return 'other';
+  const hit = (Object.keys(SUBJECTS) as (keyof typeof SUBJECTS)[]).find((k) => SUBJECTS[k].includes(subject));
+  return hit ?? 'other';
 }
 
-const SHAPES: Record<Shape, { d: string; fill: string }> = {
-  other: { d: PEBBLE_PATH, fill: LIME },
-  /* 語文：圓潤的橘色塊 */
-  language: {
-    d: 'M 11.75 4 C 14.12 2.88, 16.96 2.46, 19.25 3.00 C 21.54 3.54, 24.04 5.42, 25.50 7.25 C 26.96 9.08, 27.92 11.50, 28.00 14.00 C 28.08 16.50, 27.04 19.92, 26.00 22.25 C 24.96 24.58, 23.83 26.88, 21.75 28.00 C 19.67 29.12, 16.00 29.42, 13.50 29.00 C 11.00 28.58, 8.42 27.25, 6.75 25.50 C 5.08 23.75, 3.79 21.12, 3.50 18.50 C 3.21 15.88, 3.62 12.17, 5.00 9.75 C 6.38 7.33, 9.38 5.12, 11.75 4.00 Z',
-    fill: '#F8DA9A',
+/** w、h 是路徑自己的座標範圍；畫的時候等比縮進 32×32 的格子裡置中。 */
+type ShapeDef = { d: string; w: number; h: number; light: string; dark: string };
+
+const SHAPES: Record<Shape, ShapeDef> = {
+  other: { d: PEBBLE_PATH, w: 32, h: 32, light: LIME, dark: LIME },
+  chinese: {
+    d: 'M72.05 77.02C50.63 73.57 26.63 72.79 0 74.69L6.88 0L74.61 0L72.05 77.02Z',
+    w: 74.61,
+    h: 77.02,
+    light: '#CEBAA7',
+    dark: '#93663C',
   },
-  /* 數理：不規則多邊形，綠 */
-  stem: {
-    d: 'M 22.35 3 L 27.35 11.9 L 28.85 20.2 L 20.35 29 L 13.35 24.1 L 3.15 21.1 L 6.45 12.7 L 11.45 6.6 Z',
-    fill: '#8AE2A0',
+  english: {
+    d: 'M20.02 0.0032267C29.02 0.143227 45.63 9.14323 52.58 16.8832C59.07 23.7732 75.62 30.8532 74.9501 39.9932C74.16 47.4732 56.88 59.5232 46.69 64.0832C37.89 68.5932 27.63 74.5432 22.27 72.5632C14.79 70.7032 5.59005 64.4832 1.55005 53.4332C-0.499952 44.8232 -0.959953 27.0832 2.94005 15.5632C5.13005 8.94323 12.67 -0.196773 20.02 0.0032267Z',
+    w: 74.97,
+    h: 72.95,
+    light: '#FAE398',
+    dark: '#F3C11B',
   },
-  /* 社會：兩道凹口的七邊形，藍 */
+  science: {
+    d: 'M36.2 0L69.89 12.18L85.32 42.7L67.64 65.74L46.26 80.76L18.93 75.47L0 52.1L9.6 13.77L36.2 0Z',
+    w: 85.32,
+    h: 80.76,
+    light: '#8CD6BE',
+    dark: '#00A36E',
+  },
   social: {
-    d: 'M 6.84 7.2 Q 11 8.2 13.12 4.75 L 23.24 3.35 L 29 12.95 L 27.6 23.94 L 18 28.65 Q 12.6 24.3 7.54 24.29 L 3 17.3 Z',
-    fill: '#9AE1F3',
+    d: 'M7.94 60.9C6.13 54.77 3.48 45.25 0 32.37C13.54 19.83 22.73 9.04 27.53 0C38.08 7.32 52.53 10.72 70.89 10.19C71.55 21.14 70.75 34.42 68.5 50.05L42.03 71.5C27.6 67.26 16.24 63.72 7.94 60.9Z',
+    w: 71.11,
+    h: 71.5,
+    light: '#FFC8AE',
+    dark: '#FF854A',
+  },
+  math: {
+    d: 'M0 29.72L67.64 0L87.9 55.54L41.96 97.11L0 29.72Z',
+    w: 87.9,
+    h: 97.11,
+    light: '#8EE5F5',
+    dark: '#03C5E9',
   },
 };
 
+/** 把形狀等比縮進 32×32、四周留一點邊（鵝卵石本來就畫在 32×32 裡，不動）。 */
+function fit(def: ShapeDef): string {
+  if (def.w === 32 && def.h === 32) return '';
+  const k = 26 / Math.max(def.w, def.h);
+  return `translate(${(32 - def.w * k) / 2} ${(32 - def.h * k) / 2}) scale(${k})`;
+}
+
 /** 32×32 的剪影。 */
 function Silhouette({ shape }: { shape: Shape }) {
-  const { d, fill } = SHAPES[shape];
+  const def = SHAPES[shape];
+  const k = 26 / Math.max(def.w, def.h);
   return (
-    <>
-      {/* 懸停的灰圈沿著形狀外緣描，不是一塊圓底：多邊形、凹口都照著走 */}
-      <path className="halo" d={d} fill="none" strokeWidth={4} strokeLinejoin="round" />
-      <path d={d} fill={fill} />
-    </>
+    <g transform={fit(def) || undefined}>
+      {/* 懸停的灰圈沿著形狀外緣描，不是一塊圓底：多邊形、凹口都照著走。縮放過的形狀要把線寬除回來 */}
+      <path className="halo" d={def.d} fill="none" strokeWidth={fit(def) ? 4 / k : 4} strokeLinejoin="round" />
+      <path d={def.d} fill={def.light} />
+    </g>
   );
 }
 
@@ -116,12 +156,14 @@ const Pebble = styled.button<{ $large: boolean }>`
   &:active svg { transform: scale(0.96); }
 `;
 
-/** 書櫃分區標題前的科目記號：跟回首頁鈕同一組造型與顏色，24×24。 */
+/** 書櫃分區標題前的科目記號：跟回首頁鈕同一組造型，用深色（回首頁鈕用淺色）。 */
 export function SubjectMark({ subject, size = 24 }: { subject?: string; size?: number }) {
-  const { d, fill } = SHAPES[shapeOf(subject)];
+  const def = SHAPES[shapeOf(subject)];
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <path d={d} fill={fill} />
+      <g transform={fit(def) || undefined}>
+        <path d={def.d} fill={def.dark} />
+      </g>
     </svg>
   );
 }
