@@ -211,7 +211,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
 }
 
 /** 書櫃分區的科目名稱 → 教材設定裡的科目（決定左上角回首頁鈕的形狀）。 */
-const metaSubject = (subject: string) => ({ 國語文: '國語', 自然科學: '自然' })[subject] ?? subject;
+const metaSubject = (subject: string) => ({ 國語文: '國語', 英語文: '英語', 自然科學: '自然' })[subject] ?? subject;
 
 /** 右上角：名字＋頭像，點了切換身分。 */
 function UserMenu({ role }: { role: Role }) {

@@ -38,8 +38,8 @@ export const TEXTBOOKS: Textbook[] = [
   { id: 'guoyu-5a', subject: '國語文', edition: '115 範例', publisher: '範例', title: '國語 5上', cover: null },
   { id: 'social-5b', subject: '社會', edition: '115 翰林', publisher: '翰林', title: '社會 5下', cover: socialCover },
   { id: 'social-6a', subject: '社會', edition: '115 範例', publisher: '範例', title: '社會 6上', cover: null },
-  { id: 'english-6', subject: '英語', edition: '114 康軒', publisher: '康軒', title: 'Wonder World 6', cover: englishCover },
-  { id: 'english-5a', subject: '英語', edition: '115 範例', publisher: '範例', title: 'English 5上', cover: null },
+  { id: 'english-6', subject: '英語文', edition: '114 康軒', publisher: '康軒', title: 'Wonder World 6', cover: englishCover },
+  { id: 'english-5a', subject: '英語文', edition: '115 範例', publisher: '範例', title: 'English 5上', cover: null },
   { id: 'demo', subject: '自然科學', edition: '114 南一', publisher: '南一', title: '自然科學 5下', cover: scienceCover, md: demoMd },
   { id: 'science-6a', subject: '自然科學', edition: '115 範例', publisher: '範例', title: '自然科學 6上', cover: null },
   { id: 'math-2b', subject: '數學', edition: '114 翰林', publisher: '翰林', title: '數學 2下', cover: mathCover },
@@ -49,7 +49,7 @@ export const TEXTBOOKS: Textbook[] = [
 export const findTextbook = (id: string) => TEXTBOOKS.find((t) => t.id === id) ?? null;
 
 /** 書櫃分區的科目名稱 → 教材設定裡的科目（決定回首頁鈕的造型）。 */
-const META_SUBJECT: Record<string, string> = { 國語文: '國語', 自然科學: '自然' };
+const META_SUBJECT: Record<string, string> = { 國語文: '國語', 英語文: '英語', 自然科學: '自然' };
 
 /** 原本的內容。每次都重新解析，拿到的是乾淨的一份，建副本時改了不會動到原本。 */
 export function textbookDoc(t: Textbook): Doc {

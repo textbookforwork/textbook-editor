@@ -19,6 +19,8 @@ export type Source = {
   builtIn: boolean;
 };
 
+const RENAMED_SUBJECT: Record<string, string> = { 英語: '英語文' };
+
 /** 民國學年度：卡片左上「115 南一」那一個數字。 */
 export const rocYear = () => new Date().getFullYear() - 1911;
 
@@ -29,7 +31,8 @@ export function findSource(id: string): Source | null {
   if (b && isOriginal(b)) {
     return {
       id: b.id,
-      subject: b.subject ?? '其他',
+      // 科目改過名（2026-10-22「英語」→「英語文」），舊資料讀出來時對到新名字，書櫃才不會分成兩區
+      subject: RENAMED_SUBJECT[b.subject ?? ''] ?? b.subject ?? '其他',
       edition: `${new Date(b.createdAt).getFullYear() - 1911} ${b.publisher ?? ''}`.trim(),
       publisher: b.publisher ?? '',
       title: b.title,

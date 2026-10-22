@@ -4,8 +4,8 @@ import styled from 'styled-components';
 import { ESC, Pair, Scrim, Secondary, Sheet } from '../editor/ShareDialog';
 import { SubjectMark } from '../editor/HomeButton';
 
-/** 書櫃的科目分區，也是書櫃上由上到下的順序（乙練定的：國語文、社會、英語、自然科學、數學）。 */
-export const SUBJECTS = ['國語文', '社會', '英語', '自然科學', '數學'];
+/** 書櫃的科目分區，也是書櫃上由上到下的順序（乙練定的：國語文、社會、英語文、自然科學、數學）。 */
+export const SUBJECTS = ['國語文', '社會', '英語文', '自然科學', '數學'];
 
 /**
  * 系統管理員的「建立教材」：從空白本開始，建的是數位教科書（原本）。
@@ -108,17 +108,13 @@ const Input = styled.input`
 `;
 
 /**
- * 五顆一樣寬：六欄格線、每顆佔兩欄，第一排三顆、第二排兩顆置中。
- * 不用彈性撐滿——第二排只有兩顆時會被拉成長條（乙練：「不能滿版那麼長」）。
+ * 五顆一樣寬：三欄格線，第一排三顆、第二排兩顆靠左。
+ * 不用彈性撐滿——第二排只有兩顆時會被拉成長條（乙練：「不能滿版那麼長」）；也不置中，靠左對齊。
  */
 const Chips = styled.div`
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-
-  & > * { grid-column: span 2; }
-  & > :nth-child(4) { grid-column: 2 / span 2; }
-  & > :nth-child(5) { grid-column: 4 / span 2; }
 `;
 
 /** 選中的灰底（跟工具列的開關同一款），不用黃 */
