@@ -297,7 +297,13 @@ function BlockCapsule() {
                 type: 'patchBlock',
                 blockId: id,
                 blockType: 'web',
-                patch: { presentation: 'bookmark', chosen: true, widthPct: 100 / 3, blockSize: undefined },
+                // 直排不給比例：標籤卡片是橫的，比例套在直的那一軸會變細條（見 blockSizing）
+                patch: {
+                  presentation: 'bookmark',
+                  chosen: true,
+                  widthPct: ed.doc.settings.writingMode === 'vertical' ? undefined : 100 / 3,
+                  blockSize: undefined,
+                },
               });
             }}
             title="以插入標籤呈現"

@@ -50,10 +50,21 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   // 還沒選呈現方式時先貼的網址，選了方式才一起寫進去
   const [draftUrl, setDraftUrl] = useState('');
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [cardH, setCardH] = useState(68);
 
   const host = hostOf(block.url);
   const safe = safeHttpUrl(block.url);
   const isChosen = block.chosen !== false;
+  const vertical = ed?.doc.settings.writingMode === 'vertical';
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setCardH(el.offsetHeight || 68));
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
 
   useEffect(() => {
     if (isEditingUrl && inputRef.current) {
@@ -92,7 +103,8 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
         presentation,
         chosen: true,
         // 標籤是一條小卡，佔欄寬三分之一就夠；內嵌預設佔滿整頁（寬撐滿欄、高交給 blockSizing 撐滿一頁）
-        widthPct: presentation === 'bookmark' ? 100 / 3 : 100,
+        // 直排的標籤不給比例，交給 blockSizing 給一張橫卡的大小
+        widthPct: presentation === 'embed' ? 100 : vertical ? undefined : 100 / 3,
         blockSize: undefined,
         ...(v ? { url: v, ...(block.title ? {} : { title: hostOf(v) || '連結標題' }) } : {}),
       });
@@ -243,10 +255,8 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
   if (onPatch && (!block.url || isEditingUrl)) {
     return (
       <EmptyFrame style={boxStyle} onPointerDown={onSelect}>
-        {/* 框太小放不下網址欄（見 emptyCompact）：只留「貼上網址」，再小只剩網頁圖示；拉大就會出現網址欄 */}
-        <CompactAction label="貼上網址" action="link" kind="globe" primary={false} title="把框拉大就能貼網址" />
+        {/* 標籤本來就是矮的一條（68），不走小框只留圖示的規則（見 emptyCompact），網址欄一律直接出現 */}
         <Pick
-          data-full
           onPointerDown={(e) => {
             onSelect?.();
             e.stopPropagation();
@@ -283,7 +293,8 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
   // 已貼上網址後的「插入標籤」卡片：
   // 1. 移除網址列，只顯示標題（超過字數截斷顯示「…」）
   // 2. 拉左右側變寬可顯示更多標題文字；拉四角等比縮放時依 blockSize 比例縮放內容
-  const scaleFactor = block.blockSize ? Math.max(0.6, Math.min(2.2, block.blockSize / 68)) : 1;
+  // 依卡片實際的高縮放；直排時 blockSize 是寬，不能拿來算
+  const scaleFactor = Math.max(0.6, Math.min(2.2, cardH / 68));
   // 左邊的圖示格：撐滿卡片內高（68 − 上下內距 8×2 − 框線），4:3
   const thumbH = Math.round(50 * scaleFactor);
   const thumbW = Math.round((thumbH * 4) / 3);
@@ -291,6 +302,7 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
 
   return (
     <Card
+      ref={cardRef}
       style={boxStyle}
       $clickable={!!safe}
       onPointerDown={onSelect}
@@ -301,13 +313,37 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
       onDoubleClick={() => {
         if (onPatch && safe) window.open(safe, '_blank', 'noopener,noreferrer');
       }}
-      title={onPatch && safe ? '點兩下開啟連結' : undefined}
+      title={onPatch && safe ? '點兩下圖示開啟連結，點名稱可以改名' : undefined}
     >
       {/* 照媒體庫的網頁列：左邊淡灰圖示格（地球），右邊標題 */}
       <CardThumb style={{ inlineSize: `${thumbW}px`, blockSize: `${thumbH}px` }}>
         <Icon name="globe" size={24} />
       </CardThumb>
-      <Title style={{ fontSize: `${fontSizePx}px` }}>{block.title || linkLabel(block.url) || '連結標題'}</Title>
+      {/* 編輯時名稱直接點進去改（跟內嵌網頁中間的名稱一樣）；點兩下名稱是選字，不開連結，開連結點兩下圖示 */}
+      {onPatch ? (
+        <Title
+          style={{ fontSize: `${fontSizePx}px`, cursor: 'text' }}
+          contentEditable
+          suppressContentEditableWarning
+          data-placeholder={linkLabel(block.url) || '網頁名稱'}
+          onPointerDown={(e) => {
+            onSelect?.();
+            e.stopPropagation();
+          }}
+          onDoubleClick={(e) => e.stopPropagation()}
+          onBlur={(e) => onPatch({ title: (e.currentTarget.textContent ?? '').trim() })}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === 'Escape') {
+              e.preventDefault();
+              e.currentTarget.blur();
+            }
+          }}
+        >
+          {block.title}
+        </Title>
+      ) : (
+        <Title style={{ fontSize: `${fontSizePx}px` }}>{block.title || linkLabel(block.url) || '連結標題'}</Title>
+      )}
     </Card>
   );
 }

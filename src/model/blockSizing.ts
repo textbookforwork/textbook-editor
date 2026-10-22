@@ -217,11 +217,19 @@ export function blockBox(
       const inlineSize = ctx.vertical ? blockSize / ratio : blockSize * ratio;
       return { inlineSize: Math.min(inlineSize, webInline), blockSize };
     }
+    // 標籤卡片永遠是橫的（圖示在左、名稱在右），直排時 inline 軸是高、block 軸是寬，
+    // 照橫排的算法會變成一條直的細條。直排沒拖過就給一張橫卡的大小：高 68、寬 300
+    if (ctx.vertical && block.presentation === 'bookmark') {
+      return {
+        inlineSize: block.widthPct != null ? webInline : BOOKMARK_H,
+        blockSize: Math.min(block.blockSize ?? BOOKMARK_VERTICAL_W, ctx.maxBlockSize),
+      };
+    }
     // 內嵌網頁預設佔滿一整頁：太小的網頁裡的字看不清，老師多半要它單獨一頁給學生操作
     const defaultBlock =
       block.presentation === 'embed' ? ctx.maxBlockSize
       : block.presentation === 'qr' ? 88
-      : 68;
+      : BOOKMARK_H;
     return {
       inlineSize: webInline,
       blockSize: Math.min(block.blockSize ?? defaultBlock, ctx.maxBlockSize),
@@ -264,6 +272,10 @@ export function blockBox(
  * 只在插入時套用——之後老師拖外框就照他拖的。
  */
 const HEADING_ALLOWANCE = 112;
+
+/** 網頁標籤卡片的預設高，以及直排時的預設寬。 */
+const BOOKMARK_H = 68;
+const BOOKMARK_VERTICAL_W = 300;
 
 export function fitTwoPerPage(block: Block, settings: Pick<DocSettings, 'aspectRatio' | 'writingMode'>): Block {
   let ratio: number;
