@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import styled from 'styled-components';
-import { Icon } from './Icon';
 import { isMaskShown, maskKey, revealMask, useMaskVersion } from '../viewer/masks';
 
 type Props = {
@@ -11,30 +10,26 @@ type Props = {
   live: boolean;
 };
 
+const LABEL = '遮住：點擊後出現';
+
 /**
  * 整個元件的遮罩：跟元件一樣大，疊在元件上，不佔版面。
- * 閱讀時點了淡出；打開過的記著（見 viewer/masks），換頁再回來仍是開的。
+ * 閱讀時是一片灰白霧面（看得出底下有東西、看不出是什麼），不另外放按鈕，點了淡出；
+ * 打開過的記著（見 viewer/masks），同一堂課換頁再回來仍是開的。
  */
 export function MaskCover({ blockId, editing, live }: Props) {
   useMaskVersion();
   const key = maskKey(blockId);
   const [fading, setFading] = useState(false);
 
-  if (editing) {
-    return (
-      <Hatch aria-hidden="true">
-        <Tag>
-          <Icon name="eye-off" size={16} />
-          遮住
-        </Tag>
-      </Hatch>
-    );
-  }
+  // 編輯時只畫一圈虛線、鋪一層極淡的底，內容照樣看得清楚
+  if (editing) return <Outline aria-hidden="true" title={LABEL} />;
   if (isMaskShown(key)) return null;
   return (
-    <Cover
+    <Frost
       as={live ? 'button' : 'div'}
       type={live ? 'button' : undefined}
+      aria-label={live ? LABEL : undefined}
       $fading={fading}
       onClick={
         live
@@ -42,72 +37,43 @@ export function MaskCover({ blockId, editing, live }: Props) {
               // 點遮罩只打開遮罩，不同時打開這個元件的補充
               e.stopPropagation();
               setFading(true);
-              window.setTimeout(() => revealMask(key), 200);
+              window.setTimeout(() => revealMask(key), 260);
             }
           : undefined
       }
-    >
-      {live && <Hint>點我看</Hint>}
-    </Cover>
+    />
   );
 }
 
-/** 編輯時：斜線底紋，看得到底下的內容 */
-const Hatch = styled.div`
+const Outline = styled.div`
   position: absolute;
-  inset: 0;
+  inset: -4px;
   z-index: 2;
   pointer-events: none;
-  border-radius: 6px;
-  background: repeating-linear-gradient(
-    135deg,
-    color-mix(in srgb, ${(p) => p.theme.text.tertiary} 22%, transparent) 0 2px,
-    transparent 2px 8px
-  );
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, ${(p) => p.theme.text.tertiary} 45%, transparent);
+  border: 1.5px dashed ${(p) => p.theme.border.editing};
+  border-radius: 10px;
+  background: color-mix(in srgb, ${(p) => p.theme.surface.sunken} 25%, transparent);
 `;
 
-const Tag = styled.span`
+/** 閱讀時：霧面玻璃。底下的內容糊成一片，看得出有東西、看不出是什麼 */
+const Frost = styled.div<{ $fading: boolean }>`
   position: absolute;
-  inset-block-start: 6px;
-  inset-inline-start: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px 2px 6px;
-  border-radius: 999px;
-  background: ${(p) => p.theme.surface.raised};
-  color: ${(p) => p.theme.text.secondary};
-  font-size: 12px;
-  line-height: 18px;
-  writing-mode: horizontal-tb;
-  box-shadow: 0 1px 3px rgba(26, 25, 23, 0.12);
-`;
-
-/** 閱讀時：淡灰色實心遮罩 */
-const Cover = styled.div<{ $fading: boolean }>`
-  position: absolute;
-  inset: 0;
+  /* 往外多蓋 4px：圖片自己的圓角比較小，不多蓋一點，四個角會露出底下的顏色 */
+  inset: -4px;
   z-index: 2;
   display: grid;
   place-items: center;
   padding: 0;
-  border: none;
-  border-radius: 8px;
-  background: ${(p) => p.theme.surface.muted};
+  border: 1px solid ${(p) => p.theme.border.subtle};
+  border-radius: 12px;
+  background: color-mix(in srgb, ${(p) => p.theme.surface.sunken} 88%, transparent);
+  backdrop-filter: blur(24px) saturate(1.1);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
   font: inherit;
   cursor: pointer;
   opacity: ${(p) => (p.$fading ? 0 : 1)};
-  transition: opacity 0.2s ease, background-color 0.15s;
-  &:hover { background: color-mix(in srgb, ${(p) => p.theme.surface.muted} 85%, ${(p) => p.theme.text.tertiary}); }
-  &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: 4px; }
-`;
+  transition: opacity 0.26s ease;
 
-const Hint = styled.span`
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: ${(p) => p.theme.surface.raised};
-  color: ${(p) => p.theme.text.secondary};
-  font-size: 15px;
-  writing-mode: horizontal-tb;
+  &:hover { background: color-mix(in srgb, ${(p) => p.theme.surface.muted} 88%, transparent); }
+  &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: 4px; }
 `;

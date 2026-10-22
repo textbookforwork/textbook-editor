@@ -251,19 +251,19 @@ const Text = styled.p`
   margin: 0;
   color: ${(p) => p.theme.text.primary};
 
-  /* 遮住的幾個字（閱讀）：灰條蓋住，點了才顯示；字的位置照留，打開後版面不動 */
+  /* 遮住的幾個字（閱讀）：實心淡灰膠囊蓋住，點了才顯示；字的位置照留，打開後版面不動 */
   [data-mask]:not([data-shown]) {
     background: ${(p) => p.theme.surface.muted};
     color: transparent;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     text-decoration-color: transparent;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
   }
   [data-mask]:not([data-shown]) rt { color: transparent; }
-  [data-mask]:not([data-shown]):hover { background: color-mix(in srgb, ${(p) => p.theme.surface.muted} 85%, ${(p) => p.theme.text.tertiary}); }
-  [data-mask][data-shown] { transition: background-color 0.2s; }
+  [data-mask]:not([data-shown]):hover { background: ${(p) => p.theme.border.default}; }
+  [data-mask] { transition: background-color 0.2s, color 0.2s; }
 `;
 
 const EditableTextStyled = styled(EditableText)`
@@ -271,14 +271,11 @@ const EditableTextStyled = styled(EditableText)`
   color: ${(p) => p.theme.text.primary};
   outline: none;
 
-  /* 遮住的幾個字（編輯）：斜線底紋標出來，字照樣看得到、改得到 */
+  /* 遮住的幾個字（編輯）：淡灰底加虛線底邊標出來，字照樣看得到、改得到 */
   [data-mask] {
-    background: repeating-linear-gradient(
-      135deg,
-      color-mix(in srgb, ${(p) => p.theme.text.tertiary} 28%, transparent) 0 2px,
-      transparent 2px 6px
-    );
-    border-radius: 3px;
+    background: ${(p) => p.theme.surface.sunken};
+    box-shadow: inset 0 -1.5px 0 ${(p) => p.theme.border.editing};
+    border-radius: 4px;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
   }

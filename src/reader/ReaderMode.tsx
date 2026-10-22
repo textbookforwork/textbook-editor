@@ -1,5 +1,6 @@
 import { readyElementPopups, readyPopups } from '../model/popups';
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type RefObject } from 'react';
+import { resetMasks } from '../viewer/masks';
 import styled, { createGlobalStyle } from 'styled-components';
 import { PageView } from '../components/PageView';
 import { Icon } from '../components/Icon';
@@ -83,6 +84,8 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
   const ink = useInk(doc.id, page?.index ?? 0);
 
   // 聚焦的段落：點段落裡任何地方（或段號）開，點空白處關；翻頁就放掉（那一段可能不在這一頁了）
+  // 每次進閱讀，遮住的東西全部蓋回去（畫面出來之前就重設，不會先閃一下打開的樣子）
+  useLayoutEffect(() => resetMasks(), []);
   const [para, setPara] = useState<{ id: string; el: HTMLElement } | null>(null);
   // 段落裡聚焦到的那一句若標成句子，右下角的膠囊換成它的旨修句問與補充
   const [sentenceId, setSentenceId] = useState<string | null>(null);

@@ -352,10 +352,11 @@ function BlockCapsule() {
             patch: { masked: block.masked ? undefined : true },
           })
         }
-        title={block.masked ? '取消遮住' : '遮住：閱讀時先蓋住，點了才顯示'}
+        title="遮住：點擊後出現"
+        aria-pressed={!!block.masked}
         $icon
       >
-        <Icon name="eye-off" size={20} label={block.masked ? '取消遮住' : '遮住'} />
+        <Icon name="eye-off" size={20} label="遮住：點擊後出現" />
       </Btn>
 
       {/* 手動換頁線的位置固定，不隨內容移動——這是老師的決定 */}

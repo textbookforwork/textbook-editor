@@ -189,8 +189,8 @@ export function InlineTextTools({ block, blockId, start, end, afterFont }: Inlin
         <Icon name="overline" size={20} label="上線" />
       </ToolBtn>
       {/* 遮住這幾個字（像挖空）：閱讀時蓋一條灰底，點了才顯示 */}
-      <ToolBtn $iconOnly $on={all('masked')} onClick={() => toggle('masked')} title="遮住：閱讀時先蓋住，點了才顯示">
-        <Icon name="eye-off" size={20} label="遮住" />
+      <ToolBtn $iconOnly $on={all('masked')} onClick={() => toggle('masked')} title="遮住：點擊後出現" aria-pressed={all('masked')}>
+        <Icon name="eye-off" size={20} label="遮住：點擊後出現" />
       </ToolBtn>
 
       <ToolBtn
