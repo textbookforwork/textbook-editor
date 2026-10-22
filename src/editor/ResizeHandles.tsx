@@ -30,7 +30,9 @@ export type ResizeMode =
 
 export function resizeModeOf(block: Block): ResizeMode | null {
   switch (block.type) {
+    // 圖片：拖邊只改那一邊的長度（圖在框裡裁成填滿），拖四角才是等比縮放
     case 'image':
+      return 'free';
     case 'video':
       return 'aspect';
     case 'audio':

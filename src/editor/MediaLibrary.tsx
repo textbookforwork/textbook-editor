@@ -728,7 +728,7 @@ const ListLabel = styled.span`
  * 四種狀態（乙練 2026-10-22：框用虛線；上傳鈕試過黑底太重，改回淡灰底黑箭頭）：
  *   平常：灰虛線＋淡灰底上傳鈕
  *   滑過：虛線深一階、上傳鈕深一階
- *   拖檔案進來：品牌深綠虛線＋最淡的 Lime 底（不要太黃），上傳鈕換成 Lime 底深色箭頭，標題「放開就上傳」
+ *   拖檔案進來：底色不變、虛線變黑變粗，上傳鈕換成 Lime（Lime 只當點綴；乙練 2026-10-22 從五種配色選 B），標題「放開就上傳」
  *   上傳中：整塊停用，上傳鈕變圓、外圈進度環走滿，標題「上傳中…」、格式說明收起來；畫布同時出現載入中的佔位框
  */
 const Drop = styled.button<{ $over: boolean }>`
@@ -743,15 +743,15 @@ const Drop = styled.button<{ $over: boolean }>`
   block-size: 128px;
   padding: ${(p) => p.theme.space.insetMd};
   box-sizing: border-box;
-  border: 1.5px dashed ${(p) => (p.$over ? p.theme.border.accent : p.theme.border.default)};
+  border: ${(p) => (p.$over ? '2px' : '1.5px')} dashed ${(p) => (p.$over ? p.theme.text.primary : p.theme.border.default)};
   border-radius: ${(p) => p.theme.radius.card};
-  background: ${(p) => (p.$over ? p.theme.brand.primaryTintSubtle : p.theme.surface.raised)};
+  background: ${(p) => p.theme.surface.raised};
   font: inherit;
   text-align: center;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 
-  &:hover:not(:disabled) { border-color: ${(p) => (p.$over ? p.theme.border.accent : p.theme.border.hover)}; }
+  &:hover:not(:disabled) { border-color: ${(p) => (p.$over ? p.theme.text.primary : p.theme.border.hover)}; }
   &:disabled { cursor: progress; }
 `;
 

@@ -79,7 +79,9 @@ export function ImageBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
                     objectFit: 'fill',
                     borderRadius: 0,
                   }
-                : undefined
+                : block.blockSize != null
+                  ? { objectFit: 'cover' } /* 老師單獨拉過一邊：框的比例跟圖不同，裁成填滿，不留白邊 */
+                  : undefined
             }
           />
           {cropping && onPatch && typeof boxStyle?.width === 'number' && typeof boxStyle?.height === 'number' && (
@@ -90,7 +92,8 @@ export function ImageBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
               boxH={boxStyle.height}
               onCancel={() => setCroppingId(null)}
               onDone={(crop) => {
-                onPatch({ crop });
+                // 裁切決定了比例，之前單獨拉過的框高就不再適用
+                onPatch({ crop, blockSize: undefined });
                 setCroppingId(null);
               }}
             />

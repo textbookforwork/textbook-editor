@@ -170,6 +170,11 @@ export function blockBox(
   const explicit = block.widthPct != null;
   const wanted = (ctx.inlineSize * (block.widthPct ?? 100)) / 100;
 
+  // 圖片拖過上下（或左右）邊：框的長寬由老師決定，圖在框裡裁成填滿（見 ImageBlockView）
+  if (block.type === 'image' && block.blockSize != null) {
+    return { inlineSize: wanted, blockSize: Math.min(block.blockSize, ctx.maxBlockSize) };
+  }
+
   if (block.type === 'image' || block.type === 'video') {
     const ratio = block.type === 'image' ? imageRatio(block) : 16 / 9;
     // 老師調過尺寸就照他的，沒調過就用預設上限
