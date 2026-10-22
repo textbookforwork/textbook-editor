@@ -5,6 +5,7 @@ import { Icon } from '../components/Icon';
 import { ConfirmDialog } from './ConfirmDialog';
 import { WithoutPopupViewer } from '../viewer/PopupViewer';
 import { PAGE_SIZE } from '../model/pageSize';
+import { makeText } from '../model/document';
 import type { Action } from '../model/actions';
 import type { Page } from '../model/paginate';
 import type { Doc } from '../model/types';
@@ -95,6 +96,24 @@ export function PageThumbs({ doc, pages, current, thumbInline, onGoPage, dispatc
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   // 拖曳結束時瀏覽器還是會補一個 click，要吞掉，否則放下的瞬間會跳頁
   const suppressClick = useRef(false);
+  // 新增頁面後要跳到新的那一頁，但頁是 dispatch 之後才重算出來的，先記著要去第幾頁
+  const [goAfterAdd, setGoAfterAdd] = useState<number | null>(null);
+  useEffect(() => {
+    if (goAfterAdd === null || pages.length <= goAfterAdd) return;
+    onGoPage(goAfterAdd);
+    setGoAfterAdd(null);
+  }, [goAfterAdd, pages.length, onGoPage]);
+
+  /**
+   * 新增頁面＝在最後放一條換頁線，接一段空白文字。跟元件膠囊上的「換頁」是同一種線，
+   * 所以上面照樣會出現「可合併」，按了就併回上一頁——切分與合併的規則不另外改。
+   * 放空白文字而不是空列：空列連插入點都沒地方掛，老師進到新頁會無處下手。
+   */
+  const addPage = () => {
+    if (!dispatch) return;
+    dispatch({ type: 'insertRow', index: doc.rows.length, blocks: [makeText('', 'body')], breakBefore: true });
+    setGoAfterAdd(pages.length);
+  };
 
   // 目前這一頁的縮圖要一直看得到：捲動編輯區時，左側跟著捲過去
   useEffect(() => {
@@ -291,6 +310,15 @@ export function PageThumbs({ doc, pages, current, thumbInline, onGoPage, dispatc
             </Thumb>
           );
         })}
+        {/* 新增頁面：排在最後一張縮圖後面，跟縮圖同大小的虛線框，一看就知道是「下一頁放這裡」 */}
+        {dispatch && (
+          <AddThumb type="button" onClick={addPage} aria-label="新增頁面" title="在最後新增一頁">
+            <Num $on={false} />
+            <AddShot style={{ width: size.width * scale, height: size.height * scale }}>
+              <Icon name="plus" size={20} />
+            </AddShot>
+          </AddThumb>
+        )}
         {markTop !== null && <DropMark style={{ top: markTop }} />}
       </List>
 
@@ -361,6 +389,35 @@ const Num = styled.span<{ $on: boolean }>`
   font-weight: ${(p) => (p.$on ? 700 : 500)};
   font-variant-numeric: tabular-nums;
   color: ${(p) => (p.$on ? p.theme.text.primary : p.theme.text.tertiary)};
+`;
+
+/** 新增頁面那一格：外層跟縮圖同一套內距，框的大小與圓角也一樣，只是換成虛線、不上陰影。 */
+const AddThumb = styled.button`
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: ${THUMB_INSET}px ${THUMB_INSET}px ${THUMB_INSET}px 2px;
+  border: none;
+  border-radius: ${SHOT_RADIUS + THUMB_INSET}px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: ${(p) => p.theme.icon.secondary};
+
+  &:hover { color: ${(p) => p.theme.icon.default}; }
+  &:hover > span:last-child { border-color: ${(p) => p.theme.border.hover}; background: ${(p) => p.theme.surface.page}; }
+  &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: -2px; }
+`;
+
+const AddShot = styled.span`
+  flex: none;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border-radius: ${SHOT_RADIUS}px;
+  /* 跟空的圖片、網頁元件同一種虛線框 */
+  border: ${(p) => p.theme.border.widthDefault} dashed ${(p) => p.theme.border.default};
+  transition: border-color 0.12s, background 0.12s;
 `;
 
 /** 包住縮圖，好讓垃圾桶貼在它的右上角。 */

@@ -121,7 +121,7 @@ export function applyAction(doc: Doc, action: Action): Doc {
       const rows = doc.rows.slice();
       rows.splice(index, 0, {
         id: newId('row'),
-        breakBefore: false,
+        breakBefore: action.breakBefore ?? false,
         columns: [{ id: newId('col'), widthPct: 100, blocks: action.blocks }],
       });
       return { ...doc, rows };

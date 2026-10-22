@@ -70,7 +70,8 @@ export type Action =
   | { type: 'setSettings'; patch: Partial<DocSettings> }
   /** 書目資料（出版社、年級、科目…）。老師在設定面板改，不是只能改 md。 */
   | { type: 'setMeta'; patch: Partial<DocMeta> }
-  | { type: 'insertRow'; index: number; blocks: Block[] }
+  /** breakBefore：這一列從新的一頁開始（左側縮圖的「新增頁面」用，一次插入、一次復原）。 */
+  | { type: 'insertRow'; index: number; blocks: Block[]; breakBefore?: boolean }
   /** 一次插入好幾列（例：PDF 匯入的每一頁各一列），只算一次復原。 */
   | { type: 'insertRows'; index: number; rows: Block[][] }
   /**
