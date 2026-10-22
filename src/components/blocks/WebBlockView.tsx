@@ -40,7 +40,7 @@ type Props = {
  * 網頁。課本上有三種樣子，資料是同一個：
  *
  *  bookmark 插入標籤（先在元件上直接貼網址，貼上後轉為有標題與右側縮圖的橫向卡片）
- *  embed    內嵌網頁（直接在元件上貼網址，貼上後顯示內嵌網頁框、右上角 12px 處有刪除 × 鈕、hover 置中顯示網頁名稱）
+ *  embed    內嵌網頁（直接在元件上貼網址，貼上後顯示內嵌網頁框、右上角 12px 處有刪除鈕（垃圾桶）、hover 置中顯示網頁名稱）
  *  qr       課本印的 QR 碼
  */
 export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
@@ -214,7 +214,7 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
           </EmbedPlaceholder>
         )}
 
-        {/* 右上角刪除 × 按鈕：距離外框右上端點 12px，樣式依新設計系統 */}
+        {/* 右上角刪除按鈕（垃圾桶）：距離外框右上端點 12px，樣式依新設計系統 */}
         {onPatch && ed && (
           <EmbedCloseBtn
             type="button"
@@ -227,7 +227,7 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
               ed.select(null);
             }}
           >
-            <Icon name="x" size={16} label="刪除" />
+            <Icon name="trash" size={16} label="刪除" />
           </EmbedCloseBtn>
         )}
 
@@ -567,7 +567,7 @@ const EmbedPlaceholder = styled.div`
 `;
 
 /**
- * 內嵌網頁右上角的刪除 × 按鈕：
+ * 內嵌網頁右上角的刪除按鈕（垃圾桶，跟其他刪除鍵同一個圖示）：
  * 距離外框右上端點 12px（top: 12px; right: 12px），位置與系統其他彈窗/卡片一致，
  * 樣式依新設計系統。
  */
