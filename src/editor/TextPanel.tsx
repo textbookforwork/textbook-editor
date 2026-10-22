@@ -348,7 +348,7 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
       </ToolBtn>
       {fontOpen && (
         <Popover anchor={fontRef.current} label="字型" onClose={() => setFontOpen(false)}>
-          <Menu>
+          <Menu $compact>
             {INLINE_FONTS.map((f) => (
               <MenuItem
                 key={f.label}
@@ -361,7 +361,6 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
                 }}
               >
                 {f.label}
-                <Sample style={f.value ? { fontFamily: f.value } : undefined}>永字八法</Sample>
               </MenuItem>
             ))}
           </Menu>
@@ -632,9 +631,5 @@ const MenuItem = styled.button<{ $on?: boolean }>`
 
   /* 選單是淡白底（#FAFAFA），滑過要深一階才看得出 */
   &:hover { background: ${(p) => p.theme.surface.muted}; }
-`;
-
-const Sample = styled.span`
-  color: ${(p) => p.theme.text.tertiary};
 `;
 
