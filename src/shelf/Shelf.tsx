@@ -29,7 +29,7 @@ const TABS: { key: ShelfTab; label: string }[] = [
  * 兩種身分（右上角頭像切換，見 role.ts）：
  *   老師       在數位教科書按鉛筆＝建立自編（副本），出版社不能改
  *   系統管理員 多一顆「建立教材」從空白本開始，建的是數位教科書（原本），出版社自己填；
- *              原本在前台只能新增、不能刪（由後端刪，避免手殘）
+ *              已發布的原本不能刪（老師可能已經在用，由後端刪，避免手殘）；未發布的草稿可以刪
  */
 export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
   const books = useSyncExternalStore(subscribeLibrary, listBooks);
@@ -138,7 +138,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
                     />
                   ))
                 : s.sources.map((t) =>
-                    // 管理員建立的原本：管理員可以直接編、換封面，但不能刪（數位教科書由後端刪，避免手殘）
+                    // 管理員建立的原本：可以直接編、換封面；已發布的不能刪（老師可能已經在用，由後端刪），未發布的草稿可以刪
                     !t.builtIn && admin ? (
                       <BookCard
                         key={t.id}
@@ -146,9 +146,11 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
                         source={t}
                         showTeacher={false}
                         onCover={() => setCovering(findBook(t.id))}
+                        onDelete={findBook(t.id)?.shared ? undefined : () => setDeleting(findBook(t.id))}
                       />
                     ) : (
-                      <SourceCard key={t.id} source={t} onCreate={() => setCreating(t)} />
+                      // 內建的原本一律是已發布；只有管理員需要看到發布狀態
+                      <SourceCard key={t.id} source={t} status={admin ? 'published' : undefined} onCreate={() => setCreating(t)} />
                     )
                   )}
             </Grid>
@@ -195,7 +197,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
       {deleting && (
         <ConfirmDialog
           title={`刪除「${deleting.title}」？`}
-          message="刪除後無法復原。"
+          message={isOriginal(deleting) ? '這本還沒發布，老師看不到。刪除後無法復原。' : '刪除後無法復原。'}
           confirmLabel="刪除"
           onCancel={() => setDeleting(null)}
           onConfirm={() => {
@@ -267,11 +269,12 @@ function CoverImage({ src, subject }: { src: string | null | undefined; title: s
   );
 }
 
-function SourceCard({ source, onCreate }: { source: Source; onCreate: () => void }) {
+function SourceCard({ source, status, onCreate }: { source: Source; status?: Status; onCreate: () => void }) {
   return (
     <Card>
       <Cover>
         <CoverImage src={source.cover} title={source.title} subject={source.subject} />
+        {status && <StatusTag status={status} />}
       </Cover>
       <Body>
         <Meta>{source.edition}</Meta>
@@ -287,6 +290,22 @@ function SourceCard({ source, onCreate }: { source: Source; onCreate: () => void
         </Actions>
       </Body>
     </Card>
+  );
+}
+
+type Status = 'published' | 'shared';
+const STATUS_LABEL: Record<Status, string> = { published: '已發布', shared: '已共享' };
+
+/**
+ * 封面左上的狀態徽章：白色霧面膠囊＋一顆綠色狀態點，跟一般介面的「上線中」標示同一種語言。
+ * 只標成立的狀態（已發布、已共享）；未發布的不掛，已發布的在同一科裡排前面。
+ */
+function StatusTag({ status }: { status: Status }) {
+  return (
+    <Tag>
+      <Dot aria-hidden="true" />
+      {STATUS_LABEL[status]}
+    </Tag>
   );
 }
 
@@ -319,8 +338,8 @@ function BookCard({
     <Card>
       <Cover $hover $menu={menu}>
         <CoverImage src={book.cover ?? source?.cover} title={book.title} subject={source?.subject ?? ''} />
-        {/* 已發布／已共享用深色標籤（狀態成立）；未發布維持淺灰 */}
-        {isOriginal(book) ? <Tag $dark={book.shared}>{book.shared ? '已發布' : '未發布'}</Tag> : book.shared && <Tag $dark>已共享</Tag>}
+        {/* 只標已發布／已共享；未發布不掛標籤（乙練：未發布不用 tag） */}
+        {book.shared && <StatusTag status={isOriginal(book) ? 'published' : 'shared'} />}
         {/* 滑過封面：調暗、右上角出現「更多」；點開是編輯封面與刪除（設計稿：維持目前的設計） */}
         <More ref={menuRef}>
           <MoreBtn type="button" aria-label="更多" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
@@ -601,22 +620,31 @@ const Card = styled.article`
   }
 `;
 
-const Tag = styled.span<{ $dark?: boolean }>`
+const Tag = styled.span`
   position: absolute;
   inset-block-start: 10px;
   inset-inline-start: 10px;
   display: flex;
   align-items: center;
+  gap: 6px;
   block-size: 24px;
-  padding-inline: ${(p) => p.theme.space.insetSm};
+  padding-inline: 8px 10px;
   border-radius: ${(p) => p.theme.radius.control};
-  background: ${(p) => (p.$dark ? `color-mix(in srgb, ${p.theme.surface.inverse} 50%, transparent)` : p.theme.surface.sunken)};
+  background: color-mix(in srgb, ${(p) => p.theme.surface.raised} 88%, transparent);
   backdrop-filter: blur(8px);
-  color: ${(p) => (p.$dark ? p.theme.text.onInverse : p.theme.text.secondary)};
+  box-shadow: 0 1px 3px rgba(26, 25, 23, 0.12);
+  color: ${(p) => p.theme.text.primary};
   font-size: ${(p) => p.theme.typography.captionSize};
   line-height: ${(p) => p.theme.typography.captionLineHeight};
   font-weight: 500;
   white-space: nowrap;
+`;
+
+const Dot = styled.span`
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 999px;
+  background: ${(p) => p.theme.feedback.successDefault};
 `;
 
 const MoreBtn = styled.button`
