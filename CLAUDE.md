@@ -177,7 +177,7 @@ design/icons/*.svg  →  npm run icons  →  src/assets/icons.generated.ts
 線上版 https://textbookforwork.github.io/textbook-editor/ 是另一個 repo（`textbookforwork/textbook-editor`），
 不會跟著 vault 的 commit 更新。**每次在這裡 commit 完，同一輪就跑 `npm run deploy -- "這次改了什麼"`**：
 建置、測試、推上去、等到線上發佈完成才結束。推不上去要當場講，不能只 commit 就說做完。
-換預設範例或拿掉內容時，把 `src/editor/persist.ts` 的 `DOC_KEY` 換新版號，不然打開過舊版的人會一直讀到舊存檔。
+打開網址先到書櫃（`src/shelf/`）。數位教科書（原本）每次都從 `design/sample-*.md` 重新解析，換範例內容不用動存檔；老師建立的自編各存一份（`shelf/library.ts`），換範例不會蓋掉。書櫃三種教材的規則在 Notion PRD「書櫃｜三種教材的關係與版本管理」。
 
 ## 目前進度
 

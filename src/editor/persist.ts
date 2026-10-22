@@ -17,28 +17,28 @@ import { ensureUniqueDocIds, oneBlockPerColumn, withoutModules } from '../model/
 import type { Doc } from '../model/types';
 import { footnotesToWordNotes } from '../model/wordNotes';
 import { withCurrentFonts } from '../model/fonts';
+import { findBook, loadBookDoc, saveBookDoc, updateBook } from '../shelf/library';
 
-// 換範例或拿掉內容時換一個 key：舊版存下的教材（例如已拿掉的〈五柳先生傳〉）不再被讀回來，
-// 打開過舊網址的人也會看到新的預設範例
-const DOC_KEY = 'ds-editor:doc:v2';
-const SHARE_KEY = 'ds-editor:share';
 const AUTOSAVE_DELAY = 1000;
+
+/**
+ * 正在編的是哪一本自編教材（書櫃的清單見 shelf/library.ts）。
+ * 編輯器一次只開一本，由 App 打開時設定；存檔、共享狀態都寫到這一本。
+ */
+let activeBookId: string | null = null;
+export function setActiveBook(id: string | null) {
+  activeBookId = id;
+}
 
 /** 存整份教材。localStorage 滿了或被關掉（隱私模式）就靜靜略過，不中斷編輯。 */
 export function saveDoc(doc: Doc): void {
-  try {
-    localStorage.setItem(DOC_KEY, JSON.stringify(doc));
-  } catch {
-    // 配額不足或 storage 不可用：原型不需要警告，下一次自動存會再試。
-  }
+  if (activeBookId) saveBookDoc(activeBookId, doc);
 }
 
-/** 讀回上次存的教材；沒有或壞掉就回 null，由呼叫端決定用什麼開啟。 */
-export function loadDoc(): Doc | null {
+/** 讀回這一本存的內容；沒有或壞掉就回 null。 */
+export function loadDoc(id: string): Doc | null {
   try {
-    const raw = localStorage.getItem(DOC_KEY);
-    if (!raw) return null;
-    const doc = JSON.parse(raw) as Doc;
+    const doc = loadBookDoc(id);
     // 最低限度的形狀檢查：舊版本存的東西結構不同時，寧可從頭開始也不要炸在半路。
     if (!doc || typeof doc !== 'object' || !Array.isArray(doc.rows)) return null;
     // 舊存檔裡還沒轉的注釋，讀進來時一併轉成生字詞的註釋
@@ -89,29 +89,17 @@ export function useAutosave(doc: Doc): { pending: boolean; flush: () => void } {
   return { pending, flush };
 }
 
-/** 共享狀態。封面只記 assetId，理由與上面相同：換成真的上傳 API 就接得回來。 */
+/** 共享狀態，記在書櫃清單的那一本上：共享了就出現在「共享教材」，封面是裁切好的圖。 */
 export type ShareState = {
   shared: boolean;
-  coverAssetId: string | null;
+  cover: string | null;
 };
 
 export function loadShare(): ShareState {
-  try {
-    const raw = localStorage.getItem(SHARE_KEY);
-    if (raw) {
-      const s = JSON.parse(raw) as Partial<ShareState>;
-      return { shared: s.shared === true, coverAssetId: s.coverAssetId ?? null };
-    }
-  } catch {
-    // 壞掉就當沒共享過
-  }
-  return { shared: false, coverAssetId: null };
+  const b = activeBookId ? findBook(activeBookId) : null;
+  return { shared: b?.shared ?? false, cover: b?.cover ?? null };
 }
 
 export function saveShare(state: ShareState): void {
-  try {
-    localStorage.setItem(SHARE_KEY, JSON.stringify(state));
-  } catch {
-    // 同 saveDoc
-  }
+  if (activeBookId) updateBook(activeBookId, { shared: state.shared, cover: state.cover });
 }

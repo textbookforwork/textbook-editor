@@ -131,8 +131,8 @@ export function TopBar({
       {dialog === 'cover' && (
         <CoverDialog
           onCancel={() => setDialog('none')}
-          onConfirm={(coverAssetId) => {
-            commitShare({ ...share, shared: true, coverAssetId });
+          onConfirm={(cover) => {
+            commitShare({ ...share, shared: true, cover });
             setDialog('none');
             toast('封面已更新');
           }}

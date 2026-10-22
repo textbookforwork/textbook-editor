@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import firstMd from '../design/sample-mulan.md?raw';
-import { applyImport, parseMarkdown } from './model/markdown';
-import { emptyDoc } from './model/document';
 import { READER_CROP, PAGE_SIZE } from './model/pageSize';
 import { usePages } from './hooks/usePages';
 import { useEditor } from './hooks/useEditor';
@@ -21,7 +18,7 @@ import { newId } from './model/ids';
 import { PopupViewerProvider } from './viewer/PopupViewer';
 import { ReaderMode } from './reader/ReaderMode';
 import { TopBar } from './editor/TopBar';
-import { loadDoc } from './editor/persist';
+import { setActiveBook } from './editor/persist';
 import { PageRail } from './components/PageRail';
 import { useZoom } from './hooks/useZoom';
 import { ImportDialog } from './editor/ImportDialog';
@@ -58,25 +55,28 @@ const SAMPLES: Record<string, string> = Object.fromEntries(
   })
 );
 
-// 開啟時載入國文範例〈木蘭詩〉（直排），跟從匯入對話框選「國文（範例・直排）」走同一條路。
-// seedStars 掛的補充不在 md 裡，是為了讓人一開啟就看得到 Pop-up——
-// 交接後不要這一段的話，把 seedStars 拿掉即可。
-// 上次儲存過（儲存鈕或自動存）就接著上次的；沒有才載入範例。
-const firstDoc = (): Doc =>
-  loadDoc() ??
-  applyImport(
-    emptyDoc(),
-    seedStars(withSampleMedia(parseMarkdown(firstMd, { autoPageBreak: true })))
-  );
+type Props = {
+  /** 打開的這一本：自編教材的 id。原本（數位教科書）唯讀，沒有 id。 */
+  bookId: string | null;
+  /** 打開時的內容：自編從存檔讀，原本從課本 md 解析（見 Root）。 */
+  initialDoc: Doc;
+  /** 一打開就是閱讀模式（書櫃的「閱讀課本」）。 */
+  startReading?: boolean;
+  /** 唯讀：只能閱讀，沒有返回編輯（數位教科書的原本）。 */
+  readOnly?: boolean;
+};
 
-export function App() {
-  const [preview, setPreview] = useState(false);
+export function App({ bookId, initialDoc, startReading = false, readOnly = false }: Props) {
+  const [preview, setPreview] = useState(startReading || readOnly);
   const [current, setCurrent] = useState(0);
   const [importing, setImporting] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // 只讀一次：每次 render 都 parse 一遍 localStorage 太浪費
-  const [initial] = useState(firstDoc);
+  // 存檔寫到這一本（見 persist.ts）。在第一次 render 前就設定，自動存才不會寫到上一本
+  const [initial] = useState(() => {
+    setActiveBook(readOnly ? null : bookId);
+    return initialDoc;
+  });
   const editor = useEditor(initial);
   const { doc, dispatch, undo, redo, canUndo, canRedo } = editor;
   const rowIndexOf = useCallback(
@@ -115,7 +115,7 @@ export function App() {
   useEffect(() => {
     if (!preview) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') return setPreview(false);
+      if (e.key === 'Escape') return readOnly || setPreview(false);
       // 直排往左翻：左鍵是「下一頁」
       if (e.key === 'ArrowRight') go(vertical ? -1 : 1);
       if (e.key === 'ArrowLeft') go(vertical ? 1 : -1);
@@ -251,7 +251,7 @@ export function App() {
           go={go}
           scale={scale}
           stageRef={stageRef}
-          onExit={() => setPreview(false)}
+          onExit={readOnly ? undefined : () => setPreview(false)}
           onGoRow={jumpToRow}
         />
       ) : (
@@ -322,6 +322,7 @@ export function App() {
           onMeta={(p) => dispatch({ type: 'setMeta', patch: p })}
           onTitle={(title) => dispatch({ type: 'setTitle', title })}
           onClose={() => setSettingsOpen(false)}
+          publisherLocked={!!bookId}
           onImport={() => {
             setSettingsOpen(false);
             setImporting(true);

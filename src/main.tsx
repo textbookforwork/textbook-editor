@@ -4,7 +4,7 @@ import { ThemeProvider } from 'styled-components';
 import { theme } from './styles/theme';
 import { GlobalStyle } from './styles/GlobalStyle';
 import './styles/tokens.css';
-import { App } from './App';
+import { Root } from './Root';
 import { installScrollReveal } from './styles/scrollReveal';
 
 installScrollReveal();
@@ -17,7 +17,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider theme={theme}>
       <GlobalStyle />
-      <App />
+      <Root />
     </ThemeProvider>
   </StrictMode>
 );

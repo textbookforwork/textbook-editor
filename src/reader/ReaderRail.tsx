@@ -7,7 +7,8 @@ type Props = {
   /** 科目：決定左上角鵝卵石的形狀，跟編輯模式的回首頁鈕同一顆。 */
   subject?: string;
   /** 左上角鵝卵石：閱讀模式沒有頂部列，它就是「回到編輯」。 */
-  onExit: () => void;
+  /** 不給就沒有「返回編輯」（唯讀的數位教科書）。 */
+  onExit?: () => void;
   outlineOpen: boolean;
   onOutline: () => void;
   /** 這一頁的補充有幾項。0 項時按鈕仍在，只是沒有數字。 */
@@ -170,7 +171,7 @@ export function ReaderRail({
         系統工具：返回編輯在工具箱上面、補充資源在下面，都可以收進工具箱。
         返回編輯不用 Lime 底：Lime 在這一欄代表「正在用的工具」
       */}
-      {pinned.includes('exit') && (
+      {onExit && pinned.includes('exit') && (
         <PinSlot>
           <Tile type="button" $editing={toolboxOpen}
               tabIndex={toolboxOpen ? -1 : undefined}

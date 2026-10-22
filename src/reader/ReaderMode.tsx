@@ -30,7 +30,8 @@ type Props = {
   /** 量縮放用的容器。App 的 useZoom 看它的尺寸算「整頁剛好放進來」。 */
   stageRef: RefObject<HTMLElement | null>;
   /** 回到編輯。閱讀模式沒有頂部列，左上角的鵝卵石就是出口。 */
-  onExit: () => void;
+  /** 不給就沒有「返回編輯」（唯讀的數位教科書）。 */
+  onExit?: () => void;
   /** 目次點了跳到那一段所在的頁。 */
   onGoRow: (rowId: string) => void;
 };

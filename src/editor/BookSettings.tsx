@@ -16,6 +16,8 @@ type Props = {
   onClose: () => void;
   /** 匯入 md：換掉這本的內容，所以放在教材設定裡而不是頂部列。 */
   onImport?: () => void;
+  /** 自編教材是數位教科書的副本，出版社沿用原本、不能改（版本管理，見 PRD「書櫃｜三種教材的關係」）。 */
+  publisherLocked?: boolean;
 };
 
 /**
@@ -24,7 +26,7 @@ type Props = {
  * 由上到下：版型、排版方向、頁面比例（都是**整本**的設定，改了整份重新分頁）、
  * 書目資料、匯入教材。教材名稱在頂部列直接改，這裡不重複放。字級由每段的層級決定，不在這裡整本調。
  */
-export function BookSettings({ doc, onPatch, onMeta, onClose, onImport }: Props) {
+export function BookSettings({ doc, onPatch, onMeta, onClose, onImport, publisherLocked }: Props) {
   useExclusivePanel(true, onClose);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -105,6 +107,7 @@ export function BookSettings({ doc, onPatch, onMeta, onClose, onImport }: Props)
             出版社
             <Input
               value={meta.publisher ?? ''}
+              disabled={publisherLocked}
               onChange={(e) => onMeta({ publisher: e.target.value })}
               placeholder="出版社名稱"
             />
@@ -185,6 +188,12 @@ const SUBJECTS: Record<'國小' | '國中', string[]> = {
 
 const Input = styled.input`
   ${fieldCss}
+  &:disabled {
+    background: ${(p) => p.theme.surface.disabled};
+    color: ${(p) => p.theme.text.disabled};
+    border-color: transparent;
+    cursor: not-allowed;
+  }
 `;
 
 const Label = styled.label`

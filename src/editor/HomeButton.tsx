@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { toast } from './Toast';
+import { goShelf } from '../shelf/nav';
 
 /**
  * 回首頁：預設是一顆品牌色 Lime 的有機鵝卵石，依科目換成橘、綠、藍的造型（見 shapeOf）。
@@ -20,8 +20,8 @@ type Shape = 'language' | 'stem' | 'social' | 'other';
  * 依科目換左上角的造型與顏色。三大類：語文、數理、社會；沒設定科目或不在這三類的維持萊姆鵝卵石。
  * 形狀照設計給的三張參考圖描成 32×32 的路徑（不是 Figma 原檔，邊角是目測的）。
  */
-const LANGUAGE = ['國語', '英語', '國文', '英文'];
-const STEM = ['數學', '自然'];
+const LANGUAGE = ['國語', '英語', '國文', '英文', '國語文'];
+const STEM = ['數學', '自然', '自然科學'];
 const SOCIAL = ['社會', '歷史', '地理'];
 
 export function shapeOf(subject?: string): Shape {
@@ -81,8 +81,7 @@ export function HomeButton({ subject, onClick, title, large }: Props) {
       title={label}
       aria-label={label}
       $large={!!large}
-      // 原型沒有書櫃可以回去；按了要有反應，不然老師會以為壞掉
-      onClick={onClick ?? (() => toast('原型沒有書櫃，先留在這裡'))}
+      onClick={onClick ?? (() => goShelf())}
     >
       <svg width={px} height={px} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
         <Silhouette shape={shapeOf(subject)} />
@@ -115,3 +114,13 @@ const Pebble = styled.button<{ $large: boolean }>`
   }
   &:active svg { transform: scale(0.96); }
 `;
+
+/** 書櫃分區標題前的科目記號：跟回首頁鈕同一組造型與顏色，24×24。 */
+export function SubjectMark({ subject }: { subject?: string }) {
+  const { d, fill } = SHAPES[shapeOf(subject)];
+  return (
+    <svg width={24} height={24} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <path d={d} fill={fill} />
+    </svg>
+  );
+}

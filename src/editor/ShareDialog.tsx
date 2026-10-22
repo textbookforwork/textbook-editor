@@ -2,7 +2,8 @@ import { useEffect, useState, type DragEvent } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { Icon } from '../components/Icon';
-import { pickFile, putImage, urlOf } from './assets';
+import { pickFile } from './assets';
+import { CoverCropper } from './CoverCropper';
 
 /**
  * 共享的兩個對話框，照 Figma「共享」流程：
@@ -14,7 +15,7 @@ import { pickFile, putImage, urlOf } from './assets';
  * 共享本身不在這裡發生（按鈕按下去就共享了），這兩個框只管封面。
  */
 
-const ESC = (onClose: () => void) => {
+export const ESC = (onClose: () => void) => {
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
   };
@@ -52,33 +53,41 @@ export function CoverDialog({
   onConfirm,
 }: {
   onCancel: () => void;
-  onConfirm: (coverAssetId: string) => void;
+  /** 裁切好的封面（data URL）。 */
+  onConfirm: (cover: string) => void;
 }) {
-  const [cover, setCover] = useState<string | null>(null);
+  // 選進來的原圖，與目前選取框裁出來的那一張
+  const [src, setSrc] = useState<string | null>(null);
+  const [cropped, setCropped] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => ESC(onCancel), [onCancel]);
+  useEffect(() => () => {
+    if (src) URL.revokeObjectURL(src);
+  }, [src]);
 
-  const accept = async (file: File | null) => {
+  const accept = (file: File | null) => {
     if (!file) return;
     if (!TYPES.includes(file.type)) return setError('只支援 JPG、PNG、GIF');
     if (file.size > MAX_BYTES) return setError('檔案不可超過 5MB');
-    try {
-      const { assetId } = await putImage(file);
-      setCover(assetId);
-      setError(null);
-    } catch {
-      setError('讀不到這張圖');
-    }
+    setSrc(URL.createObjectURL(file));
+    setCropped(null);
+    setError(null);
   };
+  const pick = () => void pickFile(TYPES.join(',')).then(accept);
 
-  const onDrop = (e: DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    void accept(e.dataTransfer.files?.[0] ?? null);
+  const dropHandlers = {
+    onDragOver: (e: DragEvent) => {
+      e.preventDefault();
+      setDragging(true);
+    },
+    onDragLeave: () => setDragging(false),
+    onDrop: (e: DragEvent) => {
+      e.preventDefault();
+      setDragging(false);
+      accept(e.dataTransfer.files?.[0] ?? null);
+    },
   };
-
-  const url = urlOf(cover);
 
   return createPortal(
     <Scrim onClick={onCancel}>
@@ -90,35 +99,32 @@ export function CoverDialog({
           </Ghost>
         </Head>
 
-        <Drop
-          type="button"
-          $dragging={dragging}
-          $hasCover={!!url}
-          title="上傳檔案"
-          onClick={() => void pickFile(TYPES.join(',')).then(accept)}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={onDrop}
-        >
-          {url ? (
-            <Preview src={url} alt="封面預覽" />
-          ) : (
+        {/* 還沒選圖：整塊灰色區域可以點、也可以拖檔案進來。選了圖：換成裁切框，拖檔案進來一樣換圖 */}
+        {src ? (
+          <Drop as="div" $dragging={dragging} $hasCover {...dropHandlers}>
+            <CoverCropper src={src} onChange={setCropped} />
+          </Drop>
+        ) : (
+          <Drop type="button" $dragging={dragging} $hasCover={false} title="上傳檔案" onClick={pick} {...dropHandlers}>
             <Indicator>
               <Icon name="upload" size={24} />
               <span>上傳檔案</span>
             </Indicator>
-          )}
-        </Drop>
-        <Format $bad={!!error}>{error ?? '支援 JPG、PNG、GIF 格式，檔案大小不超過 5MB'}</Format>
+          </Drop>
+        )}
+        {src && !error ? (
+          <Format $bad={false}>
+            拖四個角調整範圍、按住圖片移動位置・<Relink type="button" onClick={pick}>換一張</Relink>
+          </Format>
+        ) : (
+          <Format $bad={!!error}>{error ?? '支援 JPG、PNG、GIF 格式，檔案大小不超過 5MB'}</Format>
+        )}
 
         <Pair>
           <Secondary type="button" onClick={onCancel}>
             取消
           </Secondary>
-          <Secondary type="button" disabled={!cover} onClick={() => cover && onConfirm(cover)} $primary>
+          <Secondary type="button" disabled={!cropped} onClick={() => cropped && onConfirm(cropped)} $primary>
             確認上傳
           </Secondary>
         </Pair>
@@ -128,7 +134,7 @@ export function CoverDialog({
   );
 }
 
-const Scrim = styled.div`
+export const Scrim = styled.div`
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -139,7 +145,7 @@ const Scrim = styled.div`
   padding: ${(p) => p.theme.space.insetLg};
 `;
 
-const Sheet = styled.div<{ $narrow?: boolean }>`
+export const Sheet = styled.div<{ $narrow?: boolean }>`
   inline-size: min(${(p) => (p.$narrow ? '500px' : '400px')}, 100%);
   display: flex;
   flex-direction: column;
@@ -168,7 +174,7 @@ const Lead = styled.p`
   text-align: center;
 `;
 
-const Head = styled.div`
+export const Head = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -176,7 +182,7 @@ const Head = styled.div`
   line-height: ${(p) => p.theme.typography.bodyLgLineHeight};
 `;
 
-const Ghost = styled.button`
+export const Ghost = styled.button`
   display: grid;
   place-items: center;
   inline-size: 24px;
@@ -188,14 +194,14 @@ const Ghost = styled.button`
   cursor: pointer;
 `;
 
-const Pair = styled.div`
+export const Pair = styled.div`
   display: flex;
   justify-content: center;
   gap: 12px;
 `;
 
 /** 照 Figma Button：48 高、圓角膠囊、左右內距 32。 */
-const Secondary = styled.button<{ $primary?: boolean }>`
+export const Secondary = styled.button<{ $primary?: boolean }>`
   block-size: ${(p) => p.theme.control.heightLg};
   padding: 0 ${(p) => p.theme.space.insetXl};
   border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.action.secondaryBorder};
@@ -207,6 +213,11 @@ const Secondary = styled.button<{ $primary?: boolean }>`
   cursor: pointer;
 
   &:hover:not(:disabled) { background: ${(p) => p.theme.action.secondaryBgHover}; }
+  /* 主要動作（確認上傳、建立）：黑色實心，跟全站的主要按鈕同色 */
+  ${(p) =>
+    p.$primary &&
+    `&:not(:disabled) { border-color: transparent; background: ${p.theme.action.primaryBg}; color: ${p.theme.action.primaryText}; }
+     &:hover:not(:disabled) { background: ${p.theme.action.primaryBgHover}; }`}
   &:disabled {
     background: ${(p) => p.theme.action.disabledBg};
     border-color: ${(p) => p.theme.action.disabledBorder};
@@ -247,11 +258,14 @@ const Indicator = styled.span`
   svg { inline-size: 60px; block-size: 60px; }
 `;
 
-const Preview = styled.img`
-  inline-size: 100%;
-  block-size: 100%;
-  object-fit: cover;
-  display: block;
+const Relink = styled.button`
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: ${(p) => p.theme.text.accent};
+  text-decoration: underline;
+  cursor: pointer;
 `;
 
 const Format = styled.p<{ $bad: boolean }>`
