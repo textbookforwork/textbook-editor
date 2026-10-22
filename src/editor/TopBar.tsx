@@ -216,8 +216,8 @@ const TitleFit = styled.div`
   & > input {
     grid-area: 1 / 1;
     font: inherit;
-    /* 教材名稱是品牌的位置，用品牌字繁 Think 黑（public/fonts/fanthink.css，只載粗體） */
-    font-family: "FanThinkGrotesk", var(--ds-typography-font-sans);
+    /* 教材名稱用系統字（中文 Noto Sans TC、英數 Lexend）；品牌字繁 Think 黑只用在 logo（乙練 2026-10-22） */
+    font-family: var(--ds-typography-font-sans);
     font-size: 20px;
     line-height: 34px;
     letter-spacing: 0.4px;

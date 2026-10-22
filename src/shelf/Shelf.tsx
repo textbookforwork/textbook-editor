@@ -480,7 +480,7 @@ const Brand = styled.div`
   gap: 14px;
 `;
 
-/** 品牌的位置用品牌字繁 Think 黑 */
+/** logo 的「數位教科書」用品牌字繁 Think 黑；品牌字只用在 logo */
 const BrandZh = styled.span`
   display: block;
   font-family: 'FanThinkGrotesk', var(--ds-typography-font-sans);
