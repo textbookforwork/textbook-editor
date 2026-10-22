@@ -1,10 +1,7 @@
 import { forwardRef, useRef, useState, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { useEditorCtx } from './EditorContext';
-import { fitTwoPerPage } from '../model/blockSizing';
-import { uploadFile } from './MediaLibrary';
-import { toast } from './Toast';
-import { blockFromAsset } from '../components/RowView';
+import { uploadIntoDoc } from './uploading';
 
 /**
  * 編輯區的空白處。
@@ -38,27 +35,16 @@ export const EditStage = forwardRef<HTMLElement, { children: ReactNode }>(functi
   };
 
   /**
-   * 把本機檔案拖進畫布：依 MIME 上傳，完成後插在離放開位置最近的縫隙。
+   * 把本機檔案拖進畫布：插在離放開位置最近的縫隙，上傳期間先放載入中的佔位框（見 uploading.ts），傳完換成內容。
    * 不用先開媒體庫；上傳的檔案也會進媒體庫對應的分頁（uploadFile 走的是同一條）。
    * 不支援的格式用提示說支援什麼，不是靜靜不理。
    */
   const dropFiles = async (files: File[], x: number, y: number) => {
     if (!ed) return;
-    let index = nearestGap(x, y);
-    let last: string | null = null;
-    for (const file of files) {
-      const r = await uploadFile(file);
-      if ('error' in r) {
-        toast(r.error);
-        continue;
-      }
-      const block = fitTwoPerPage(blockFromAsset(r.asset), ed.doc.settings);
-      ed.dispatch({ type: 'insertRow', index, blocks: [block] });
-      last = block.id;
-      // 一次拖好幾個：照拖進來的順序排在一起，不要全部擠到同一個縫隙倒著放
-      index += 1;
-    }
-    // 放好後選取最後一個，膠囊直接浮出來，可以接著調大小、掛補充
+    const index = nearestGap(x, y);
+    // 一次拖好幾個：佔位框照拖進來的順序一起排好（插入在第一個 await 之前就做了），再各自傳
+    const done = await Promise.all(files.map((file, i) => uploadIntoDoc(ed, file, index + i)));
+    const last = done.filter(Boolean).pop()?.blockId ?? null;
     if (last) ed.select(last);
   };
 

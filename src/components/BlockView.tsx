@@ -20,6 +20,7 @@ import { LineBlockView } from './blocks/LineBlockView';
 import type { BlockPatch } from '../model/actions';
 import type { Block, DocSettings, InlineSpan } from '../model/types';
 import { useNoteNo } from './ParagraphContext';
+import { useIsUploading } from '../editor/uploading';
 
 type Props = {
   block: Block;
@@ -79,11 +80,21 @@ export function BlockView({
   // 非文字區塊：尺寸由 blockSizing 決定，跟量測用的是同一個函式，
   // 所以畫出來的一定等於量到的，不會撐破頁面。
   const box = blockBox(block, sizing);
+  const isUploading = useIsUploading(block.id);
   const boxStyle = box
     ? sizing.vertical
       ? { width: box.blockSize, height: box.inlineSize }
       : { width: box.inlineSize, height: box.blockSize }
     : undefined;
+
+  // 檔案還在上傳：畫閃動的骨架佔住位置（見 editor/uploading.ts），不畫空的上傳框
+  if (isUploading && boxStyle) {
+    return (
+      <Uploading style={boxStyle} role="status" aria-label="上傳中">
+        <span>上傳中…</span>
+      </Uploading>
+    );
+  }
 
   switch (block.type) {
     case 'text': {
@@ -357,4 +368,33 @@ const Ref = styled.div`
   align-self: flex-start;
   font-size: var(--ds-typography-label-size);
   color: ${(p) => p.theme.text.tertiary};
+`;
+
+/**
+ * 上傳中的佔位框：淡灰底上一道亮光由左往右掃過，像內容正在長出來。
+ * 不放進度條（乙練 2026-10-22）；跟媒體庫上傳框的轉圈是兩種樣子，一看就分得出是畫布這邊。
+ */
+const Uploading = styled.div`
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: ${(p) => p.theme.radius.card};
+  background: ${(p) => p.theme.surface.sunken};
+  color: ${(p) => p.theme.text.tertiary};
+  font-size: var(--ds-typography-caption-size);
+  writing-mode: horizontal-tb;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.75) 50%, transparent 80%);
+    transform: translateX(-100%);
+    animation: ds-upload-sheen 1.2s ease-in-out infinite;
+  }
+  @keyframes ds-upload-sheen { to { transform: translateX(100%); } }
+  @media (prefers-reduced-motion: reduce) {
+    &::after { animation-duration: 3s; }
+  }
 `;

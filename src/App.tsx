@@ -11,6 +11,7 @@ import { fitTwoPerPage } from './model/blockSizing';
 import { FloatingToolbar } from './editor/FloatingToolbar';
 import { PopupPanel } from './editor/PopupPanel';
 import { MediaLibrary } from './editor/MediaLibrary';
+import { uploadIntoDoc } from './editor/uploading';
 import { TablePanel } from './editor/TablePanel';
 import { blockFor, blockFromAsset } from './components/RowView';
 import type { Asset } from './editor/assets';
@@ -497,6 +498,14 @@ function EditorMediaLibrary({
       onChoose={handleChoose}
       onImportPdf={handleImportPdf}
       onGenerate={handleGenerate}
+      onUpload={async (file) => {
+        const at = resolveTargetIndex();
+        ed.openInsert(null);
+        const r = await uploadIntoDoc(ed, file, at);
+        if (r) revealBlock(r.blockId);
+        // 跟從清單點素材一樣：媒體庫保持開著，插入點往後挪
+        ed.openLibrary(at + 1);
+      }}
     />
   );
 }

@@ -106,6 +106,8 @@ type Props = {
   onGenerate?: (prompt?: string) => void;
   /** PDF 選好頁、畫成圖片之後，交給外層一頁一列插進畫布。 */
   onImportPdf?: (asset: Asset, pages: ImportedPage[]) => void;
+  /** 上傳框收到檔案：外層插一個載入中的佔位框到畫布，傳完換成內容（見 uploading.ts）。PDF 不走這裡，傳完先選頁。 */
+  onUpload?: (file: File) => Promise<unknown>;
   onClose: () => void;
 };
 
@@ -120,7 +122,7 @@ export function openLibraryTab(tab: Tab) {
   tabListeners.forEach((fn) => fn());
 }
 
-export function MediaLibrary({ onChoose, onGenerate, onImportPdf, onClose }: Props) {
+export function MediaLibrary({ onChoose, onGenerate, onImportPdf, onUpload, onClose }: Props) {
   useExclusivePanel(true, onClose);
   const [tab, setTab] = useState<Tab>(() => {
     const t = requestedTab ?? 'image';
@@ -239,7 +241,7 @@ export function MediaLibrary({ onChoose, onGenerate, onImportPdf, onClose }: Pro
             }}
           />
         ) : (
-          <UploadBox kind={tab} onUploaded={(a) => a.kind === 'pdf' && setPicking(a)} />
+          <UploadBox kind={tab} onUpload={onUpload} onUploaded={(a) => a.kind === 'pdf' && setPicking(a)} />
         )}
         {tab === 'video' && (
           <LinkAdder
@@ -475,7 +477,15 @@ function AssetCard({
 
 /** 上傳框：說支援什麼、多大以內，一顆上傳鈕；也接受把檔案拖進來。 */
 /** onUploaded：上傳完的那一筆。PDF 上傳完直接進選頁畫面，少點一次。 */
-function UploadBox({ kind, onUploaded }: { kind: Exclude<Tab, 'web'>; onUploaded?: (a: Asset) => void }) {
+function UploadBox({
+  kind,
+  onUpload,
+  onUploaded,
+}: {
+  kind: Exclude<Tab, 'web'>;
+  onUpload?: (file: File) => Promise<unknown>;
+  onUploaded?: (a: Asset) => void;
+}) {
   const rule = UPLOAD_RULES[kind];
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
@@ -484,6 +494,11 @@ function UploadBox({ kind, onUploaded }: { kind: Exclude<Tab, 'web'>; onUploaded
     if (!file) return;
     setBusy(true);
     try {
+      // 圖片、影片、聲音：上傳時畫布同步出現載入中的佔位框，傳完直接放進頁面
+      if (onUpload && kindOfFile(file) !== 'pdf') {
+        await onUpload(file);
+        return;
+      }
       const r = await uploadFile(file);
       if ('error' in r) toast(r.error);
       else onUploaded?.(r.asset);
@@ -504,7 +519,7 @@ function UploadBox({ kind, onUploaded }: { kind: Exclude<Tab, 'web'>; onUploaded
       $over={over}
       disabled={busy}
       aria-busy={busy}
-      aria-label={`上傳${rule.label}：拖曳或點選檔案`}
+      aria-label={`上傳${rule.label}：拖曳或選取檔案`}
       onClick={pick}
       onDragOver={(e) => {
         if (busy || !e.dataTransfer.types.includes('Files')) return;
@@ -519,7 +534,7 @@ function UploadBox({ kind, onUploaded }: { kind: Exclude<Tab, 'web'>; onUploaded
       }}
     >
       <DropTile $over={over}>{busy ? <Spinner aria-hidden="true" /> : <Icon name="upload" size={20} />}</DropTile>
-      <DropTitle>{busy ? '上傳中…' : over ? '放開就上傳' : '拖曳或點選檔案'}</DropTitle>
+      <DropTitle>{busy ? '上傳中…' : over ? '放開就上傳' : '拖曳或選取檔案'}</DropTitle>
       <DropHint>{rule.formats}，{rule.limitMb} MB 以內</DropHint>
     </Drop>
   );
@@ -680,8 +695,12 @@ const ListLabel = styled.span`
 `;
 
 /**
- * 上傳框：白色圓角卡片，中間一塊淡灰圓角方塊放上傳圖示，下面一行標題、一行格式。
- * 面板是 #FAFAFA，白卡加一圈淡灰細線才分得出邊；滑過框線深一階；拖檔案進來換成品牌深綠虛線（不鋪底色）。
+ * 上傳框：白色圓角卡片、灰色虛線框（看得出是可以拖檔進來的區域），中間一顆黑色上傳鈕，下面一行標題、一行格式。
+ * 四種狀態（乙練 2026-10-22：上傳鈕黑色、框用虛線）：
+ *   平常：灰虛線＋黑色上傳鈕
+ *   滑過：虛線深一階、上傳鈕深一階
+ *   拖檔案進來：品牌深綠虛線＋最淡的 Lime 底（不要太黃），上傳鈕換成 Lime 底深色箭頭，標題「放開就上傳」
+ *   上傳中：整塊停用變淡，上傳鈕裡轉圈，標題「上傳中…」
  */
 const Drop = styled.button<{ $over: boolean }>`
   display: flex;
@@ -694,17 +713,16 @@ const Drop = styled.button<{ $over: boolean }>`
   block-size: 128px;
   padding: ${(p) => p.theme.space.insetMd};
   box-sizing: border-box;
-  border: ${(p) => (p.$over ? '1.5px dashed' : `${p.theme.border.widthDefault} solid`)}
-    ${(p) => (p.$over ? p.theme.border.accent : p.theme.border.subtle)};
+  border: 1.5px dashed ${(p) => (p.$over ? p.theme.border.accent : p.theme.border.default)};
   border-radius: ${(p) => p.theme.radius.card};
-  background: ${(p) => p.theme.surface.raised};
+  background: ${(p) => (p.$over ? p.theme.brand.primaryTintSubtle : p.theme.surface.raised)};
   font: inherit;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
 
-  &:hover:not(:disabled) { border-color: ${(p) => (p.$over ? p.theme.border.accent : p.theme.border.default)}; }
-  &:disabled { cursor: progress; }
+  &:hover:not(:disabled) { border-color: ${(p) => (p.$over ? p.theme.border.accent : p.theme.border.hover)}; }
+  &:disabled { cursor: progress; opacity: 0.7; }
 `;
 
 const DropTile = styled.span<{ $over: boolean }>`
@@ -716,19 +734,19 @@ const DropTile = styled.span<{ $over: boolean }>`
   padding: 0;
   margin-block-end: 6px;
   border-radius: ${(p) => p.theme.radius.tile};
-  background: ${(p) => p.theme.surface.sunken};
-  color: ${(p) => (p.$over ? p.theme.text.accent : p.theme.icon.default)};
+  background: ${(p) => (p.$over ? p.theme.brand.primary : p.theme.action.primaryBg)};
+  color: ${(p) => (p.$over ? p.theme.text.primary : p.theme.action.primaryText)};
   transition: background 0.15s, color 0.15s;
-  ${Drop}:hover:not(:disabled) & { background: ${(p) => p.theme.surface.muted}; }
+  ${Drop}:hover:not(:disabled) & { background: ${(p) => p.theme.action.primaryBgHover}; }
 `;
 
-/** 上傳中的轉圈：一圈淡灰軌道，上面一段品牌深綠在轉 */
+/** 上傳中的轉圈：在黑色上傳鈕裡，一圈半透明白軌道，上面一段白色在轉 */
 const Spinner = styled.span`
   inline-size: 18px;
   block-size: 18px;
   border-radius: 999px;
-  border: 2px solid ${(p) => p.theme.border.subtle};
-  border-top-color: ${(p) => p.theme.brand.accentOnLight};
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: ${(p) => p.theme.action.primaryText};
   animation: ds-spin 0.8s linear infinite;
   @keyframes ds-spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { animation-duration: 2s; }
