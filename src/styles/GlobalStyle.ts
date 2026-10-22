@@ -20,7 +20,8 @@ export const GlobalStyle = createGlobalStyle`
 
   body {
     margin: 0;
-    background: ${(p) => p.theme.surface.sunken};
+    /* 畫布外的大面積底色（#F2F2F2），比品牌的 Off-White-2（#F5F5F5）深一點，白紙才浮得出來 */
+    background: ${(p) => p.theme.surface.backdrop};
     color: ${(p) => p.theme.text.primary};
     font-family: ${(p) => p.theme.typography.fontSans};
     font-size: ${(p) => p.theme.typography.bodyLgSize};

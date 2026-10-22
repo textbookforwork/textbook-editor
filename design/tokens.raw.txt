@@ -106,6 +106,7 @@
 --ds-space-stack-lg|FLOAT|24
 --ds-space-stack-md|FLOAT|16
 --ds-surface-accent-strong|COLOR|#3F4D00
+--ds-surface-backdrop|COLOR|#F2F2F2
 --ds-surface-brand|COLOR|#F0FF62
 --ds-surface-card|COLOR|#E5E5E5
 --ds-surface-disabled|COLOR|#F5F5F5

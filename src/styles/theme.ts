@@ -132,6 +132,7 @@ export const theme = {
   },
   surface: {
     accentStrong: 'var(--ds-surface-accent-strong)',
+    backdrop: 'var(--ds-surface-backdrop)',
     brand: 'var(--ds-surface-brand)',
     card: 'var(--ds-surface-card)',
     disabled: 'var(--ds-surface-disabled)',

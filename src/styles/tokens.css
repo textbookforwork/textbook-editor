@@ -1,5 +1,5 @@
 /* 由 scripts/build-tokens.mjs 產生，請勿手動編輯。 */
-/* 來源：design/tokens.raw.txt（Figma「2. Semantic」collection，183 個變數） */
+/* 來源：design/tokens.raw.txt（Figma「2. Semantic」collection，184 個變數） */
 
 :root {
   --ds-action-accent-bg: #F0FF62;
@@ -110,6 +110,7 @@
   --ds-space-stack-lg: 24px;
   --ds-space-stack-md: 16px;
   --ds-surface-accent-strong: #3F4D00;
+  --ds-surface-backdrop: #F2F2F2;
   --ds-surface-brand: #F0FF62;
   --ds-surface-card: #E5E5E5;
   --ds-surface-disabled: #F5F5F5;

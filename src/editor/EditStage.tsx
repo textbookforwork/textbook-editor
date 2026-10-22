@@ -217,7 +217,7 @@ const Stage = styled.main<{ $dragOver?: boolean }>`
   /* 左右的 56px 留白不放這裡，放在 App 的 PageSlot 上：可捲動的 flex 容器捲到最右時
      不算自己右側的 padding，放大後頁面右緣會直接貼到編輯區邊界、看起來捲不過去 */
   padding: ${(p) => p.theme.space.insetXl} 0;
-  background: ${(p) => (p.$dragOver ? p.theme.surface.muted : p.theme.surface.sunken)};
+  background: ${(p) => (p.$dragOver ? p.theme.surface.muted : p.theme.surface.backdrop)};
   /* 編輯區是一塊灰卡，右邊留白；下緣貼齊視窗底，左右兩邊筆直到底，只有上方兩角是圓的 */
   border-start-start-radius: ${(p) => p.theme.radius.panel};
   border-start-end-radius: ${(p) => p.theme.radius.panel};

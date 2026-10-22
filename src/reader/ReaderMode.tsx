@@ -437,8 +437,8 @@ const Root = styled.div`
   min-inline-size: 0;
   display: flex;
   position: relative;
-  /* 整個閱讀畫面是淡灰底：白色圓角的頁面浮在上面，左欄的工具直接放在灰底上 */
-  background: ${(p) => p.theme.surface.sunken};
+  /* 整個閱讀畫面是淡灰底（畫布底色 #F2F2F2）：白色圓角的頁面浮在上面，左欄的工具直接放在灰底上 */
+  background: ${(p) => p.theme.surface.backdrop};
 `;
 
 /** 頁面外圍：上、右、下各留 12（左邊緊鄰左欄，左欄自己有留白）。平板上一圈留白都直接吃掉頁面大小，所以收到最小 */
