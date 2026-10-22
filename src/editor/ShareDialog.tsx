@@ -28,15 +28,20 @@ export function SharedDialog({ onClose, onUpload }: { onClose: () => void; onUpl
   return createPortal(
     <Scrim onClick={onClose}>
       <Sheet role="dialog" aria-modal="true" aria-label="自編教材已共享" $narrow onClick={(e) => e.stopPropagation()}>
-        <Heading>自編教材已共享</Heading>
+        <Head>
+          <Heading>自編教材已共享</Heading>
+          <Ghost type="button" onClick={onClose} aria-label="關閉" title="關閉">
+            <Icon name="x" size={24} label="關閉" />
+          </Ghost>
+        </Head>
         <Lead>放上一張封面，讓教材變完整吧！</Lead>
         <Pair>
           <Secondary type="button" onClick={onClose}>
-            關閉
+            取消
           </Secondary>
-          <Accent type="button" onClick={onUpload}>
+          <Secondary type="button" $primary onClick={onUpload}>
             前往上傳
-          </Accent>
+          </Secondary>
         </Pair>
       </Sheet>
     </Scrim>,
@@ -150,7 +155,7 @@ export const Sheet = styled.div<{ $narrow?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${(p) => (p.$narrow ? '24px' : '20px')};
-  align-items: ${(p) => (p.$narrow ? 'center' : 'stretch')};
+  align-items: stretch;
   padding: ${(p) => p.theme.space.insetLg};
   background: ${(p) => p.theme.surface.page};
   border-radius: ${(p) => p.theme.radius.panel};
@@ -159,19 +164,16 @@ export const Sheet = styled.div<{ $narrow?: boolean }>`
 
 const Heading = styled.p`
   margin: 0;
-  padding-block: ${(p) => p.theme.space.insetXs};
   font-size: ${(p) => p.theme.typography.bodyLgSize};
   line-height: ${(p) => p.theme.typography.bodyLgLineHeight};
   font-weight: 600;
-  text-align: center;
 `;
 
 const Lead = styled.p`
   margin: 0;
-  padding-block: ${(p) => p.theme.space.insetLg};
   font-size: ${(p) => p.theme.typography.bodySize};
   line-height: ${(p) => p.theme.typography.bodyLineHeight};
-  text-align: center;
+  color: ${(p) => p.theme.text.secondary};
 `;
 
 export const Head = styled.div`
@@ -224,13 +226,6 @@ export const Secondary = styled.button<{ $primary?: boolean }>`
     color: ${(p) => p.theme.action.disabledText};
     cursor: default;
   }
-`;
-
-const Accent = styled(Secondary)`
-  border-color: transparent;
-  background: ${(p) => p.theme.action.accentBg};
-  color: ${(p) => p.theme.action.accentText};
-  &:hover:not(:disabled) { background: ${(p) => p.theme.action.accentBgHover}; }
 `;
 
 const Drop = styled.button<{ $dragging: boolean; $hasCover: boolean }>`
