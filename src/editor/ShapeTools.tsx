@@ -488,12 +488,27 @@ function TextStyleMenu({ block, onPatch }: { block: ShapeBlock; onPatch: (p: Par
       />
 
       <StyleLabel>方向</StyleLabel>
+      {/* 圖示跟段落工具列的直排／橫排同一組，選中的灰底 */}
       <FontRow>
-        <ToolBtn type="button" $on={!block.textVertical} onClick={() => onPatch({ textVertical: undefined })}>
-          橫排
+        <ToolBtn
+          type="button"
+          $on={!block.textVertical}
+          onClick={() => onPatch({ textVertical: undefined })}
+          title="橫排"
+          aria-label="橫排"
+          style={{ padding: 0, inlineSize: 36 }}
+        >
+          <Icon name="writing-horizontal" size={20} />
         </ToolBtn>
-        <ToolBtn type="button" $on={!!block.textVertical} onClick={() => onPatch({ textVertical: true })}>
-          直排
+        <ToolBtn
+          type="button"
+          $on={!!block.textVertical}
+          onClick={() => onPatch({ textVertical: true })}
+          title="直排"
+          aria-label="直排"
+          style={{ padding: 0, inlineSize: 36 }}
+        >
+          <Icon name="writing-vertical" size={20} />
         </ToolBtn>
       </FontRow>
     </StyleGrid>
@@ -571,8 +586,9 @@ const FontRow = styled.div`
   gap: 2px;
 `;
 
+/** 只佔右欄，選項的字跟上面按鈕裡的字左緣對齊（兩者內距都是 12px） */
 const FontList = styled.div`
-  grid-column: 1 / -1;
+  grid-column: 2;
   display: flex;
   flex-direction: column;
   margin-block: -4px 4px;
