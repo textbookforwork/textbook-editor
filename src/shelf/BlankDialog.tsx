@@ -115,6 +115,9 @@ const Chips = styled.div`
 
 /** 選中的灰底（跟工具列的開關同一款），不用黃 */
 const Chip = styled.button<{ $on: boolean }>`
+  /* 每一排平均撐滿整排（3＋2 時兩排都左右貼齊），內容置中 */
+  flex: 1 1 auto;
+  justify-content: center;
   display: inline-flex;
   align-items: center;
   gap: 6px;
