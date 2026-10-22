@@ -163,6 +163,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
                       book={b}
                       source={findSource(b.sourceId)}
                       showTeacher
+                      inSharedTab={tab === 'shared'}
                       onCover={() => setCovering(b)}
                       onDelete={() => setDeleting(b)}
                     />
@@ -343,14 +344,17 @@ function BookCard({
   book,
   source,
   showTeacher,
+  inSharedTab = false,
   onCover,
   onCopy,
   onDelete,
 }: {
   book: MyBook;
   source: Source | null;
-  /** 在共享教材分頁：顯示老師名字、不掛「已共享」標籤。 */
+  /** 自編、共享教材分頁：顯示老師名字。 */
   showTeacher: boolean;
+  /** 共享教材分頁每本都是共享的，不掛「已共享」標籤。 */
+  inSharedTab?: boolean;
   onCover: () => void;
   /** 管理員已發布的原本才有：建立自編（副本）。未發布的不能建。 */
   onCopy?: () => void;
@@ -373,7 +377,7 @@ function BookCard({
       <Cover $hover $menu={menu}>
         <CoverImage src={book.cover ?? source?.cover} title={book.title} subject={source?.subject ?? ''} />
         {/* 只標已發布／已共享；未發布不掛標籤。「已共享」是在自編教材分頁裡區分用的，共享教材分頁每本都是，不標 */}
-        {book.shared && !showTeacher && <StatusTag status={isOriginal(book) ? 'published' : 'shared'} />}
+        {book.shared && !inSharedTab && <StatusTag status={isOriginal(book) ? 'published' : 'shared'} />}
         {/* 滑過封面：調暗、右上角出現「更多」；點開是編輯封面與刪除（設計稿：維持目前的設計） */}
         <More ref={menuRef}>
           <MoreBtn type="button" aria-label="更多" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
@@ -434,7 +438,7 @@ const Page = styled.div`
   /* 尺寸跟著視窗走：Figma 稿是 1440 寬的長頁，照抄固定像素的話，矮的視窗連一整張卡片都看不完 */
   padding: clamp(16px, 3vh, 32px) clamp(16px, 2.2vw, 32px) 48px;
   /* 卡片寬：卡片高＝封面（寬×1.24）＋下方約 130px；扣掉上方標題、分頁約 300px，讓一整排卡片放得進一個畫面 */
-  --card-w: clamp(150px, calc((100vh - 430px) / 1.24), 228px);
+  --card-w: clamp(140px, calc(68vh - 377px), 228px);
   box-sizing: border-box;
 `;
 
@@ -729,6 +733,7 @@ const Card = styled.article`
   border-radius: 12px;
   background: ${(p) => p.theme.surface.raised};
   overflow: hidden;
+  container-type: inline-size;
   transition: transform 0.35s cubic-bezier(0.34, 1.8, 0.64, 1), box-shadow 0.35s ease;
 
   /* 選書：往上跳一截、微微放大，落下時帶一點回彈；陰影拉長，像書離開書架 */
@@ -921,6 +926,7 @@ const ReadBtn = styled.button`
   justify-content: space-between;
   block-size: 36px;
   padding: 0 14px 0 16px;
+  min-inline-size: 0;
   white-space: nowrap;
   border: none;
   border-radius: 999px;
@@ -931,6 +937,13 @@ const ReadBtn = styled.button`
   cursor: pointer;
 
   &:hover { background: ${(p) => p.theme.action.primaryBgHover}; }
+
+  /* 平板上卡片窄：拿掉箭頭、縮內距，鉛筆鈕才不會被擠出卡片 */
+  @container (max-width: 170px) {
+    justify-content: center;
+    padding: 0 8px;
+    svg { display: none; }
+  }
 `;
 
 const EditBtn = styled.button`
