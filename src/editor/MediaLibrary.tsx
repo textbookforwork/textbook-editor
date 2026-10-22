@@ -475,7 +475,7 @@ function AssetCard({
       {/* 刪除媒體資源先確認 */}
       {confirmDelete && (
         <ConfirmDialog
-          title={`刪除「${name}」？`}
+          title={`刪除${KIND_LABEL[asset.kind] ?? ''}「${baseName(asset.name)}」？`}
           confirmLabel="刪除"
           onConfirm={() => {
             if (previewing) preview?.stop();
@@ -722,7 +722,8 @@ const Drop = styled.button<{ $over: boolean }>`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  /* 間距各自定：圖示和標題隔 12，標題和格式只隔 2——標題與格式是同一組說明，要比跟圖示更靠近 */
+  gap: 0;
   inline-size: 100%;
   /* 跟下面的「描述要生成的圖片」框同高、同圓角，上下兩塊對齊 */
   block-size: 128px;
@@ -747,7 +748,7 @@ const DropTile = styled.span<{ $over: boolean }>`
   inline-size: 40px;
   block-size: 40px;
   padding: 0;
-  margin-block-end: 6px;
+  margin-block-end: 12px;
   border-radius: ${(p) => p.theme.radius.tile};
   background: ${(p) => (p.$over ? p.theme.brand.primary : p.theme.surface.sunken)};
   color: ${(p) => p.theme.text.primary};
@@ -769,12 +770,15 @@ const Spinner = styled.span`
 
 const DropTitle = styled.span`
   font-size: var(--ds-typography-body-sm-size);
+  line-height: 1.4;
   font-weight: 500;
   color: ${(p) => p.theme.text.primary};
 `;
 
 const DropHint = styled.span`
+  margin-block-start: 2px;
   font-size: var(--ds-typography-caption-size);
+  line-height: 1.4;
   color: ${(p) => p.theme.text.tertiary};
 `;
 
@@ -912,7 +916,16 @@ const Mask = styled.span`
   svg path, svg polygon { fill: currentColor; }
 `
 
-/** 白卡；按下或選定時外面一圈品牌深綠框（outline，不改變大小） */
+/** 刪除確認寫媒體種類，例如「刪除圖片「黃河」？」 */
+const KIND_LABEL: Record<string, string> = { image: '圖片', video: '影片', audio: '聲音', web: '網頁', pdf: 'PDF' };
+
+/** 檔名不帶副檔名（.jpg、.mp4…），老師看的是名稱不是檔案格式 */
+const baseName = (n: string) => n.replace(/\.[a-z0-9]{2,5}$/i, '');
+
+/**
+ * 白卡；按下或選定時框線直接變品牌深綠（2px）。
+ * 不用 outline 疊在外面：滑過的灰框、陰影跟外面的綠框會疊成兩圈，邊緣看起來不乾淨。
+ */
 const CardShell = styled.div<{ $layout: 'row' | 'tile'; $selected: boolean }>`
   position: relative;
   min-inline-size: 0;
@@ -924,15 +937,19 @@ const CardShell = styled.div<{ $layout: 'row' | 'tile'; $selected: boolean }>`
   background: ${(p) => p.theme.surface.raised};
   /* 平常就留一圈透明框，滑過時框線變灰才不會推動版面 */
   border: ${(p) => p.theme.border.widthDefault} solid transparent;
-  outline: 2px solid ${(p) => (p.$selected ? p.theme.brand.accentOnLight : 'transparent')};
-  transition: border-color 0.12s, box-shadow 0.12s, outline-color 0.12s;
+  transition: border-color 0.12s, box-shadow 0.12s;
+  ${(p) => p.$selected && `border-color: ${p.theme.brand.accentOnLight}; box-shadow: 0 0 0 1px ${p.theme.brand.accentOnLight};`}
 
   /* 滑過：維持白底，加灰框與淡陰影浮起來（乙練 2026-10-22 選 B；淡灰底跟面板 #FAFAFA 分不出來） */
   &:hover {
     border-color: ${(p) => p.theme.border.default};
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   }
-  &:has(> button:first-child:active) { outline-color: ${(p) => p.theme.brand.accentOnLight}; }
+  /* 按下去：同一圈框線變深綠（1px 框＋1px 內陰影＝2px），不另外疊外框 */
+  &:has(> button:first-child:active) {
+    border-color: ${(p) => p.theme.brand.accentOnLight};
+    box-shadow: 0 0 0 1px ${(p) => p.theme.brand.accentOnLight};
+  }
 `;
 
 const CardMain = styled.button<{ $layout: 'row' | 'tile' }>`
