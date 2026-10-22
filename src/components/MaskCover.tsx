@@ -23,7 +23,7 @@ export function MaskCover({ blockId, editing, live }: Props) {
   const key = maskKey(blockId);
   const [opening, setOpening] = useState(false);
 
-  // 編輯時：半透明灰白加細斜線、中間一個閉著的眼睛，看得出「這裡會被遮住」；內容照樣看得到、改得到
+  // 編輯時：半透明灰白加細斜線、中間一個閉著的眼睛（外面不加框），看得出「這裡會被遮住」；內容照樣看得到、改得到
   if (editing)
     return (
       <Outline aria-hidden="true" title={LABEL}>
@@ -59,14 +59,13 @@ const REVEAL_MS = 900;
 
 const Outline = styled.div`
   position: absolute;
-  inset: -4px;
+  inset: 0;
   z-index: 2;
   pointer-events: none;
   /* 有遮住的感覺：鋪一層半透明的灰白，底下的內容變淡但還認得出來，老師照樣能改 */
   display: grid;
   place-items: center;
-  border: 1.5px dashed ${(p) => p.theme.border.hover};
-  border-radius: 10px;
+  border-radius: 6px;
   background-color: color-mix(in srgb, ${(p) => p.theme.surface.muted} 62%, transparent);
   background-image: repeating-linear-gradient(
     135deg,
