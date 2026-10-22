@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
+import { isMaskShown, maskKey, revealMask, useMaskVersion } from '../viewer/masks';
 import styled from 'styled-components';
 import { roleStyle, TEXT_SCALE, textFlowStyle } from '../styles/roles';
 import { blockBox, type SizingContext } from '../model/blockSizing';
@@ -66,6 +67,15 @@ export function BlockView({
   const html = block.type === 'text' ? spansToHtml(block.spans) : '';
   const richHtml = useMemo(() => ({ __html: html }), [html]);
 
+  // 遮住的幾個字：閱讀時打開過的要記著，換頁回來（元件重畫）再把它們標回打開
+  const maskVersion = useMaskVersion();
+  const textRef = useRef<HTMLParagraphElement>(null);
+  useLayoutEffect(() => {
+    textRef.current?.querySelectorAll<HTMLElement>('[data-mask]').forEach((el) => {
+      if (isMaskShown(maskKey(block.id, el.textContent ?? ''))) el.dataset.shown = '1';
+    });
+  }, [html, maskVersion, block.id]);
+
   // 非文字區塊：尺寸由 blockSizing 決定，跟量測用的是同一個函式，
   // 所以畫出來的一定等於量到的，不會撐破頁面。
   const box = blockBox(block, sizing);
@@ -109,6 +119,7 @@ export function BlockView({
       }
       return (
         <Text
+          ref={textRef}
           className="ds-rich"
           style={s}
           {...dir}
@@ -118,6 +129,14 @@ export function BlockView({
           onClick={
             viewer
               ? (e) => {
+                  // 遮住的幾個字：點了只打開遮罩，不同時開補充或聚焦
+                  const maskEl = (e.target as HTMLElement).closest<HTMLElement>('[data-mask]');
+                  if (maskEl && !maskEl.dataset.shown) {
+                    e.stopPropagation();
+                    maskEl.dataset.shown = '1';
+                    revealMask(maskKey(block.id, maskEl.textContent ?? ''));
+                    return;
+                  }
                   // 標成生字詞的幾個字：在字旁彈出註釋，連到這幾個字的補充接在註釋底下。
                   // 註釋的標題是號碼加那幾個字本身（跟課本注釋一樣）。
                   // 標成句子的不在這裡開：它的旨修句問與補充在頁面右下角那條膠囊上（閱讀模式管）
@@ -231,12 +250,38 @@ export function BlockView({
 const Text = styled.p`
   margin: 0;
   color: ${(p) => p.theme.text.primary};
+
+  /* 遮住的幾個字（閱讀）：灰條蓋住，點了才顯示；字的位置照留，打開後版面不動 */
+  [data-mask]:not([data-shown]) {
+    background: ${(p) => p.theme.surface.muted};
+    color: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration-color: transparent;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  [data-mask]:not([data-shown]) rt { color: transparent; }
+  [data-mask]:not([data-shown]):hover { background: color-mix(in srgb, ${(p) => p.theme.surface.muted} 85%, ${(p) => p.theme.text.tertiary}); }
+  [data-mask][data-shown] { transition: background-color 0.2s; }
 `;
 
 const EditableTextStyled = styled(EditableText)`
   margin: 0;
   color: ${(p) => p.theme.text.primary};
   outline: none;
+
+  /* 遮住的幾個字（編輯）：斜線底紋標出來，字照樣看得到、改得到 */
+  [data-mask] {
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, ${(p) => p.theme.text.tertiary} 28%, transparent) 0 2px,
+      transparent 2px 6px
+    );
+    border-radius: 3px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
 
   &:focus,
   &:focus-visible {

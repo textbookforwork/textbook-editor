@@ -98,6 +98,8 @@ export type InlineSpan = {
   keyword?: boolean;
   /** 注釋參照（md 規格的 `[^1]`）。對應 Doc.footnotes 裡的 id。 */
   footnoteRef?: string;
+  /** 遮住這幾個字（像挖空）：閱讀時蓋一條灰底，點了才顯示。 */
+  masked?: boolean;
 };
 
 /** 注釋。國文一課可能有二十五條，是內容不是註腳裝飾。 */
@@ -204,6 +206,11 @@ type BlockBase = {
    */
   widthPct?: number;
   blockSize?: number;
+  /**
+   * 遮住：閱讀時原地蓋一層，點了才顯示（取代現行網站的「點擊後消失／出現」）。
+   * 遮罩跟元件一樣大，不佔額外版面，所以分頁不受影響。
+   */
+  masked?: boolean;
 };
 
 export type TextBlock = BlockBase & {

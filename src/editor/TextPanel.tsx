@@ -42,7 +42,7 @@ export function InlineTextTools({ block, blockId, start, end, afterFont }: Inlin
   const [open, setOpen] = useState<'color' | 'font' | 'kind' | null>(null);
 
   // 「整段都已經是」才算開著——半段是的時候按下去應該是全部套上
-  const all = (f: 'underline' | 'strike' | 'overline') =>
+  const all = (f: 'underline' | 'strike' | 'overline' | 'masked') =>
     picked.length > 0 && picked.every((s) => s[f]);
   // 整段同一個值才顯示在按鈕上；混著的時候不顯示，免得誤導
   const uniform = <K extends keyof InlineSpan>(key: K): InlineSpan[K] | undefined => {
@@ -53,7 +53,7 @@ export function InlineTextTools({ block, blockId, start, end, afterFont }: Inlin
   const apply = (patch: Partial<SpanMarks>) => {
     ed.dispatch({ type: 'setSpans', blockId, spans: markSpans(block.spans, start, end, patch) });
   };
-  const toggle = (mark: 'underline' | 'strike' | 'overline') => apply({ [mark]: !all(mark) });
+  const toggle = (mark: 'underline' | 'strike' | 'overline' | 'masked') => apply({ [mark]: !all(mark) });
 
   const color = uniform('color');
   const font = uniform('fontFamily');
@@ -187,6 +187,10 @@ export function InlineTextTools({ block, blockId, start, end, afterFont }: Inlin
       </ToolBtn>
       <ToolBtn $iconOnly $on={all('overline')} onClick={() => toggle('overline')} title="上線（線段 AB）">
         <Icon name="overline" size={20} label="上線" />
+      </ToolBtn>
+      {/* 遮住這幾個字（像挖空）：閱讀時蓋一條灰底，點了才顯示 */}
+      <ToolBtn $iconOnly $on={all('masked')} onClick={() => toggle('masked')} title="遮住：閱讀時先蓋住，點了才顯示">
+        <Icon name="eye-off" size={20} label="遮住" />
       </ToolBtn>
 
       <ToolBtn

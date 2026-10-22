@@ -12,6 +12,7 @@ import { textFlowStyle, FLOW_SHARE_OF_PAGE } from '../styles/roles';
 import { usePopupViewer } from '../viewer/PopupViewer';
 import { readyElementPopups, readyPopups } from '../model/popups';
 import { PopupBadge } from './PopupBadge';
+import { MaskCover } from './MaskCover';
 import { useParagraphIndex, useParaFocus } from './ParagraphContext';
 import { paraLabel } from '../model/paragraphs';
 import { COLUMN_GAP } from '../model/pageSize';
@@ -471,6 +472,7 @@ export function RowView({
                       paraOn={!!para && paraFocus?.focusId === para.startId}
                     />
                     </BlockErrorBoundary>
+                    {b.masked && <MaskCover blockId={b.id} editing={!!ed} live={!ed && !!viewer} />}
                   </BlockShell>
                   );
                 })}

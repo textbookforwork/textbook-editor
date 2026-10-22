@@ -103,6 +103,7 @@ function spanToHtml(s: InlineSpan, withMarks = true): string {
   if (s.underline) attrs.push('data-u="1"');
   if (s.strike) attrs.push('data-s="1"');
   if (s.overline) attrs.push('data-o="1"');
+  if (s.masked) attrs.push('data-mask="1"');
   if (s.color && s.color !== 'default' && isSafeColor(s.color)) {
     attrs.push(`data-color="${esc(s.color)}"`);
     // 語意色由 GlobalStyle 的 [data-color='accent'] 之類畫；任意色值只能寫成行內樣式
@@ -187,6 +188,7 @@ export function htmlToSpans(root: HTMLElement): InlineSpan[] {
       if (el.dataset.s) marks.strike = true;
 
       if (el.dataset.o) marks.overline = true;
+      if (el.dataset.mask) marks.masked = true;
       if (el.dataset.color) marks.color = el.dataset.color;
       if (el.dataset.font) marks.fontFamily = el.dataset.font;
       if (el.dataset.pop) marks.popupId = el.dataset.pop;
@@ -206,6 +208,7 @@ export function htmlToSpans(root: HTMLElement): InlineSpan[] {
     if (el.dataset.s || el.tagName === 'S' || el.tagName === 'STRIKE' || el.tagName === 'DEL')
       marks.strike = true;
     if (el.dataset.o) marks.overline = true;
+    if (el.dataset.mask) marks.masked = true;
     // 顏色與字體從 data-* 讀，不從 style 讀：style 是畫出來用的，data 才是資料
     if (el.dataset.color) marks.color = el.dataset.color;
     if (el.dataset.font) marks.fontFamily = el.dataset.font;

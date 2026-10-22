@@ -33,6 +33,7 @@ export function sameMarks(a: InlineSpan, b: InlineSpan): boolean {
     !!a.underline === !!b.underline &&
     !!a.strike === !!b.strike &&
     !!a.overline === !!b.overline &&
+    !!a.masked === !!b.masked &&
     !!a.keyword === !!b.keyword &&
     normalColor(a.color) === normalColor(b.color) &&
     (a.fontFamily ?? undefined) === (b.fontFamily ?? undefined) &&
@@ -55,6 +56,7 @@ export type SpanMarks = Pick<
   | 'underline'
   | 'strike'
   | 'overline'
+  | 'masked'
   | 'keyword'
   | 'color'
   | 'fontFamily'

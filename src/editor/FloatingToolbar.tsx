@@ -341,6 +341,23 @@ function BlockCapsule() {
         </Btn>
       )}
 
+      {/* 遮住：閱讀時原地蓋住，點了才顯示（取代現行網站的「點擊後消失／出現」） */}
+      <Btn
+        $on={!!block.masked}
+        onClick={() =>
+          ed.dispatch({
+            type: 'patchBlock',
+            blockId: id,
+            blockType: block.type,
+            patch: { masked: block.masked ? undefined : true },
+          })
+        }
+        title={block.masked ? '取消遮住' : '遮住：閱讀時先蓋住，點了才顯示'}
+        $icon
+      >
+        <Icon name="eye-off" size={20} label={block.masked ? '取消遮住' : '遮住'} />
+      </Btn>
+
       {/* 手動換頁線的位置固定，不隨內容移動——這是老師的決定 */}
       <Btn
         $on={row.breakBefore}

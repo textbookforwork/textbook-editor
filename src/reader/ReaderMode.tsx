@@ -95,6 +95,8 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
    * 第一下就算剛好點在生字詞上也只選段，免得想指著某段講時一按就彈出泡泡蓋住課文。
    */
   const decide = (rich: HTMLElement, offset: number, target: Element, e: MouseEvent): Decision => {
+    // 點在還沒打開的遮罩上：只打開遮罩（文字元件自己處理），不選段、不聚焦句子
+    if (target.closest('[data-mask]:not([data-shown])')) return { kind: 'stop' };
     const shell = rich.closest<HTMLElement>('[data-para]');
     // 不是段落（標題、一般內文）：沒有段這一層，點一下就聚焦那一句
     if (!shell) {
