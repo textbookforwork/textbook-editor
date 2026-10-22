@@ -315,7 +315,10 @@ export function PageThumbs({ doc, pages, current, thumbInline, onGoPage, dispatc
           <AddThumb type="button" onClick={addPage} aria-label="新增頁面" title="在最後新增一頁">
             <Num $on={false} />
             <AddShot style={{ width: size.width * scale, height: size.height * scale }}>
-              <Icon name="plus" size={20} />
+              <AddCircle>
+                <Icon name="plus" size={16} />
+              </AddCircle>
+              <AddLabel>新增頁面</AddLabel>
             </AddShot>
           </AddThumb>
         )}
@@ -391,7 +394,10 @@ const Num = styled.span<{ $on: boolean }>`
   color: ${(p) => (p.$on ? p.theme.text.primary : p.theme.text.tertiary)};
 `;
 
-/** 新增頁面那一格：外層跟縮圖同一套內距，框的大小與圓角也一樣，只是換成虛線、不上陰影。 */
+/**
+ * 新增頁面那一格：外層跟縮圖同一套內距，框的大小與圓角也一樣，換成淡虛線、不上陰影。
+ * 中間一顆白色圓鈕放＋（跟插入點的＋同一種長相），下面一行小字說明，滑過時圓鈕浮起來。
+ */
 const AddThumb = styled.button`
   display: flex;
   align-items: flex-start;
@@ -402,22 +408,50 @@ const AddThumb = styled.button`
   background: transparent;
   cursor: pointer;
   font: inherit;
-  color: ${(p) => p.theme.icon.secondary};
+  color: ${(p) => p.theme.text.tertiary};
 
-  &:hover { color: ${(p) => p.theme.icon.default}; }
-  &:hover > span:last-child { border-color: ${(p) => p.theme.border.hover}; background: ${(p) => p.theme.surface.page}; }
   &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: -2px; }
+`;
+
+const AddCircle = styled.span`
+  display: grid;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: 999px;
+  background: ${(p) => p.theme.surface.raised};
+  color: ${(p) => p.theme.icon.default};
+  box-shadow: ${(p) => p.theme.shadow.popover};
+  transition: transform 0.15s, box-shadow 0.15s;
+`;
+
+const AddLabel = styled.span`
+  font-size: var(--ds-typography-label-size);
+  line-height: var(--ds-typography-label-line-height);
+  transition: color 0.15s;
 `;
 
 const AddShot = styled.span`
   flex: none;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   box-sizing: border-box;
   border-radius: ${SHOT_RADIUS}px;
-  /* 跟空的圖片、網頁元件同一種虛線框 */
   border: ${(p) => p.theme.border.widthDefault} dashed ${(p) => p.theme.border.default};
-  transition: border-color 0.12s, background 0.12s;
+  transition: border-color 0.15s, background 0.15s;
+
+  ${AddThumb}:hover & {
+    border-color: ${(p) => p.theme.border.hover};
+    background: ${(p) => p.theme.surface.page};
+  }
+  ${AddThumb}:hover & ${AddCircle} {
+    transform: translateY(-1px);
+    box-shadow: ${(p) => p.theme.shadow.popover}, 0 6px 16px rgba(26, 25, 23, 0.10);
+  }
+  ${AddThumb}:hover & ${AddLabel} { color: ${(p) => p.theme.text.secondary}; }
 `;
 
 /** 包住縮圖，好讓垃圾桶貼在它的右上角。 */
