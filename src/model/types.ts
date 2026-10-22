@@ -317,7 +317,7 @@ export type ShapeBlock = BlockBase & {
   stroke?: string;
   /** 邊框粗細（px）。 */
   strokeWidth?: number;
-  /** 透明度 0～1，整個圖形連文字一起。 */
+  /** 透明度 0～1，只套在形狀（填色與邊框），裡面的字不受影響。 */
   opacity?: number;
   /**
    * 對話框尖角的尖端，以外框為基準的相對座標（0,0＝左上、1,1＝右下），

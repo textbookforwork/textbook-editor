@@ -216,7 +216,9 @@ export function ShapeBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
   const inner = { w: Math.max(0, w - sw), h: Math.max(0, h - sw) };
   const d = shapePath(block.shape, inner.w, inner.h, tail);
   const spans = spansOfShape(block);
-  const textColor = isDarkColor(block.fill) ? theme.text.onInverse : theme.text.primary;
+  // 字不跟著淡，所以深色填色調到半透明以下時，底已經接近白紙，字要換回墨色
+  const darkBehind = isDarkColor(block.fill) && (block.opacity ?? 1) >= 0.5;
+  const textColor = darkBehind ? theme.text.onInverse : theme.text.primary;
 
   // 取消選取就離開打字狀態，否則外框消失了游標卻還在裡面
   useEffect(() => {
@@ -272,14 +274,14 @@ export function ShapeBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
   return (
     <Frame
       ref={frameRef}
-      style={{ ...boxStyle, opacity: block.opacity ?? 1 }}
+      style={boxStyle}
       onPointerDown={onSelect}
       onDoubleClick={() => {
         if (onPatch) setEditing(true);
       }}
     >
-      {/* 形狀。overflow visible 讓對話框的尖角畫得到框外 */}
-      <Svg width={w} height={h} aria-hidden="true">
+      {/* 形狀。overflow visible 讓對話框的尖角畫得到框外；透明度只套在形狀，字不跟著淡 */}
+      <Svg width={w} height={h} aria-hidden="true" style={{ opacity: block.opacity ?? 1 }}>
         <g transform={`translate(${sw / 2} ${sw / 2})`}>
           <path
             d={d}
