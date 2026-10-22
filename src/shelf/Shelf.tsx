@@ -372,7 +372,10 @@ function BookCard({
 const Page = styled.div`
   min-block-size: 100vh;
   background: ${(p) => p.theme.surface.backdrop};
-  padding: 32px 32px 48px;
+  /* 尺寸跟著視窗走：Figma 稿是 1440 寬的長頁，照抄固定像素的話，矮的視窗連一整張卡片都看不完 */
+  padding: clamp(16px, 3vh, 32px) clamp(16px, 2.2vw, 32px) 48px;
+  /* 卡片寬：卡片高＝封面（寬×1.24）＋下方約 130px；扣掉上方標題、分頁約 300px，讓一整排卡片放得進一個畫面 */
+  --card-w: clamp(150px, calc((100vh - 430px) / 1.24), 228px);
   box-sizing: border-box;
 `;
 
@@ -436,7 +439,7 @@ const TabRow = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-block-end: 36px;
+  margin-block-end: clamp(16px, 3vh, 36px);
 `;
 
 /** 管理員的「建立教材」：分頁列右上角的黑色主要按鈕 */
@@ -463,7 +466,7 @@ const NewBtn = styled.button`
 const Placeholder = styled.div`
   inline-size: 100%;
   block-size: 100%;
-  border-radius: 12px 12px 0 0;
+  border-radius: 0;
   overflow: hidden;
 
   svg { display: block; }
@@ -483,7 +486,7 @@ const Avatar = styled.span`
 const Nav = styled.nav`
   display: flex;
   gap: 8px;
-  margin: 44px 0 20px;
+  margin: clamp(12px, 3.5vh, 44px) 0 clamp(10px, 2vh, 20px);
 `;
 
 const NavPill = styled.button<{ $on?: boolean }>`
@@ -505,7 +508,7 @@ const NavPill = styled.button<{ $on?: boolean }>`
 const Panel = styled.main`
   background: ${(p) => p.theme.surface.raised};
   border-radius: 24px;
-  padding: 24px clamp(24px, 6vw, 94px) 48px;
+  padding: clamp(14px, 2.4vh, 24px) clamp(20px, 5vw, 94px) 48px;
 `;
 
 const Tabs = styled.div`
@@ -550,14 +553,14 @@ const Empty = styled.p`
 `;
 
 const Section = styled.section`
-  & + & { margin-block-start: 48px; }
+  & + & { margin-block-start: clamp(28px, 5vh, 48px); }
 `;
 
 const SectionHead = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-block-end: 24px;
+  margin-block-end: clamp(12px, 2.2vh, 24px);
 
   h2 {
     margin: 0;
@@ -569,17 +572,32 @@ const SectionHead = styled.div`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, 228px);
+  grid-template-columns: repeat(auto-fill, var(--card-w));
   gap: 24px;
 `;
 
+/**
+ * 書卡：圓角由卡片統一裁切（封面不另外畫圓角，才不會跟框線錯開露出縫）。
+ * 滑過時整張書往上浮起一點、陰影加深，像把書從書櫃抽出來。
+ */
 const Card = styled.article`
   display: flex;
   flex-direction: column;
   border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
   border-radius: 12px;
   background: ${(p) => p.theme.surface.raised};
-  overflow: visible;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+
+  &:hover,
+  &:focus-within {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 28px rgba(26, 25, 23, 0.14);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: box-shadow 0.25s ease;
+    &:hover, &:focus-within { transform: none; }
+  }
 `;
 
 const Tag = styled.span<{ $dark?: boolean }>`
@@ -625,14 +643,14 @@ const More = styled.div`
 const Cover = styled.div<{ $hover?: boolean; $menu?: boolean }>`
   position: relative;
   aspect-ratio: 228 / 283;
-  border-radius: 12px 12px 0 0;
+  border-radius: 0;
 
   img {
     display: block;
     inline-size: 100%;
     block-size: 100%;
     object-fit: cover;
-    border-radius: 12px 12px 0 0;
+    border-radius: 0;
   }
 
   ${(p) =>
@@ -642,7 +660,7 @@ const Cover = styled.div<{ $hover?: boolean; $menu?: boolean }>`
       content: '';
       position: absolute;
       inset: 0;
-      border-radius: 12px 12px 0 0;
+      border-radius: 0;
       background: rgba(26, 25, 23, 0.35);
       opacity: ${p.$menu ? 1 : 0};
       transition: opacity 0.15s;
