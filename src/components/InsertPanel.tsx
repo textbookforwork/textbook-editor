@@ -165,7 +165,11 @@ export function InsertPanel({ onPick, onClose, anchorRef, vertical }: Props) {
       {tableMenu ? (
         <TablePicker onBack={() => setTableMenu(false)} onInsert={(size) => onPick('table', size)} />
       ) : shapeMenu ? (
-        <Grid>
+        /*
+         * 兩層用不同的 key 整個換掉：不然 React 會沿用同一個格線，主選單「圖形」那顆按鈕（key 也是 'shape'）
+         * 直接變成子選單的「矩形」，按下的狀態跟著留下來，矩形會閃一下
+         */
+        <Grid key="shapes">
           {SHAPE_TILES.map((t) => (
             <Tile key={t.key} type="button" onClick={() => onPick(t.key)}>
               <ShapeGlyph glyph={t.glyph} />
@@ -174,7 +178,7 @@ export function InsertPanel({ onPick, onClose, anchorRef, vertical }: Props) {
           ))}
         </Grid>
       ) : (
-        <Grid>
+        <Grid key="main">
           {TILES.map((t) => (
             <Tile
               key={t.key}
