@@ -79,20 +79,19 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
             <BrandEn>Digital Textbook</BrandEn>
           </span>
         </Brand>
+        {/* 地球大廳、啟航探索是平台的兩個主要區域；這次只做書櫃（地球大廳），另一個先不能點 */}
+        <Nav>
+          <NavPill $on aria-current="page">
+            <Icon name="book" size={20} />
+            地球大廳
+          </NavPill>
+          <NavPill as="span" title="還沒開放">
+            <Icon name="globe" size={20} />
+            啟航探索
+          </NavPill>
+        </Nav>
         <UserMenu role={role} />
       </Top>
-
-      {/* 地球大廳、啟航探索是平台的兩個主要區域；這次只做書櫃（地球大廳），另一個先不能點 */}
-      <Nav>
-        <NavPill $on aria-current="page">
-          <Icon name="book" size={20} />
-          地球大廳
-        </NavPill>
-        <NavPill as="span" title="還沒開放">
-          <Icon name="globe" size={20} />
-          啟航探索
-        </NavPill>
-      </Nav>
 
       <Panel>
         <TabRow>
@@ -402,15 +401,20 @@ const Page = styled.div`
   background: ${(p) => p.theme.surface.backdrop};
   /* 尺寸跟著視窗走：Figma 稿是 1440 寬的長頁，照抄固定像素的話，矮的視窗連一整張卡片都看不完 */
   padding: clamp(16px, 3vh, 32px) clamp(16px, 2.2vw, 32px) 48px;
-  /* 卡片寬：卡片高＝封面（寬×1.24）＋下方約 130px；扣掉上方標題、分頁約 300px，讓一整排卡片放得進一個畫面 */
-  --card-w: clamp(150px, calc((100vh - 430px) / 1.24), 228px);
+  /* 卡片寬：一個畫面要看得到兩科（兩排卡片）。上方留白也跟著 vh 縮放，所以用量的：
+     1440×900 量到 136px、1920×1080 量到 192px 剛好放得下兩排，取這兩點連線 */
+  --card-w: clamp(132px, calc(31.1vh - 144px), 228px);
   box-sizing: border-box;
 `;
 
+/** 頁首一列：品牌、地球大廳／啟航探索、右邊使用者。分頁放同一列，省下一整列的高度給書櫃 */
 const Top = styled.header`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: clamp(24px, 4vw, 56px);
+  margin-block-end: clamp(12px, 2.4vh, 24px);
+
+  & > :last-child { margin-inline-start: auto; }
 `;
 
 const Brand = styled.div`
@@ -514,7 +518,7 @@ const Avatar = styled.span`
 const Nav = styled.nav`
   display: flex;
   gap: 8px;
-  margin: clamp(12px, 3.5vh, 44px) 0 clamp(10px, 2vh, 20px);
+  margin: 0;
 `;
 
 const NavPill = styled.button<{ $on?: boolean }>`
@@ -615,14 +619,14 @@ const EmptyHint = styled.p`
 `;
 
 const Section = styled.section`
-  & + & { margin-block-start: clamp(28px, 5vh, 48px); }
+  & + & { margin-block-start: clamp(20px, 3.5vh, 40px); }
 `;
 
 const SectionHead = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-block-end: clamp(12px, 2.2vh, 24px);
+  margin-block-end: clamp(8px, 1.6vh, 16px);
 
   h2 {
     margin: 0;
@@ -649,6 +653,7 @@ const Card = styled.article`
   border-radius: 12px;
   background: ${(p) => p.theme.surface.raised};
   overflow: hidden;
+  container-type: inline-size;
   transition: transform 0.35s cubic-bezier(0.34, 1.8, 0.64, 1), box-shadow 0.35s ease;
 
   /* 選書：往上跳一截、微微放大，落下時帶一點回彈；陰影拉長，像書離開書架 */
@@ -780,8 +785,8 @@ const MenuItem = styled.button<{ $danger?: boolean }>`
 const Body = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px;
+  gap: 2px;
+  padding: 10px;
   flex: 1;
 `;
 
@@ -792,8 +797,8 @@ const Meta = styled.span`
 
 const Title = styled.h3`
   margin: 0;
-  font-size: 18px;
-  line-height: 28px;
+  font-size: 16px;
+  line-height: 24px;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -837,7 +842,7 @@ const TeacherAvatar = styled.span`
 const Actions = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-block-start: auto;
   padding-block-start: 8px;
 `;
@@ -847,8 +852,16 @@ const ReadBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  block-size: 36px;
-  padding: 0 14px 0 16px;
+  block-size: 32px;
+  padding: 0 10px 0 14px;
+  white-space: nowrap;
+
+  /* 卡片窄到放不下箭頭時（矮螢幕）只留字，鉛筆鈕才不會被擠出卡片 */
+  @container (max-width: 150px) {
+    justify-content: center;
+    padding: 0 10px;
+    svg { display: none; }
+  }
   border: none;
   border-radius: 999px;
   background: ${(p) => p.theme.action.primaryBg};
@@ -864,8 +877,8 @@ const EditBtn = styled.button`
   flex: none;
   display: grid;
   place-items: center;
-  inline-size: 36px;
-  block-size: 36px;
+  inline-size: 32px;
+  block-size: 32px;
   padding: 0;
   border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
   border-radius: 999px;
