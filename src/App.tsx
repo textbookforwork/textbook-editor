@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { READER_CROP, PAGE_SIZE } from './model/pageSize';
+import { READER_CROP, PAGE_SIZE, type PageDims } from './model/pageSize';
 import { usePages } from './hooks/usePages';
 import { useEditor } from './hooks/useEditor';
 import { PageView } from './components/PageView';
@@ -84,14 +84,16 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
     (rowId: string) => doc.rows.findIndex((r) => r.id === rowId),
     [doc.rows]
   );
-  const { pages } = usePages(doc);
+  // 流式排版的閱讀畫面：頁面大小跟著螢幕走，字不縮放（見 useReflowSize）
+  const stageRef = useRef<HTMLDivElement>(null);
+  const reflow = useReflowSize(stageRef, preview && doc.settings.layout === 'flow');
+  const { pages } = usePages(doc, reflow?.size);
   // 管理員從空白本建立的數位教科書（原本）；老師的自編是副本
   const isOriginalBook = !!bookId && findBook(bookId)?.kind === 'original';
 
   const patch = (p: Partial<DocSettings>) => dispatch({ type: 'setSettings', patch: p });
 
   // 整頁等比縮放：整頁剛好放進編輯區＝100%，再乘上使用者的倍率
-  const stageRef = useRef<HTMLDivElement>(null);
   const pageSize = PAGE_SIZE[doc.settings.aspectRatio];
   const { scale, percent, setZoom, zoomIn, zoomOut, resetZoom } = useZoom(stageRef, {
     // 閱讀模式不顯示頁面四周的留白（見 ReaderMode 的 Crop），縮放照內容區算，字大約 7%
@@ -252,7 +254,8 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
           pages={pages}
           current={current}
           go={go}
-          scale={scale}
+          scale={reflow ? reflow.zoom : scale}
+          pageSize={reflow?.size}
           stageRef={stageRef}
           onExit={readOnly ? undefined : () => setPreview(false)}
           onGoRow={jumpToRow}
@@ -530,4 +533,42 @@ const PageSlot = styled.div`
   min-inline-size: 100%;
   inline-size: max-content;
 `;
+
+/**
+ * 流式排版的閱讀畫面用滿螢幕：頁面大小＝畫布大小換算回頁座標，字的大小固定（不整頁縮放）。
+ * 流式只在換頁線與章、節換頁，頁數不受螢幕影響；變的只是一頁裡的內容怎麼排、要捲多少。
+ *   學生平板（1024×768、1280×800）：zoom 1，內文 24px，高於 20px 的下限
+ *   教室大螢幕（畫布寬 1700 以上）：zoom 1.25，整體放大給遠處的學生看 [需確認：放大多少]
+ * 畫布四周各留 24，頁邊再裁掉 READER_CROP（跟固定頁一樣），所以頁座標要把裁掉的加回去。
+ */
+const REFLOW_MARGIN = 24;
+function useReflowSize(ref: React.RefObject<HTMLElement | null>, active: boolean): { size: PageDims; zoom: number } | null {
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    if (!active) {
+      setBox(null);
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const read = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w > 0 && h > 0) setBox((b) => (b && b.w === w && b.h === h ? b : { w, h }));
+    };
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref, active]);
+  if (!active || !box) return null;
+  const zoom = box.w >= 1700 ? 1.25 : 1;
+  return {
+    zoom,
+    size: {
+      width: Math.round((box.w - REFLOW_MARGIN * 2) / zoom + READER_CROP * 2),
+      height: Math.round((box.h - REFLOW_MARGIN * 2) / zoom + READER_CROP * 2),
+    },
+  };
+}
 

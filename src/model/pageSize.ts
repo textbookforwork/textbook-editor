@@ -29,8 +29,14 @@ export const READER_CROP = PAGE_PADDING - 16;
 /** 欄與欄之間的溝寬。與 GAP.module 同值，橫縱格線一致。 */
 export const COLUMN_GAP = 48;
 
-export function contentBox(settings: Pick<DocSettings, 'aspectRatio'>) {
-  const page = PAGE_SIZE[settings.aspectRatio];
+export type PageDims = { width: number; height: number };
+
+/**
+ * 內容區。size 不給就是固定的頁座標（編輯、自動切頁的教材）；
+ * 流式排版的教材在閱讀時，頁面大小跟著螢幕走（見 App 的 reflowSize），由呼叫端傳進來。
+ */
+export function contentBox(settings: Pick<DocSettings, 'aspectRatio'>, size?: PageDims) {
+  const page = size ?? PAGE_SIZE[settings.aspectRatio];
   return {
     width: page.width - PAGE_PADDING * 2,
     height: page.height - PAGE_PADDING * 2,

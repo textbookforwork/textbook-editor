@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { PAGE_PADDING, PAGE_SIZE, contentBox } from '../model/pageSize';
+import { PAGE_PADDING, PAGE_SIZE, contentBox, type PageDims } from '../model/pageSize';
 import { RowView } from './RowView';
 import { urlOf } from '../editor/assets';
 import type { Page } from '../model/paginate';
@@ -35,6 +35,8 @@ type Props = {
   rowCount?: number;
   /** 縮圖模式：不顯示捲軸、不攔截滾輪。 */
   thumbnail?: boolean;
+  /** 頁面大小。不給就是固定的頁座標；流式排版的閱讀畫面傳螢幕換算後的大小（要跟分頁用的同一個）。 */
+  pageSize?: PageDims;
 };
 
 /**
@@ -43,11 +45,11 @@ type Props = {
  * 頁面本身永遠是固定尺寸，靠 transform 等比縮放——
  * 不是重新排版。所以任何螢幕上看到的都是同一份分頁結果。
  */
-export function PageView({ page, settings, scale, rowIndexOf, rowCount = 0, thumbnail = false }: Props) {
-  const size = PAGE_SIZE[settings.aspectRatio];
+export function PageView({ page, settings, scale, rowIndexOf, rowCount = 0, thumbnail = false, pageSize }: Props) {
+  const size = pageSize ?? PAGE_SIZE[settings.aspectRatio];
   const vertical = settings.writingMode === 'vertical';
   const flow = settings.layout === 'flow';
-  const box = contentBox(settings);
+  const box = contentBox(settings, pageSize);
   // 邏輯軸：橫排的 inline 是寬、直排的 inline 是高
   const contentInline = vertical ? box.height : box.width;
   const contentBlock = vertical ? box.width : box.height;

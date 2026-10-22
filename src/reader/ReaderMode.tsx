@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps,
 import styled, { createGlobalStyle } from 'styled-components';
 import { PageView } from '../components/PageView';
 import { Icon } from '../components/Icon';
-import { READER_CROP, PAGE_SIZE } from '../model/pageSize';
+import { READER_CROP, PAGE_SIZE, type PageDims } from '../model/pageSize';
 import { outlineOf, pageOfRow } from '../model/outline';
 import type { Page } from '../model/paginate';
 import type { Doc, RangeNote, TextBlock } from '../model/types';
@@ -34,6 +34,8 @@ type Props = {
   onExit?: () => void;
   /** 目次點了跳到那一段所在的頁。 */
   onGoRow: (rowId: string) => void;
+  /** 流式排版：頁面大小跟著螢幕走（App 的 reflowSize），要跟分頁用的同一個。不給就是固定頁座標。 */
+  pageSize?: PageDims;
 };
 
 /** 補充資源面板。要在 PopupViewerProvider 裡面才拿得到 viewer。開關由左欄的「補充資源」控制。 */
@@ -63,9 +65,9 @@ function Supplements(props: Omit<ComponentProps<typeof SupplementPanel>, 'onOpen
  * 筆跡畫在頁面上方的透明層，不碰頁面的 DOM；逐句聚焦與補充面板照舊，
  * 沒拿工具時點頁面還是它們在接。
  */
-export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, onGoRow }: Props) {
+export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, onGoRow, pageSize }: Props) {
   const page = pages[Math.min(current, pages.length - 1)];
-  const size = PAGE_SIZE[doc.settings.aspectRatio];
+  const size = pageSize ?? PAGE_SIZE[doc.settings.aspectRatio];
 
   const [tool, setTool] = useState<InkTool | null>(null);
   const [toolboxOpen, setToolboxOpen] = useState(false);
@@ -280,7 +282,7 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
                 筆跡層跟著頁面一起推，座標仍是整頁的
               */}
               <Crop style={{ margin: -READER_CROP * scale }}>
-                <PageView page={page} settings={doc.settings} scale={scale} />
+                <PageView page={page} settings={doc.settings} scale={scale} pageSize={pageSize} />
                 <InkLayer
                   ink={ink}
                   tool={tool}

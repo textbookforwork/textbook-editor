@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createDomMeasurer } from '../measure/domMeasurer';
 import { withCache, type CachedMeasurer } from '../measure/cachedMeasurer';
 import { paginate, pageOptionsFor, type Page } from '../model/paginate';
-import { COLUMN_GAP, contentBox } from '../model/pageSize';
+import { COLUMN_GAP, contentBox, type PageDims } from '../model/pageSize';
 import type { Doc } from '../model/types';
 
 /**
@@ -11,7 +11,11 @@ import type { Doc } from '../model/types';
  * 量測器與快取跟著「設定」走：換書寫方向或字級檔位會讓所有量測失效，
  * 其餘情況（打字、插入、拖曳）都靠快取，只重量真正改變的區塊。
  */
-export function usePages(doc: Doc): { pages: Page[]; stats: CachedMeasurer['stats'] } {
+/**
+ * size：流式排版的教材在閱讀時，頁面大小跟著螢幕走，傳進螢幕換算後的頁面大小。
+ * 流式只在換頁線與章、節換頁，所以頁數不受影響，只有頁裡的內容重排。
+ */
+export function usePages(doc: Doc, size?: PageDims): { pages: Page[]; stats: CachedMeasurer['stats'] } {
   const { writingMode, textScale, aspectRatio, layout } = doc.settings;
 
   // 字型載入前量到的寬度是錯的，載入後要重算一次
@@ -48,10 +52,11 @@ export function usePages(doc: Doc): { pages: Page[]; stats: CachedMeasurer['stat
   }, [measurer]);
 
   const pages = useMemo(() => {
-    const box = contentBox({ aspectRatio });
+    const box = contentBox({ aspectRatio }, size);
     const opts = pageOptionsFor({ writingMode, layout }, box, COLUMN_GAP);
     return paginate(doc.rows, opts, measurer.cached);
-  }, [doc.rows, aspectRatio, writingMode, layout, measurer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc.rows, aspectRatio, writingMode, layout, measurer, size?.width, size?.height]);
 
   return { pages, stats: measurer.cached.stats };
 }

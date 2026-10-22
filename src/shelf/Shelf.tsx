@@ -73,11 +73,13 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
     }))
     .filter((s) => (shown ? s.books.length > 0 : s.sources.length > 0))
     .filter((s) => !subject || s.subject === subject);
-  // 主頁每科只排一列；子頁（查看全部）不限
-  const limit = subject ? Infinity : columns;
+  // 主頁每科只排一列、最多 5 本；子頁（查看全部）不限
+  const limit = subject ? Infinity : Math.min(columns, 5);
+
+  const zoom = usePageZoom();
 
   return (
-    <Page>
+    <Page style={{ '--z': zoom } as React.CSSProperties}>
       <Top>
         <Brand>
           <svg width={52} height={54} viewBox="0 0 32 32" aria-hidden="true">
@@ -432,13 +434,31 @@ function BookCard({
 
 // ── 樣式 ─────────────────────────────────────────────
 
+/**
+ * 書櫃整頁照設計稿 1440 寬排（一排 5 本、卡片 228），再依視窗整頁等比縮放（zoom），
+ * 標題、分頁、卡片一起變大變小，比例不會跑掉。只縮卡片的話，頁首和卡片會一大一小。
+ * 基準高 790：1440×900 的螢幕扣掉瀏覽器上方的網址列、分頁後，實際看得到的高度。
+ */
+const BASE_W = 1440;
+const BASE_H = 790;
+
+function usePageZoom() {
+  const read = () => Math.min(document.documentElement.clientWidth / BASE_W, window.innerHeight / BASE_H);
+  const [zoom, setZoom] = useState(read);
+  useEffect(() => {
+    const onResize = () => setZoom(read());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return zoom;
+}
+
 const Page = styled.div`
-  min-block-size: 100vh;
+  zoom: var(--z, 1);
+  min-block-size: calc(100vh / var(--z, 1));
   background: ${(p) => p.theme.surface.backdrop};
-  /* 尺寸跟著視窗走：Figma 稿是 1440 寬的長頁，照抄固定像素的話，矮的視窗連一整張卡片都看不完 */
-  padding: clamp(16px, 3vh, 32px) clamp(16px, 2.2vw, 32px) 48px;
-  /* 卡片寬：卡片高＝封面（寬×1.24）＋下方約 130px；扣掉上方標題、分頁約 300px，讓一整排卡片放得進一個畫面 */
-  --card-w: clamp(140px, calc(68vh - 377px), 228px);
+  padding: 24px 32px 48px;
+  --card-w: 228px;
   box-sizing: border-box;
 `;
 
@@ -503,7 +523,7 @@ const TabRow = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-block-end: clamp(16px, 3vh, 36px);
+  margin-block-end: 24px;
 `;
 
 /** 管理員的「建立教材」：分頁列右上角的黑色主要按鈕 */
@@ -550,7 +570,7 @@ const Avatar = styled.span`
 const Nav = styled.nav`
   display: flex;
   gap: 8px;
-  margin: clamp(12px, 3.5vh, 44px) 0 clamp(10px, 2vh, 20px);
+  margin: 28px 0 16px;
 `;
 
 const NavPill = styled.button<{ $on?: boolean }>`
@@ -572,7 +592,7 @@ const NavPill = styled.button<{ $on?: boolean }>`
 const Panel = styled.main`
   background: ${(p) => p.theme.surface.raised};
   border-radius: 24px;
-  padding: clamp(14px, 2.4vh, 24px) clamp(20px, 5vw, 94px) 48px;
+  padding: 20px 64px 48px;
 `;
 
 const Tabs = styled.div`
@@ -615,7 +635,7 @@ const Empty = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  margin: clamp(40px, 10vh, 96px) 0;
+  margin: 80px 0;
   text-align: center;
 `;
 
@@ -645,14 +665,14 @@ const EmptyHint = styled.p`
 `;
 
 const Section = styled.section`
-  & + & { margin-block-start: clamp(28px, 5vh, 48px); }
+  & + & { margin-block-start: 40px; }
 `;
 
 const SectionHead = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-block-end: clamp(12px, 2.2vh, 24px);
+  margin-block-end: 16px;
 
   h2 {
     margin: 0;
@@ -707,7 +727,7 @@ const Back = styled.button`
   place-items: center;
   inline-size: 44px;
   block-size: 44px;
-  margin-block-end: clamp(16px, 3vh, 32px);
+  margin-block-end: 24px;
   border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
   border-radius: 50%;
   background: ${(p) => p.theme.surface.raised};
@@ -733,7 +753,6 @@ const Card = styled.article`
   border-radius: 12px;
   background: ${(p) => p.theme.surface.raised};
   overflow: hidden;
-  container-type: inline-size;
   transition: transform 0.35s cubic-bezier(0.34, 1.8, 0.64, 1), box-shadow 0.35s ease;
 
   /* 選書：往上跳一截、微微放大，落下時帶一點回彈；陰影拉長，像書離開書架 */
@@ -937,13 +956,6 @@ const ReadBtn = styled.button`
   cursor: pointer;
 
   &:hover { background: ${(p) => p.theme.action.primaryBgHover}; }
-
-  /* 平板上卡片窄：拿掉箭頭、縮內距，鉛筆鈕才不會被擠出卡片 */
-  @container (max-width: 170px) {
-    justify-content: center;
-    padding: 0 8px;
-    svg { display: none; }
-  }
 `;
 
 const EditBtn = styled.button`
