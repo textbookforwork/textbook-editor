@@ -14,7 +14,7 @@ const LABEL = '遮住：點擊後出現';
 
 /**
  * 整個元件的遮罩：跟元件一樣大，疊在元件上，不佔版面。
- * 閱讀時是一片灰白霧面（看得出底下有東西、看不出是什麼），不另外放按鈕，點了淡出；
+ * 閱讀時是一片實心灰白，不另外放按鈕，點了淡出；
  * 打開過的記著（見 viewer/masks），同一堂課換頁再回來仍是開的。
  */
 export function MaskCover({ blockId, editing, live }: Props) {
@@ -56,7 +56,7 @@ const Outline = styled.div`
   background: color-mix(in srgb, ${(p) => p.theme.surface.muted} 62%, transparent);
 `;
 
-/** 閱讀時：霧面玻璃。底下的內容糊成一片，看得出有東西、看不出是什麼 */
+/** 閱讀時：一片實心灰白，完全蓋住 */
 const Frost = styled.div<{ $fading: boolean }>`
   position: absolute;
   /* 往外多蓋 4px：圖片自己的圓角比較小，不多蓋一點，四個角會露出底下的顏色 */
@@ -65,16 +65,15 @@ const Frost = styled.div<{ $fading: boolean }>`
   display: grid;
   place-items: center;
   padding: 0;
+  /* 實心灰白：不用霧面模糊——模糊會把圖片邊緣的深色暈出來，四邊出現一條深色邊，也可能透出答案 */
   border: 1px solid ${(p) => p.theme.border.subtle};
   border-radius: 12px;
-  background: color-mix(in srgb, ${(p) => p.theme.surface.sunken} 88%, transparent);
-  backdrop-filter: blur(24px) saturate(1.1);
-  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  background: ${(p) => p.theme.surface.sunken};
   font: inherit;
   cursor: pointer;
   opacity: ${(p) => (p.$fading ? 0 : 1)};
   transition: opacity 0.26s ease;
 
-  &:hover { background: color-mix(in srgb, ${(p) => p.theme.surface.muted} 88%, transparent); }
+  &:hover { background: ${(p) => p.theme.surface.muted}; }
   &:focus-visible { outline: 2px solid ${(p) => p.theme.border.focus}; outline-offset: 4px; }
 `;
