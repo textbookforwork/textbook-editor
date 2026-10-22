@@ -273,8 +273,9 @@ const EditableTextStyled = styled(EditableText)`
 
   /* 遮住的幾個字（編輯）：淡灰底加虛線底邊標出來，字照樣看得到、改得到 */
   [data-mask] {
-    background: ${(p) => p.theme.surface.sunken};
-    box-shadow: inset 0 -1.5px 0 ${(p) => p.theme.border.editing};
+    background: ${(p) => p.theme.surface.muted};
+    color: ${(p) => p.theme.text.secondary};
+    box-shadow: inset 0 -1.5px 0 ${(p) => p.theme.border.hover};
     border-radius: 4px;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;

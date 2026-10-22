@@ -50,9 +50,10 @@ const Outline = styled.div`
   inset: -4px;
   z-index: 2;
   pointer-events: none;
-  border: 1.5px dashed ${(p) => p.theme.border.editing};
+  /* 有遮住的感覺：鋪一層半透明的灰白，底下的內容變淡但還認得出來，老師照樣能改 */
+  border: 1.5px dashed ${(p) => p.theme.border.hover};
   border-radius: 10px;
-  background: color-mix(in srgb, ${(p) => p.theme.surface.sunken} 25%, transparent);
+  background: color-mix(in srgb, ${(p) => p.theme.surface.muted} 62%, transparent);
 `;
 
 /** 閱讀時：霧面玻璃。底下的內容糊成一片，看得出有東西、看不出是什麼 */
