@@ -107,16 +107,22 @@ const Input = styled.input`
   }
 `;
 
+/**
+ * 五顆一樣寬：六欄格線、每顆佔兩欄，第一排三顆、第二排兩顆置中。
+ * 不用彈性撐滿——第二排只有兩顆時會被拉成長條（乙練：「不能滿版那麼長」）。
+ */
 const Chips = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
+
+  & > * { grid-column: span 2; }
+  & > :nth-child(4) { grid-column: 2 / span 2; }
+  & > :nth-child(5) { grid-column: 4 / span 2; }
 `;
 
 /** 選中的灰底（跟工具列的開關同一款），不用黃 */
 const Chip = styled.button<{ $on: boolean }>`
-  /* 每一排平均撐滿整排（3＋2 時兩排都左右貼齊），內容置中 */
-  flex: 1 1 auto;
   justify-content: center;
   display: inline-flex;
   align-items: center;
