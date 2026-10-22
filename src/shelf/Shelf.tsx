@@ -602,12 +602,18 @@ const Tag = styled.span<{ $muted?: boolean }>`
   position: absolute;
   inset-block-start: 10px;
   inset-inline-start: 10px;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: ${(p) => p.theme.surface.raised};
+  display: flex;
+  align-items: center;
+  block-size: 24px;
+  padding-inline: ${(p) => p.theme.space.insetSm};
+  border-radius: ${(p) => p.theme.radius.control};
+  background: ${(p) => p.theme.surface.sunken};
+  backdrop-filter: blur(5px);
   color: ${(p) => (p.$muted ? p.theme.text.secondary : p.theme.text.primary)};
   font-size: ${(p) => p.theme.typography.captionSize};
+  line-height: ${(p) => p.theme.typography.captionLineHeight};
   font-weight: 500;
+  white-space: nowrap;
 `;
 
 const MoreBtn = styled.button`
