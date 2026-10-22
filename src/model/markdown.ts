@@ -33,7 +33,8 @@ const HEADING_BY_LEVEL: Record<number, TextRole> = {
 
 export type ImportOptions = {
   /**
-   * 自動切頁：在每個「區塊」（`##`）前面放一條換頁線。
+   * 自動切頁：在每個「章」（`#`）與「區塊」（`##`）前面放一條換頁線（整份第一列除外）。
+   * frontmatter 的 pagebreak 白名單只管 `##`，章一律換頁。
    *
    * 只切區塊，不切「項」——一課通常有 5 個區塊但十幾個項，
    * 每個項都切會得到二十幾頁，而有些項只有一張照片。
@@ -263,8 +264,11 @@ export function parseMarkdown(src: string, opts: ImportOptions): ImportResult {
 
     if ((m = RE.heading.exec(line))) {
       const role = HEADING_BY_LEVEL[m[1].length];
-      // 自動切頁只切 `##`；md 寫了 pagebreak 就只切列出來的那幾個（例如題解、課文接在標題頁後面）
-      push([text(m[2], role)], opts.autoPageBreak && role === 'sectionTitle' && (!breakAt || breakAt.has(m[2].trim())));
+      // 自動切頁：每個章（`#`）前一定換頁；區塊（`##`）照 pagebreak 白名單，沒寫就每個都換
+      // （例如題解、課文接在標題頁後面）。整份第一列前面的換頁線在最後拿掉
+      const breakHere =
+        role === 'lessonTitle' || (role === 'sectionTitle' && (!breakAt || breakAt.has(m[2].trim())));
+      push([text(m[2], role)], opts.autoPageBreak && breakHere);
       continue;
     }
     if ((m = RE.printPage.exec(line))) {

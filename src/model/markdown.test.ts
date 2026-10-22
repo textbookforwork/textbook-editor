@@ -252,4 +252,11 @@ describe('frontmatter 的 pagebreak', () => {
     const r = parseMarkdown(md.replace('pagebreak: 語文小視窗\n', ''), { autoPageBreak: true });
     expect(r.rows.filter((row) => row.breakBefore)).toHaveLength(3);
   });
+  it('每個章（#）前都換頁，白名單管不到章；整份第一列不留換頁線', () => {
+    const two = md + '\n# 第二課\n\n## 題解\n\n內文四\n';
+    const r = parseMarkdown(two, { autoPageBreak: true });
+    const breaks = r.rows.filter((row) => row.breakBefore).map((row) => (row.columns[0].blocks[0] as TextBlock).spans.map((s) => s.text).join(''));
+    expect(breaks).toEqual(['語文小視窗', '第二課']);
+    expect(r.rows[0].breakBefore).toBe(false);
+  });
 });
