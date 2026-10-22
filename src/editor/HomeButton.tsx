@@ -81,7 +81,8 @@ export function HomeButton({ subject, onClick, title, large }: Props) {
       title={label}
       aria-label={label}
       $large={!!large}
-      onClick={onClick ?? (() => goShelf())}
+      // 回書櫃：從數位教科書（原本）的閱讀畫面回來停在「數位教科書」分頁，其他都回「自編教材」
+      onClick={onClick ?? (() => goShelf(window.location.hash.startsWith('#/read/book/') ? 'textbook' : 'mine'))}
     >
       <svg width={px} height={px} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
         <Silhouette shape={shapeOf(subject)} />
