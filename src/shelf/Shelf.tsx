@@ -74,7 +74,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
     .filter((s) => (shown ? s.books.length > 0 : s.sources.length > 0))
     .filter((s) => !subject || s.subject === subject);
   // 主頁每科只排一列、最多 5 本；子頁（查看全部）不限
-  const limit = subject ? Infinity : Math.min(columns, 5);
+  const limit = subject ? Infinity : columns;
 
   const zoom = usePageZoom();
 
@@ -435,15 +435,21 @@ function BookCard({
 // ── 樣式 ─────────────────────────────────────────────
 
 /**
- * 書櫃整頁照設計稿 1440 寬排（一排 5 本、卡片 228），再依視窗整頁等比縮放（zoom），
- * 標題、分頁、卡片一起變大變小，比例不會跑掉。只縮卡片的話，頁首和卡片會一大一小。
- * 基準高 790：1440×900 的螢幕扣掉瀏覽器上方的網址列、分頁後，實際看得到的高度。
+ * 書櫃整頁依視窗等比縮放（zoom），標題、分頁、卡片一起變大變小，比例不會跑掉。只縮卡片的話，頁首和卡片會一大一小。
+ * 基準是 1440 寬、可視高 790（1440×900 的螢幕扣掉瀏覽器網址列）。2026-10-22 乙練定：
+ *   電腦：整頁 90%，一排 6 本
+ *   教室大屏：不再放大（最多 100%），一排 7 本
+ *   平板（寬不到 1400）：不多縮 90%，一排 5 本，字才不會太小
  */
 const BASE_W = 1440;
 const BASE_H = 790;
 
 function usePageZoom() {
-  const read = () => Math.min(document.documentElement.clientWidth / BASE_W, window.innerHeight / BASE_H);
+  const read = () => {
+    const w = document.documentElement.clientWidth;
+    const fit = Math.min(w / BASE_W, window.innerHeight / BASE_H);
+    return w < 1400 ? fit : Math.min(1, fit * 0.9);
+  };
   const [zoom, setZoom] = useState(read);
   useEffect(() => {
     const onResize = () => setZoom(read());
@@ -458,7 +464,7 @@ const Page = styled.div`
   min-block-size: calc(100vh / var(--z, 1));
   background: ${(p) => p.theme.surface.backdrop};
   padding: 24px 32px 48px;
-  --card-w: 228px;
+  --card-w: 214px;
   box-sizing: border-box;
 `;
 
@@ -811,6 +817,8 @@ const More = styled.div`
 const Cover = styled.div<{ $hover?: boolean; $menu?: boolean }>`
   position: relative;
   aspect-ratio: 228 / 283;
+  /* 不讓封面圖的原始高度把框撐開，封面一律照這個比例裁 */
+  min-block-size: 0;
   border-radius: 0;
 
   img {
