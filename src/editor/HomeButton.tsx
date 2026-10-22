@@ -170,8 +170,8 @@ export function SubjectMark({ subject, size = 24 }: { subject?: string; size?: n
 }
 
 /**
- * 沒有封面時的預設封面：整張鋪科目的淺色，中間挖出科目形狀透出白紙，不放書名（書名在卡片下方）。
- * 乙練 2026-10-22 從三種做法裡選的 B：淺色底＋鏤空。沒有科目的用萊姆鵝卵石。
+ * 沒有封面時的預設封面：整張鋪科目的深色，中間挖出科目形狀透出白紙，不放書名（書名在卡片下方）。
+ * 乙練 2026-10-22 先選了淺色底＋鏤空，後來改成深色（書櫃上的科目一律用深色）。沒有科目的用萊姆鵝卵石。
  */
 export function SubjectCover({ subject }: { subject?: string }) {
   const def = SHAPES[shapeOf(subject)];
@@ -189,7 +189,7 @@ export function SubjectCover({ subject }: { subject?: string }) {
         </mask>
       </defs>
       <rect width={W} height={H} fill="#FFFFFF" />
-      <rect width={W} height={H} fill={def.light} mask={`url(#${id})`} />
+      <rect width={W} height={H} fill={def.dark} mask={`url(#${id})`} />
     </svg>
   );
 }

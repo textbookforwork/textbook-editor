@@ -587,12 +587,13 @@ const Card = styled.article`
   border-radius: 12px;
   background: ${(p) => p.theme.surface.raised};
   overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  transition: transform 0.35s cubic-bezier(0.34, 1.8, 0.64, 1), box-shadow 0.35s ease;
 
+  /* 選書：往上跳一截、微微放大，落下時帶一點回彈；陰影拉長，像書離開書架 */
   &:hover,
   &:focus-within {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 28px rgba(26, 25, 23, 0.14);
+    transform: translateY(-14px) scale(1.03);
+    box-shadow: 0 22px 40px rgba(26, 25, 23, 0.2);
   }
   @media (prefers-reduced-motion: reduce) {
     transition: box-shadow 0.25s ease;
