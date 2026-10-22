@@ -538,7 +538,8 @@ const PageSlot = styled.div`
  * 流式排版的閱讀畫面用滿螢幕：頁面大小＝畫布大小換算回頁座標，字的大小固定（不整頁縮放）。
  * 流式只在換頁線與章、節換頁，頁數不受螢幕影響；變的只是一頁裡的內容怎麼排、要捲多少。
  *   學生平板（1024×768、1280×800）：zoom 1，內文 24px，高於 20px 的下限
- *   教室大螢幕（畫布寬 1700 以上）：zoom 1.25，整體放大給遠處的學生看 [需確認：放大多少]
+ *   教室大螢幕（畫布寬 1700 以上）：zoom 1.5，整體放大給遠處的學生看（乙練 2026-10-22 定；
+ *   依視角算，86 吋、最後一排 6–7 公尺至少要 1.3–1.5 倍，螢幕小或教室深要更大）
  * 畫布四周各留 24，頁邊再裁掉 READER_CROP（跟固定頁一樣），所以頁座標要把裁掉的加回去。
  */
 const REFLOW_MARGIN = 24;
@@ -562,7 +563,7 @@ function useReflowSize(ref: React.RefObject<HTMLElement | null>, active: boolean
     return () => ro.disconnect();
   }, [ref, active]);
   if (!active || !box) return null;
-  const zoom = box.w >= 1700 ? 1.25 : 1;
+  const zoom = box.w >= 1700 ? 1.5 : 1;
   return {
     zoom,
     size: {
