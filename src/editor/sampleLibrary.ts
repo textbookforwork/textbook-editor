@@ -2,11 +2,12 @@ import { addSampleAsset } from './assets';
 import { sampleCredit } from './sampleMedia';
 
 /**
- * 開發時預先放進媒體庫的測試素材，每個分頁都有東西可以點、可以插。
+ * 預先放進媒體庫的測試素材：自然（夏季大三角）與國文（木蘭詩）兩課各一組，
+ * 圖片、影片、聲音、網頁、PDF 每個分頁都有東西可以點、可以插。
  *
  * 圖片用範例教材附的開放授權照片（design/media/，出處見 credits.json，插進畫布會疊出處）；
  * 影片、聲音、PDF 是自己做的（design/media-samples/：星空照做的縮放影片、系統語音念的旁白、
- * 用範例照片排的四頁學習單），沒有授權問題。只在 npm run dev 時載入，正式版不會出現。
+ * 用範例照片排的學習單），沒有授權問題。線上版也載入，讓老師打開就能測試；正式上線接了真的媒體庫再拿掉（見 main.tsx）。
  */
 const files = import.meta.glob<string>('../../design/media-samples/*', {
   eager: true,
@@ -56,5 +57,12 @@ export function seedSampleLibrary() {
   addSampleAsset(
     { assetId: 'sample-pdf-worksheet', kind: 'pdf', name: '學習單-夏季大三角.pdf' },
     fileUrl('學習單-夏季大三角.pdf')
+  );
+  addSampleAsset({ assetId: 'sample-web-mulan-wiki', kind: 'web', name: '維基百科：木蘭辭', url: 'https://zh.wikipedia.org/zh-tw/木蘭辭' });
+  addSampleAsset({ assetId: 'sample-web-mulan-source', kind: 'web', name: '維基文庫：木蘭詩全文', url: 'https://zh.wikisource.org/zh-hant/木蘭詩' });
+  // 用木蘭詩的開放授權圖片排的兩頁學習單（出處印在第二頁下方）
+  addSampleAsset(
+    { assetId: 'sample-pdf-mulan-worksheet', kind: 'pdf', name: '學習單-木蘭詩.pdf' },
+    fileUrl('學習單-木蘭詩.pdf')
   );
 }
