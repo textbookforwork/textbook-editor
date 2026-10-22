@@ -49,6 +49,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
   const copies = books.filter((b) => !isOriginal(b));
   const shown = tab === 'textbook' ? null : tab === 'shared' ? copies.filter((b) => b.shared) : copies;
 
+  const published = (t: Source) => t.builtIn || !!findBook(t.id)?.shared;
   // 依科目分區，順序照 SUBJECTS（國語文置頂）；不在清單裡的科目排最後
   const rank = (subject: string) => (SUBJECTS.indexOf(subject) + SUBJECTS.length + 1) % (SUBJECTS.length + 1);
   const sections = sources
@@ -57,7 +58,10 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
     .sort((a, b) => rank(a) - rank(b))
     .map((subject) => ({
       subject,
-      sources: sources.filter((t) => t.subject === subject),
+      // 已發布的排前面：內建的原本一律算已發布，管理員建立的看 shared
+      sources: sources
+        .filter((t) => t.subject === subject)
+        .sort((a, b) => Number(!published(a)) - Number(!published(b))),
       books: (shown ?? []).filter((b) => findSource(b.sourceId)?.subject === subject),
     }))
     .filter((s) => (shown ? s.books.length > 0 : s.sources.length > 0));
@@ -314,7 +318,8 @@ function BookCard({
     <Card>
       <Cover $hover $menu={menu}>
         <CoverImage src={book.cover ?? source?.cover} title={book.title} subject={source?.subject ?? ''} />
-        {isOriginal(book) ? <Tag $muted={!book.shared}>{book.shared ? '已發布' : '未發布'}</Tag> : book.shared && <Tag>已共享</Tag>}
+        {/* 已發布／已共享用深色標籤（狀態成立）；未發布維持淺灰 */}
+        {isOriginal(book) ? <Tag $dark={book.shared}>{book.shared ? '已發布' : '未發布'}</Tag> : book.shared && <Tag $dark>已共享</Tag>}
         {/* 滑過封面：調暗、右上角出現「更多」；點開是編輯封面與刪除（設計稿：維持目前的設計） */}
         <More ref={menuRef}>
           <MoreBtn type="button" aria-label="更多" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
@@ -574,7 +579,7 @@ const Card = styled.article`
   overflow: visible;
 `;
 
-const Tag = styled.span<{ $muted?: boolean }>`
+const Tag = styled.span<{ $dark?: boolean }>`
   position: absolute;
   inset-block-start: 10px;
   inset-inline-start: 10px;
@@ -583,9 +588,9 @@ const Tag = styled.span<{ $muted?: boolean }>`
   block-size: 24px;
   padding-inline: ${(p) => p.theme.space.insetSm};
   border-radius: ${(p) => p.theme.radius.control};
-  background: ${(p) => p.theme.surface.sunken};
+  background: ${(p) => (p.$dark ? `color-mix(in srgb, ${p.theme.surface.inverse} 82%, transparent)` : p.theme.surface.sunken)};
   backdrop-filter: blur(5px);
-  color: ${(p) => (p.$muted ? p.theme.text.secondary : p.theme.text.primary)};
+  color: ${(p) => (p.$dark ? p.theme.text.onInverse : p.theme.text.secondary)};
   font-size: ${(p) => p.theme.typography.captionSize};
   line-height: ${(p) => p.theme.typography.captionLineHeight};
   font-weight: 500;
