@@ -318,6 +318,7 @@ function BookCard({
 }: {
   book: MyBook;
   source: Source | null;
+  /** 在共享教材分頁：顯示老師名字、不掛「已共享」標籤。 */
   showTeacher: boolean;
   onCover: () => void;
   /** 不給就沒有「刪除」：數位教科書（原本）在前台不能刪，只能由後端刪。 */
@@ -338,8 +339,8 @@ function BookCard({
     <Card>
       <Cover $hover $menu={menu}>
         <CoverImage src={book.cover ?? source?.cover} title={book.title} subject={source?.subject ?? ''} />
-        {/* 只標已發布／已共享；未發布不掛標籤（乙練：未發布不用 tag） */}
-        {book.shared && <StatusTag status={isOriginal(book) ? 'published' : 'shared'} />}
+        {/* 只標已發布／已共享；未發布不掛標籤。「已共享」是在自編教材分頁裡區分用的，共享教材分頁每本都是，不標 */}
+        {book.shared && !showTeacher && <StatusTag status={isOriginal(book) ? 'published' : 'shared'} />}
         {/* 滑過封面：調暗、右上角出現「更多」；點開是編輯封面與刪除（設計稿：維持目前的設計） */}
         <More ref={menuRef}>
           <MoreBtn type="button" aria-label="更多" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
