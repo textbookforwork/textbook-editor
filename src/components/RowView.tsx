@@ -472,7 +472,7 @@ export function RowView({
                       paraOn={!!para && paraFocus?.focusId === para.startId}
                     />
                     </BlockErrorBoundary>
-                    {b.masked && <MaskCover blockId={b.id} editing={!!ed} live={!ed && !!viewer} vertical={vertical} />}
+                    {b.masked && <MaskCover blockId={b.id} editing={!!ed} live={!ed && !!viewer} />}
                   </BlockShell>
                   );
                 })}
