@@ -591,8 +591,8 @@ const Tag = styled.span<{ $dark?: boolean }>`
   block-size: 24px;
   padding-inline: ${(p) => p.theme.space.insetSm};
   border-radius: ${(p) => p.theme.radius.control};
-  background: ${(p) => (p.$dark ? `color-mix(in srgb, ${p.theme.surface.inverse} 82%, transparent)` : p.theme.surface.sunken)};
-  backdrop-filter: blur(5px);
+  background: ${(p) => (p.$dark ? `color-mix(in srgb, ${p.theme.surface.inverse} 50%, transparent)` : p.theme.surface.sunken)};
+  backdrop-filter: blur(8px);
   color: ${(p) => (p.$dark ? p.theme.text.onInverse : p.theme.text.secondary)};
   font-size: ${(p) => p.theme.typography.captionSize};
   line-height: ${(p) => p.theme.typography.captionLineHeight};
