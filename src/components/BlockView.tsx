@@ -253,7 +253,13 @@ const Text = styled.p`
 
   /* 遮住的幾個字（閱讀）：實心淡灰膠囊蓋住，點了才顯示；字的位置照留，打開後版面不動 */
   [data-mask]:not([data-shown]) {
-    background: ${(p) => p.theme.surface.muted};
+    background-color: ${(p) => p.theme.surface.muted};
+    /* 跟整個元件的遮罩同一套：灰白底加細斜線 */
+    background-image: repeating-linear-gradient(
+      135deg,
+      ${(p) => p.theme.border.default} 0 1px,
+      transparent 1px 7px
+    );
     color: transparent;
     border-radius: 6px;
     cursor: pointer;
@@ -262,8 +268,9 @@ const Text = styled.p`
     -webkit-box-decoration-break: clone;
   }
   [data-mask]:not([data-shown]) rt { color: transparent; }
-  [data-mask]:not([data-shown]):hover { background: ${(p) => p.theme.border.default}; }
-  [data-mask] { transition: background-color 0.2s, color 0.2s; }
+  [data-mask]:not([data-shown]):hover { background-color: ${(p) => p.theme.border.subtle}; }
+  /* 打開時字慢慢浮現、灰底慢慢退掉 */
+  [data-mask] { transition: background-color 0.6s ease, color 0.6s ease; }
 `;
 
 const EditableTextStyled = styled(EditableText)`
