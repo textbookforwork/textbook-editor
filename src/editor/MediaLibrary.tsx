@@ -710,9 +710,9 @@ const ListLabel = styled.span`
 `;
 
 /**
- * 上傳框：白色圓角卡片、灰色虛線框（看得出是可以拖檔進來的區域），中間一顆黑色上傳鈕，下面一行標題、一行格式。
- * 四種狀態（乙練 2026-10-22：上傳鈕黑色、框用虛線）：
- *   平常：灰虛線＋黑色上傳鈕
+ * 上傳框：白色圓角卡片、灰色虛線框（看得出是可以拖檔進來的區域），中間一塊淡灰底黑箭頭的上傳鈕，下面一行標題、一行格式。
+ * 四種狀態（乙練 2026-10-22：框用虛線；上傳鈕試過黑底太重，改回淡灰底黑箭頭）：
+ *   平常：灰虛線＋淡灰底上傳鈕
  *   滑過：虛線深一階、上傳鈕深一階
  *   拖檔案進來：品牌深綠虛線＋最淡的 Lime 底（不要太黃），上傳鈕換成 Lime 底深色箭頭，標題「放開就上傳」
  *   上傳中：整塊停用變淡，上傳鈕裡轉圈，標題「上傳中…」
@@ -749,19 +749,19 @@ const DropTile = styled.span<{ $over: boolean }>`
   padding: 0;
   margin-block-end: 6px;
   border-radius: ${(p) => p.theme.radius.tile};
-  background: ${(p) => (p.$over ? p.theme.brand.primary : p.theme.action.primaryBg)};
-  color: ${(p) => (p.$over ? p.theme.text.primary : p.theme.action.primaryText)};
-  transition: background 0.15s, color 0.15s;
-  ${Drop}:hover:not(:disabled) & { background: ${(p) => p.theme.action.primaryBgHover}; }
+  background: ${(p) => (p.$over ? p.theme.brand.primary : p.theme.surface.sunken)};
+  color: ${(p) => p.theme.text.primary};
+  transition: background 0.15s;
+  ${Drop}:hover:not(:disabled) & { background: ${(p) => (p.$over ? p.theme.brand.primary : p.theme.surface.muted)}; }
 `;
 
-/** 上傳中的轉圈：在黑色上傳鈕裡，一圈半透明白軌道，上面一段白色在轉 */
+/** 上傳中的轉圈：在淡灰底的上傳鈕裡，一圈淡灰軌道，上面一段黑色在轉 */
 const Spinner = styled.span`
   inline-size: 18px;
   block-size: 18px;
   border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: ${(p) => p.theme.action.primaryText};
+  border: 2px solid ${(p) => p.theme.border.default};
+  border-top-color: ${(p) => p.theme.text.primary};
   animation: ds-spin 0.8s linear infinite;
   @keyframes ds-spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { animation-duration: 2s; }
