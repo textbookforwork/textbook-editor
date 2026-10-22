@@ -42,7 +42,8 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
   // 數位教科書＝內建的原本＋管理員建立的原本；自編與共享只列副本
   const sources: Source[] = [
     ...TEXTBOOKS.map((t) => findSource(t.id)!),
-    ...books.filter(isOriginal).map((b) => findSource(b.id)!),
+    // 管理員建立的原本：發布了（shared）才上架給老師；管理員看得到全部
+    ...books.filter((b) => isOriginal(b) && (admin || b.shared)).map((b) => findSource(b.id)!),
   ];
   const copies = books.filter((b) => !isOriginal(b));
   const shown = tab === 'textbook' ? null : tab === 'shared' ? copies.filter((b) => b.shared) : copies;
@@ -309,7 +310,7 @@ function BookCard({
     <Card>
       <Cover $hover $menu={menu}>
         <CoverImage src={book.cover ?? source?.cover} title={book.title} subject={source?.subject ?? ''} />
-        {book.shared && <Tag>已共享</Tag>}
+        {isOriginal(book) ? <Tag $muted={!book.shared}>{book.shared ? '已發布' : '未發布'}</Tag> : book.shared && <Tag>已共享</Tag>}
         {/* 滑過封面：調暗、右上角出現「更多」；點開是編輯封面與刪除（設計稿：維持目前的設計） */}
         <More ref={menuRef}>
           <MoreBtn type="button" aria-label="更多" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
@@ -561,13 +562,14 @@ const Card = styled.article`
   overflow: visible;
 `;
 
-const Tag = styled.span`
+const Tag = styled.span<{ $muted?: boolean }>`
   position: absolute;
   inset-block-start: 10px;
   inset-inline-start: 10px;
   padding: 2px 10px;
   border-radius: 999px;
   background: ${(p) => p.theme.surface.raised};
+  color: ${(p) => (p.$muted ? p.theme.text.secondary : p.theme.text.primary)};
   font-size: ${(p) => p.theme.typography.captionSize};
   font-weight: 500;
 `;

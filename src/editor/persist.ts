@@ -30,6 +30,12 @@ export function setActiveBook(id: string | null) {
   activeBookId = id;
 }
 
+/**
+ * 正在編的是不是數位教科書的原本（管理員從空白本建立的）。
+ * 原本的「共享」叫「發布」：發布了才上架到書櫃，老師才看得到、能建副本。
+ */
+export const isActiveOriginal = () => (activeBookId ? findBook(activeBookId)?.kind === 'original' : false);
+
 /** 存整份教材。localStorage 滿了或被關掉（隱私模式）就靜靜略過，不中斷編輯。 */
 export function saveDoc(doc: Doc): void {
   if (activeBookId) saveBookDoc(activeBookId, doc);

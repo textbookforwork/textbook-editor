@@ -23,14 +23,14 @@ export const ESC = (onClose: () => void) => {
   return () => window.removeEventListener('keydown', onKey);
 };
 
-export function SharedDialog({ onClose, onUpload }: { onClose: () => void; onUpload: () => void }) {
+export function SharedDialog({ onClose, onUpload, published }: { onClose: () => void; onUpload: () => void; published?: boolean }) {
   useEffect(() => ESC(onClose), [onClose]);
   return createPortal(
     <Scrim onClick={onClose}>
-      <Sheet role="dialog" aria-modal="true" aria-label="自編教材已共享" $narrow onClick={(e) => e.stopPropagation()}>
+      <Sheet role="dialog" aria-modal="true" aria-label={published ? '教材已發布' : '自編教材已共享'} $narrow onClick={(e) => e.stopPropagation()}>
         {/* 不放 ×：按「取消」或點框外就能關，多一顆只是重複 */}
-        <Heading>自編教材已共享</Heading>
-        <Lead>放上一張封面，讓教材變完整吧！</Lead>
+        <Heading>{published ? '教材已發布' : '自編教材已共享'}</Heading>
+        <Lead>{published ? '老師現在可以在數位教科書看到這本、建立自編。放上一張封面，讓教材變完整吧！' : '放上一張封面，讓教材變完整吧！'}</Lead>
         <Pair>
           <Secondary type="button" onClick={onClose}>
             取消

@@ -85,6 +85,8 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
     [doc.rows]
   );
   const { pages } = usePages(doc);
+  // 管理員從空白本建立的數位教科書（原本）；老師的自編是副本
+  const isOriginalBook = !!bookId && findBook(bookId)?.kind === 'original';
 
   const patch = (p: Partial<DocSettings>) => dispatch({ type: 'setSettings', patch: p });
 
@@ -323,11 +325,16 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
           onMeta={(p) => dispatch({ type: 'setMeta', patch: p })}
           onTitle={(title) => dispatch({ type: 'setTitle', title })}
           onClose={() => setSettingsOpen(false)}
-          publisherLocked={!!bookId && findBook(bookId)?.kind !== 'original'}
-          onImport={() => {
-            setSettingsOpen(false);
-            setImporting(true);
-          }}
+          publisherLocked={!isOriginalBook}
+          // 匯入 md 會換掉整份內容，等於從頭建立一本：只有管理員的原本可以（出版社上稿走這條），老師的副本不行
+          onImport={
+            isOriginalBook
+              ? () => {
+                  setSettingsOpen(false);
+                  setImporting(true);
+                }
+              : undefined
+          }
         />
       )}
     </Layout>

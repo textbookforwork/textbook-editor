@@ -6,7 +6,7 @@ import type { Doc } from '../model/types';
 import { HomeButton } from './HomeButton';
 import { CoverDialog, SharedDialog } from './ShareDialog';
 import { Toaster, toast } from './Toast';
-import { loadShare, saveShare, useAutosave, type ShareState } from './persist';
+import { isActiveOriginal, loadShare, saveShare, useAutosave, type ShareState } from './persist';
 
 export type TopBarProps = {
   doc: Doc;
@@ -74,10 +74,14 @@ export function TopBar({
     saveShare(next);
   }, []);
 
+  // 管理員的原本叫「發布」（上架給老師），老師的自編叫「共享」；存的是同一個欄位
+  const [original] = useState(isActiveOriginal);
+  const verb = original ? '發布' : '共享';
+
   const toggleShare = () => {
     if (share.shared) {
       commitShare({ ...share, shared: false });
-      toast('已取消共享');
+      toast(original ? '已取消發布，老師暫時看不到這本' : '已取消共享');
       return;
     }
     // 先共享、再問封面：Figma 的順序。老師按下去的那一刻就已經分享出去了
@@ -107,9 +111,9 @@ export function TopBar({
             onClick={save}
           />
           <Tile
-            icon="share"
-            label={share.shared ? '已共享' : '共享'}
-            title={share.shared ? '再按一次取消共享' : '共享教材'}
+            icon={original ? 'send' : 'share'}
+            label={share.shared ? `已${verb}` : verb}
+            title={share.shared ? `再按一次取消${verb}` : original ? '發布到書櫃的數位教科書，老師就能建立自編' : '共享教材'}
             $on={share.shared}
             aria-pressed={share.shared}
             onClick={toggleShare}
@@ -126,7 +130,7 @@ export function TopBar({
       </Right>
 
       {dialog === 'shared' && (
-        <SharedDialog onClose={() => setDialog('none')} onUpload={() => setDialog('cover')} />
+        <SharedDialog published={original} onClose={() => setDialog('none')} onUpload={() => setDialog('cover')} />
       )}
       {dialog === 'cover' && (
         <CoverDialog
