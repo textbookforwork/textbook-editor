@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { primaryButtonCss } from '../components/buttonStyles';
 import styled from 'styled-components';
 import { Icon } from '../components/Icon';
+import { ConfirmDialog } from './ConfirmDialog';
 import { PanelBody, PanelClose, PanelDrawer, PanelHead, PanelTab, PanelTabs, PanelTitle, useExclusivePanel } from './SidePanel';
 import { PdfPagePicker, type ImportedPage } from './PdfPagePicker';
 import { pageThumb } from './pdfPages';
@@ -366,7 +367,7 @@ function PdfCover({ asset }: { asset: Asset }) {
 type Preview = ReturnType<typeof useAudioPreview>;
 
 /**
- * 媒體庫的一筆，照參考的卡片：白卡（圓角 16）、左邊（或上面）大縮圖、檔名與日期、右上「⋮」選單（收藏、刪除）。
+ * 媒體庫的一筆，照參考的卡片：白卡（圓角 16）、左邊（或上面）大縮圖、檔名與日期、右上「⋮」選單（收藏／移除收藏、刪除；刪除先跳確認）。
  * 點卡片＝插進頁面（PDF 是進選頁畫面）。按下去、或正在選頁的那份，外面畫一圈品牌深綠框。
  * 聲音的縮圖中間是試聽鍵：試聽跟插入是兩件事，要分開點。
  */
@@ -384,6 +385,7 @@ function AssetCard({
   preview?: Preview;
 }) {
   const [menu, setMenu] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!menu) return;
@@ -454,21 +456,35 @@ function AssetCard({
             }}
           >
             <Icon name="bookmark" size={16} />
-            {asset.favorite ? '取消收藏' : '收藏'}
+            {asset.favorite ? '移除收藏' : '收藏'}
           </MoreItem>
           <MoreItem
             type="button"
             role="menuitem"
             $danger
             onClick={() => {
-              if (previewing) preview?.stop();
-              removeAsset(asset.assetId);
+              setMenu(false);
+              setConfirmDelete(true);
             }}
           >
             <Icon name="trash" size={16} />
             刪除
           </MoreItem>
         </MoreMenu>
+      )}
+      {/* 刪除媒體資源先確認：刪了就從媒體庫拿掉，要用得重新上傳；已經放進頁面的不受影響 */}
+      {confirmDelete && (
+        <ConfirmDialog
+          title="刪除這個媒體資源？"
+          message={`「${name}」會從媒體庫刪除，之後要用得重新上傳。已經放進頁面的不受影響。`}
+          confirmLabel="刪除"
+          onConfirm={() => {
+            if (previewing) preview?.stop();
+            removeAsset(asset.assetId);
+            setConfirmDelete(false);
+          }}
+          onCancel={() => setConfirmDelete(false)}
+        />
       )}
 
     </CardShell>
