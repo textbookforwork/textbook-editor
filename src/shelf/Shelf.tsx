@@ -28,7 +28,8 @@ const TABS: { key: ShelfTab; label: string }[] = [
  *
  * 兩種身分（右上角頭像切換，見 role.ts）：
  *   老師       在數位教科書按鉛筆＝建立自編（副本），出版社不能改
- *   系統管理員 多一顆「建立教材」從空白本開始，建的是數位教科書（原本），出版社自己填
+ *   系統管理員 多一顆「建立教材」從空白本開始，建的是數位教科書（原本），出版社自己填；
+ *              原本在前台只能新增、不能刪（由後端刪，避免手殘）
  */
 export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
   const books = useSyncExternalStore(subscribeLibrary, listBooks);
@@ -137,7 +138,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
                     />
                   ))
                 : s.sources.map((t) =>
-                    // 管理員建立的原本：管理員可以直接編、換封面、刪除
+                    // 管理員建立的原本：管理員可以直接編、換封面，但不能刪（數位教科書由後端刪，避免手殘）
                     !t.builtIn && admin ? (
                       <BookCard
                         key={t.id}
@@ -145,7 +146,6 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
                         source={t}
                         showTeacher={false}
                         onCover={() => setCovering(findBook(t.id))}
-                        onDelete={() => setDeleting(findBook(t.id))}
                       />
                     ) : (
                       <SourceCard key={t.id} source={t} onCreate={() => setCreating(t)} />
@@ -195,7 +195,7 @@ export function Shelf({ tab = 'textbook' }: { tab?: ShelfTab }) {
       {deleting && (
         <ConfirmDialog
           title={`刪除「${deleting.title}」？`}
-          message={isOriginal(deleting) ? '這是數位教科書的原本，老師已經建立的自編不會受影響。刪除後無法復原。' : '刪除後無法復原。'}
+          message="刪除後無法復原。"
           confirmLabel="刪除"
           onCancel={() => setDeleting(null)}
           onConfirm={() => {
@@ -301,7 +301,8 @@ function BookCard({
   source: Source | null;
   showTeacher: boolean;
   onCover: () => void;
-  onDelete: () => void;
+  /** 不給就沒有「刪除」：數位教科書（原本）在前台不能刪，只能由後端刪。 */
+  onDelete?: () => void;
 }) {
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -331,10 +332,12 @@ function BookCard({
                 <Icon name="pencil" size={16} />
                 編輯封面
               </MenuItem>
-              <MenuItem role="menuitem" type="button" $danger onClick={() => (setMenu(false), onDelete())}>
-                <Icon name="trash" size={16} />
-                刪除
-              </MenuItem>
+              {onDelete && (
+                <MenuItem role="menuitem" type="button" $danger onClick={() => (setMenu(false), onDelete())}>
+                  <Icon name="trash" size={16} />
+                  刪除
+                </MenuItem>
+              )}
             </Menu>
           )}
         </More>
