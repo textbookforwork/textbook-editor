@@ -14,7 +14,7 @@ type Props = {
 const SIZE = { min: 16, max: 40, step: 2 };
 const LH = { min: 1.2, max: 3, step: 0.2 };
 const FONTS: [ReaderFont, string][] = [
-  ['auto', '原本'],
+  ['auto', '預設'],
   ['kai', '楷體'],
   ['hei', '黑體'],
 ];

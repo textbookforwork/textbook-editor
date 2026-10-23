@@ -37,7 +37,7 @@ type Props = {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  /** 閱讀設定（文字大小、行距、字體、注音）。固定在左欄最下面，不能收進工具箱。 */
+  /** 閱讀設定（文字大小、行距、字體、注音）。接在補充資源下面，不能收進工具箱。 */
   settingsOpen: boolean;
   onSettings: () => void;
 };
@@ -228,7 +228,7 @@ export function ReaderRail({
         </PinSlot>
       )}
 
-      {/* 閱讀設定：每個人自己的，固定在最下面，跟上面的工具分開 */}
+      {/* 閱讀設定：接在系統工具最後一顆下面，不貼底（跟課堂模式的左欄同一個順序） */}
       <SettingsSlot>
         <Tile
           type="button"
@@ -416,10 +416,7 @@ const Line = styled.hr`
 
 
 
-const SettingsSlot = styled.div`
-  margin-block-start: auto;
-  padding-block-start: ${(p) => p.theme.space.gapSm};
-`;
+const SettingsSlot = styled.div``;
 
 const PinSlot = styled.div`
   position: relative;

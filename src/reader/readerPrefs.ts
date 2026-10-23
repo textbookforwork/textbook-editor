@@ -14,7 +14,7 @@ export type ReaderPrefs = {
   size: number | null;
   /** 行距倍數。null＝照教材。 */
   lineHeight: number | null;
-  /** auto＝照教材（老師設的字體）。 */
+  /** auto＝預設：照教材（老師設的字體）。 */
   font: ReaderFont;
   ruby: boolean;
 };
