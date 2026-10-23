@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/textbook-editor/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      設計系統指定的兩支字型。
+
+      沒有引入的話，Mac 會退回 PingFang TC 看起來正常，但 Windows 與
+      Android 平板會換成另一套字，行高與字距都不同——而老師學生用的
+      正是平板。PingFang TC 是 Apple 系統字，不可嵌入散布，只能當
+      fallback，不能當交付的依據。
+
+      字重取設計 token 實際用到的：Noto Sans TC 內文 400、標籤與導言 500、
+      小標 600、標題 700；Lexend 是介面的英文與數字（系統字，400–700），
+      課本內容不用。多載一個字重就多一份下載，不要順手加。
+
+      ⚠️ 正式上線要考慮改成自架：目前依賴 Google Fonts 的可用性，
+      而且第一次載入前會有一小段時間看到 fallback 字（已用
+      display=swap 讓文字先出現，不要等字型）。
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Lexend:wght@400;500;600;700&display=swap"
+    />
+    <!--
+      老師在字型選單可選的字（styles/roles.ts 的 INLINE_FONTS），各載 400 與 700（粗體）。
+      Google Fonts 有的直接掛：思源宋體（Noto Serif TC）、Lexend、Tinos。
+      Tinos 是 Times New Roman 的替身：字寬相同，沒裝 Times 的 Android 平板排版不會跑掉。
+      Google 沒有的自己架在 public/fonts/（源泉圓體、Lesson One、品牌字繁 Think 黑），
+      中文切成小塊，畫面用到哪些字才下載哪幾塊（scripts/build-webfonts.py）。
+      標楷體不架：教育部授權不允許改字型檔，只用裝置本來就有的。
+    -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Tinos:wght@400;700&display=swap"
+    />
+    <link rel="stylesheet" href="/textbook-editor/fonts/gensen-rounded.css" />
+    <link rel="stylesheet" href="/textbook-editor/fonts/lesson-one.css" />
+    <link rel="stylesheet" href="/textbook-editor/fonts/fanthink.css" />
+
+    <title>數位教科書 · 自編編輯器</title>
+    <script type="module" crossorigin src="/textbook-editor/assets/index-C-5UpO4C.js"></script>
+    <link rel="stylesheet" crossorigin href="/textbook-editor/assets/index-D6QoeH6A.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
