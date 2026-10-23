@@ -6,13 +6,16 @@ import { findTextbook, textbookDoc } from './shelf/catalog';
 import { findBook } from './shelf/library';
 import { sourceDoc } from './shelf/sources';
 import { goShelf, useRoute } from './shelf/nav';
+import { Login } from './shelf/Login';
+import { useSignedIn } from './shelf/session';
 
 /**
- * 最外層：依網址決定是書櫃還是編輯器（見 shelf/nav.ts）。
+ * 最外層：沒登入一律先到登入頁（見 shelf/session.ts）；登入後依網址決定是書櫃還是編輯器（見 shelf/nav.ts）。
  * 編輯器以那一本的 id 當 key，換一本就整個重開，不會帶著上一本的復原紀錄與選取。
  */
 export function Root() {
   const route = useRoute();
+  const signedIn = useSignedIn();
 
   const book = route.page === 'edit' || route.page === 'read' ? findBook(route.id) : null;
   const textbook = route.page === 'readTextbook' ? findTextbook(route.id) : null;
@@ -21,8 +24,10 @@ export function Root() {
 
   // 找不到那一本（被刪了、換了瀏覽器）就回書櫃，不要停在空白的編輯器
   useEffect(() => {
-    if (missing || missingTextbook) goShelf(missing ? 'mine' : 'textbook');
-  }, [missing, missingTextbook]);
+    if (signedIn && (missing || missingTextbook)) goShelf(missing ? 'mine' : 'textbook');
+  }, [signedIn, missing, missingTextbook]);
+
+  if (!signedIn) return <Login />;
 
   if (book) {
     const doc = loadDoc(book.id) ?? sourceDoc(book.sourceId);

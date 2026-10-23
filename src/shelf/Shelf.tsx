@@ -13,6 +13,7 @@ import { BlankDialog, SUBJECTS } from './BlankDialog';
 import { emptyDoc } from '../model/document';
 import { createBook, deleteBook, findBook, isOriginal, listBooks, subscribeLibrary, updateBook, type MyBook } from './library';
 import { goEdit, goRead, goReadTextbook, goShelf, type ShelfTab } from './nav';
+import { signOut } from './session';
 
 const TABS: { key: ShelfTab; label: string }[] = [
   { key: 'textbook', label: '數位教科書' },
@@ -249,7 +250,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
 /** 書櫃分區的科目名稱 → 教材設定裡的科目（決定左上角回首頁鈕的形狀）。 */
 const metaSubject = (subject: string) => ({ 國語文: '國語', 英語文: '英語', 自然科學: '自然' })[subject] ?? subject;
 
-/** 右上角：名字＋頭像，點了切換身分。 */
+/** 右上角：名字＋頭像，點了切換身分或登出。 */
 function UserMenu({ role }: { role: Role }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -264,7 +265,7 @@ function UserMenu({ role }: { role: Role }) {
   const name = ROLE_NAME[role];
   return (
     <UserWrap ref={ref}>
-      <User type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="切換身分">
+      <User type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="切換身分、登出">
         {name}
         <Avatar aria-hidden="true">{role === 'admin' ? '管' : name.slice(0, 1)}</Avatar>
       </User>
@@ -286,6 +287,18 @@ function UserMenu({ role }: { role: Role }) {
               {role === r && <Icon name="check" size={16} />}
             </MenuItem>
           ))}
+          <MenuDivider />
+          <MenuItem
+            role="menuitem"
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              signOut();
+              window.location.hash = '#/';
+            }}
+          >
+            登出
+          </MenuItem>
         </Menu>
       )}
     </UserWrap>
@@ -514,6 +527,12 @@ const User = styled.button`
   font-size: ${(p) => p.theme.typography.bodySmSize};
   color: ${(p) => p.theme.text.primary};
   cursor: pointer;
+`;
+
+const MenuDivider = styled.hr`
+  margin: 4px 6px;
+  border: none;
+  border-block-start: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
 `;
 
 const MenuHint = styled.span`
