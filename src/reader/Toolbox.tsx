@@ -7,6 +7,8 @@ type Props = {
   pinned: RailTool[];
   onTogglePin: (tool: RailTool) => void;
   onClose: () => void;
+  /** 「設定」打開閱讀設定 */
+  onSettings: () => void;
 };
 
 /**
@@ -15,7 +17,7 @@ type Props = {
  * 四個編輯工具是真的——點了是「釘到左欄／從左欄收回」，不是直接拿起來；
  * 拿起來是在左欄做的事。其餘格子原型還沒做，點了提示。
  */
-export function Toolbox({ pinned, onTogglePin, onClose }: Props) {
+export function Toolbox({ pinned, onTogglePin, onClose, onSettings }: Props) {
   return (
     <Panel id="reader-toolbox" role="dialog" aria-label="工具箱">
       <Head>
@@ -41,10 +43,13 @@ export function Toolbox({ pinned, onTogglePin, onClose }: Props) {
                       ? on
                         ? `從左欄收回「${item.label}」`
                         : `把「${item.label}」釘到左欄`
-                      : `${item.label}：原型還沒做`
+                      : item.id === 'settings'
+                        ? '閱讀設定'
+                        : `${item.label}：原型還沒做`
                   }
                   onClick={() => {
                     if (item.rail) return onTogglePin(item.rail);
+                    if (item.id === 'settings') return onSettings();
                     toast(`${item.label}：原型還沒做`);
                   }}
                 >

@@ -37,6 +37,9 @@ type Props = {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  /** 閱讀設定（文字大小、行距、字體、注音）。固定在左欄最下面，不能收進工具箱。 */
+  settingsOpen: boolean;
+  onSettings: () => void;
 };
 
 /**
@@ -68,6 +71,8 @@ export function ReaderRail({
   redo,
   canUndo,
   canRedo,
+  settingsOpen,
+  onSettings,
 }: Props) {
   return (
     <Rail aria-label="閱讀工具">
@@ -222,6 +227,21 @@ export function ReaderRail({
           )}
         </PinSlot>
       )}
+
+      {/* 閱讀設定：每個人自己的，固定在最下面，跟上面的工具分開 */}
+      <SettingsSlot>
+        <Tile
+          type="button"
+          $active={settingsOpen}
+          aria-expanded={settingsOpen}
+          aria-controls="reader-settings"
+          onClick={onSettings}
+          title="閱讀設定"
+        >
+          <Icon name="settings" size={20} />
+          <span>設定</span>
+        </Tile>
+      </SettingsSlot>
     </Rail>
   );
 }
@@ -395,6 +415,11 @@ const Line = styled.hr`
 
 
 
+
+const SettingsSlot = styled.div`
+  margin-block-start: auto;
+  padding-block-start: ${(p) => p.theme.space.gapSm};
+`;
 
 const PinSlot = styled.div`
   position: relative;

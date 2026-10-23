@@ -21,6 +21,7 @@ import type { BlockPatch } from '../model/actions';
 import type { Block, DocSettings, InlineSpan } from '../model/types';
 import { useNoteNo } from './ParagraphContext';
 import { useIsUploading } from '../editor/uploading';
+import { useReaderText } from '../reader/readerPrefs';
 
 type Props = {
   block: Block;
@@ -58,6 +59,8 @@ export function BlockView({
   paraOn,
 }: Props) {
   const scale = TEXT_SCALE[settings.textScale];
+  // 閱讀設定的字級、行距（只有閱讀畫面有包；編輯、縮圖、量測拿到的是倍數 1）
+  const reader = useReaderText();
   // 閱讀模式點「掛了補充的詞」要開檢視器；縮圖裡沒有檢視器，點了什麼都不會發生
   const viewer = usePopupViewer();
   // 生字詞的號碼（①②），全文一串。課文上不標，只出現在彈出的註釋標題
@@ -101,7 +104,13 @@ export function BlockView({
       // 字級覆寫與單段直橫排都跟量測探針走同一組函式（roleStyle、textFlowStyle）
       const flow = textFlowStyle(block, sizing);
       const s: React.CSSProperties = {
-        ...roleStyle(block.role, scale, block.fontSize, block.lineHeight, flow.vertical),
+        ...roleStyle(
+          block.role,
+          scale * reader.scale,
+          block.fontSize ? block.fontSize * reader.scale : undefined,
+          reader.lineHeight ?? block.lineHeight,
+          flow.vertical
+        ),
         textAlign: block.align,
         ...flow.style,
       };

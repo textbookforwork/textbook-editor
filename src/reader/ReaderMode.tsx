@@ -20,6 +20,9 @@ import { useInk } from './useInk';
 import { ParaFocusCtx, type ParaFocus } from '../components/ParagraphContext';
 import { PARA_NOTE_KINDS, markPopups, markRange, markReady, paraButtons, paragraphIndex, rangeKindOf, sentenceNotesOf } from '../model/paragraphs';
 import { findBlock } from '../model/document';
+import { defaultLineHeight, defaultSizeOf } from '../styles/roles';
+import { ReadSettings } from './ReadSettings';
+import { READER_FONTS, ReaderTextCtx, loadPrefs, savePrefs, type ReaderPrefs, type ReaderText } from './readerPrefs';
 
 type Props = {
   doc: Doc;
@@ -80,6 +83,24 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
   );
   const outline = useMemo(() => outlineOf(doc).filter((i) => i.depth <= 1), [doc]);
   const [pinned, setPinned] = useState<RailTool[]>(loadPinned);
+
+  // 閱讀設定：每個人自己的，存在這台裝置。字級、行距只在流式排版生效（見 readerPrefs）
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [prefs, setPrefsState] = useState<ReaderPrefs>(loadPrefs);
+  const setPrefs = (next: ReaderPrefs) => {
+    setPrefsState(next);
+    savePrefs(next);
+  };
+  const canResize = doc.settings.layout === 'flow';
+  const vertical = doc.settings.writingMode === 'vertical';
+  const baseSize = defaultSizeOf('body', vertical);
+  const readerText = useMemo<ReaderText>(
+    () => ({
+      scale: canResize && prefs.size ? prefs.size / baseSize : 1,
+      lineHeight: canResize && prefs.lineHeight ? prefs.lineHeight : undefined,
+    }),
+    [canResize, prefs.size, prefs.lineHeight, baseSize]
+  );
 
   const ink = useInk(doc.id, page?.index ?? 0);
 
@@ -198,9 +219,10 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (toolboxOpen || outlineOpen) {
+        if (toolboxOpen || outlineOpen || settingsOpen) {
           setToolboxOpen(false);
           setOutlineOpen(false);
+          setSettingsOpen(false);
           e.stopPropagation();
           return;
         }
@@ -223,10 +245,14 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
     };
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
-  }, [tool, toolboxOpen, outlineOpen, ink, para]);
+  }, [tool, toolboxOpen, outlineOpen, settingsOpen, ink, para]);
 
   return (
-    <Root>
+    <Root
+      data-reader-font={prefs.font === 'auto' ? undefined : prefs.font}
+      data-reader-noruby={prefs.ruby ? undefined : ''}
+      style={prefs.font === 'auto' ? undefined : ({ '--reader-font': READER_FONTS[prefs.font] } as React.CSSProperties)}
+    >
       <ReaderVars />
       <ReaderRail
         subject={doc.meta.subject}
@@ -245,9 +271,16 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
         onNextPage={() => go(1)}
         onGoPage={(n) => go(n - 1 - current)}
         toolboxOpen={toolboxOpen}
+        settingsOpen={settingsOpen}
+        onSettings={() => {
+          setSettingsOpen((v) => !v);
+          setToolboxOpen(false);
+          setOutlineOpen(false);
+        }}
         onToolbox={() => {
           setToolboxOpen((v) => !v);
           setOutlineOpen(false);
+          setSettingsOpen(false);
           // 打開工具箱是在整理左欄，不是在畫：手上的工具放下
           setTool(null);
         }}
@@ -263,7 +296,8 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
         canRedo={ink.canRedo}
       />
 
-      <Main>
+      <Main onPointerDown={() => settingsOpen && setSettingsOpen(false)}>
+        <ReaderTextCtx.Provider value={readerText}>
         <ParaFocusCtx.Provider value={paraFocus}>
         <Stage ref={stageRef as RefObject<HTMLElement>}>
           {/* 點課文：第一下選段、第二下選句；點空白處全部取消。它不畫任何 DOM，只掛監聽 */}
@@ -313,6 +347,7 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
           )}
         </Stage>
         </ParaFocusCtx.Provider>
+        </ReaderTextCtx.Provider>
       </Main>
 
       {outlineOpen && (
@@ -341,7 +376,25 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
       )}
 
       {toolboxOpen && (
-        <Toolbox pinned={pinned} onTogglePin={togglePin} onClose={() => setToolboxOpen(false)} />
+        <Toolbox
+          pinned={pinned}
+          onTogglePin={togglePin}
+          onClose={() => setToolboxOpen(false)}
+          onSettings={() => {
+            setToolboxOpen(false);
+            setSettingsOpen(true);
+          }}
+        />
+      )}
+
+      {settingsOpen && (
+        <ReadSettings
+          prefs={prefs}
+          onChange={setPrefs}
+          baseSize={baseSize}
+          baseLineHeight={defaultLineHeight('body')}
+          canResize={canResize}
+        />
       )}
     </Root>
   );
@@ -566,6 +619,14 @@ const ReaderVars = createGlobalStyle`
     --reader-tile-w: 56px;
     --reader-tile-h: 56px;
     --reader-label: var(--ds-typography-label-size);
+  }
+  /* 閱讀設定：字體一律換掉（老師逐字設的也一起換）；注音另外固定黑體，不跟著換。關掉注音就把注音藏起來 */
+  [data-reader-font] .ds-rich,
+  [data-reader-font] .ds-rich *:not(rt):not(rt *) {
+    font-family: var(--reader-font) !important;
+  }
+  [data-reader-noruby] .ds-rich rt {
+    display: none !important;
   }
   @media (max-height: 820px), (max-width: 1100px) {
     :root {
