@@ -7,8 +7,6 @@ type Props = {
   /** 教材的內文字級與行距：沒調過時顯示這兩個數字。 */
   baseSize: number;
   baseLineHeight: number;
-  /** 流式排版才能調字級、行距（自動切頁整頁縮放，字一放大就撐破頁）。 */
-  canResize: boolean;
 };
 
 const SIZE = { min: 16, max: 40, step: 2 };
@@ -26,31 +24,30 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
  * 再按一次「設定」、按 Esc 或點浮層外面就收起來（ReaderMode 管）。
  * 右邊的控制項一律同寬同高（156×44）、灰色膠囊底，右緣對齊；選中的是黑底白字，跟開關打開時同一個黑。
  */
-export function ReadSettings({ prefs, onChange, baseSize, baseLineHeight, canResize }: Props) {
+export function ReadSettings({ prefs, onChange, baseSize, baseLineHeight }: Props) {
   const size = prefs.size ?? baseSize;
   const lh = prefs.lineHeight ?? baseLineHeight;
   const set = (patch: Partial<ReaderPrefs>) => onChange({ ...prefs, ...patch });
-  const off = canResize ? undefined : '這本是自動切頁，整頁一起縮放，不能另外調';
 
   return (
     <Panel id="reader-settings" role="dialog" aria-label="閱讀設定">
-      <Row title={off}>
+      <Row>
         <span>文字大小</span>
         <Stepper>
-          <button type="button" aria-label="文字小一點" disabled={!canResize || size <= SIZE.min}
+          <button type="button" aria-label="文字小一點" disabled={size <= SIZE.min}
             onClick={() => set({ size: Math.max(SIZE.min, size - SIZE.step) })}>−</button>
           <b>{size}</b>
-          <button type="button" aria-label="文字大一點" disabled={!canResize || size >= SIZE.max}
+          <button type="button" aria-label="文字大一點" disabled={size >= SIZE.max}
             onClick={() => set({ size: Math.min(SIZE.max, size + SIZE.step) })}>+</button>
         </Stepper>
       </Row>
-      <Row title={off}>
+      <Row>
         <span>行距</span>
         <Stepper>
-          <button type="button" aria-label="行距小一點" disabled={!canResize || lh <= LH.min + 0.01}
+          <button type="button" aria-label="行距小一點" disabled={lh <= LH.min + 0.01}
             onClick={() => set({ lineHeight: round1(Math.max(LH.min, lh - LH.step)) })}>−</button>
           <b>{lh.toFixed(1)}</b>
-          <button type="button" aria-label="行距大一點" disabled={!canResize || lh >= LH.max - 0.01}
+          <button type="button" aria-label="行距大一點" disabled={lh >= LH.max - 0.01}
             onClick={() => set({ lineHeight: round1(Math.min(LH.max, lh + LH.step)) })}>+</button>
         </Stepper>
       </Row>

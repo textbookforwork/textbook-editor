@@ -4,6 +4,7 @@ import { RowView } from './RowView';
 import { urlOf } from '../editor/assets';
 import type { Page } from '../model/paginate';
 import type { DocSettings, PageBackground } from '../model/types';
+import { useReaderText } from '../reader/readerPrefs';
 
 /**
  * 這一頁的背景。掛在「這一頁的第一列」上；那一列若是從上一頁接續下來的，
@@ -46,6 +47,8 @@ type Props = {
  * 不是重新排版。所以任何螢幕上看到的都是同一份分頁結果。
  */
 export function PageView({ page, settings, scale, rowIndexOf, rowCount = 0, thumbnail = false, pageSize }: Props) {
+  // 閱讀設定把字調大、行距調寬時，自動切頁的頁裝不下：頁碼照原本切法不變，放不下的在這一頁裡捲動（跟流式一樣）
+  const reader = useReaderText();
   const size = pageSize ?? PAGE_SIZE[settings.aspectRatio];
   const vertical = settings.writingMode === 'vertical';
   const flow = settings.layout === 'flow';
@@ -54,9 +57,10 @@ export function PageView({ page, settings, scale, rowIndexOf, rowCount = 0, thum
   const contentInline = vertical ? box.height : box.width;
   const contentBlock = vertical ? box.width : box.height;
   const horizontalPanels = flow && !vertical && (page.panels?.length ?? 0) > 1;
+  const readerScroll = !flow && !thumbnail && (reader.scale !== 1 || reader.lineHeight !== undefined);
 
   const onWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (!flow || thumbnail) return;
+    if (!(flow || (readerScroll && vertical)) || thumbnail) return;
     // 在流式排版的頁面內，若使用者用滑鼠滾輪（只有垂直 deltaY），
     // 自動轉為頁面內的橫向滑動（直排由右往左、橫排由左往右）；滑到底才放行給外部捲動。
     if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
@@ -80,6 +84,7 @@ export function PageView({ page, settings, scale, rowIndexOf, rowCount = 0, thum
         $flow={flow}
         $horizontalPanels={horizontalPanels}
         $thumbnail={thumbnail}
+        $readerScroll={readerScroll}
         data-vertical={vertical || undefined}
         data-layout={flow ? 'flow' : 'paged'}
         onWheel={onWheel}
@@ -136,6 +141,7 @@ const Sheet = styled.div<{
   $flow?: boolean;
   $horizontalPanels?: boolean;
   $thumbnail?: boolean;
+  $readerScroll?: boolean;
 }>`
   transform-origin: top left;
   background: ${(p) => p.theme.surface.raised};
@@ -148,8 +154,9 @@ const Sheet = styled.div<{
   /* 近直角，模擬紙張 */
   border-radius: 2px;
   padding: ${PAGE_PADDING}px;
-  overflow-x: ${(p) => (p.$flow && !p.$thumbnail ? 'auto' : 'hidden')};
-  overflow-y: hidden;
+  overflow-x: ${(p) => ((p.$flow && !p.$thumbnail) || (p.$readerScroll && p.$vertical) ? 'auto' : 'hidden')};
+  /* 自動切頁的頁面平常不捲；閱讀設定把字放大時，橫排往下捲、直排往左捲 */
+  overflow-y: ${(p) => (p.$readerScroll && !p.$vertical ? 'auto' : 'hidden')};
   /* 只有頁面內真的能橫向捲（流式排版）才把橫向捲動留在頁內；分頁模式要放行給外層，
      否則放大後游標停在頁面上就左右滑不動 */
   overscroll-behavior-x: ${(p) => (p.$flow && !p.$thumbnail ? 'contain' : 'auto')};

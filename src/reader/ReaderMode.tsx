@@ -84,22 +84,21 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
   const outline = useMemo(() => outlineOf(doc).filter((i) => i.depth <= 1), [doc]);
   const [pinned, setPinned] = useState<RailTool[]>(loadPinned);
 
-  // 閱讀設定：每個人自己的，存在這台裝置。字級、行距只在流式排版生效（見 readerPrefs）
+  // 閱讀設定：每個人自己的，存在這台裝置（見 readerPrefs）
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [prefs, setPrefsState] = useState<ReaderPrefs>(loadPrefs);
   const setPrefs = (next: ReaderPrefs) => {
     setPrefsState(next);
     savePrefs(next);
   };
-  const canResize = doc.settings.layout === 'flow';
   const vertical = doc.settings.writingMode === 'vertical';
   const baseSize = defaultSizeOf('body', vertical);
   const readerText = useMemo<ReaderText>(
     () => ({
-      scale: canResize && prefs.size ? prefs.size / baseSize : 1,
-      lineHeight: canResize && prefs.lineHeight ? prefs.lineHeight : undefined,
+      scale: prefs.size ? prefs.size / baseSize : 1,
+      lineHeight: prefs.lineHeight ?? undefined,
     }),
-    [canResize, prefs.size, prefs.lineHeight, baseSize]
+    [prefs.size, prefs.lineHeight, baseSize]
   );
 
   const ink = useInk(doc.id, page?.index ?? 0);
@@ -393,7 +392,6 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
           onChange={setPrefs}
           baseSize={baseSize}
           baseLineHeight={defaultLineHeight('body')}
-          canResize={canResize}
         />
       )}
     </Root>
