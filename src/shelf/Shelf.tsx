@@ -431,7 +431,8 @@ function BookCard({
  * 基準是 1440 寬、可視高 790（1440×900 的螢幕扣掉瀏覽器網址列）。2026-10-22 乙練定：
  *   電腦：整頁 90%，一排 6 本
  *   教室大屏：不再放大（最多 100%），一排 7 本
- *   平板（寬不到 1400）：不多縮 90%，一排 5 本，字才不會太小
+ *   平板（觸控裝置，不看寬度）：不多縮 90%，一排 5 本，字才不會太小
+ *   電腦視窗開不滿也算電腦（2026-10-27 改）：只照寬度縮，一排維持 6 本
  */
 const BASE_W = 1440;
 const BASE_H = 790;
@@ -439,8 +440,11 @@ const BASE_H = 790;
 function usePageZoom() {
   const read = () => {
     const w = document.documentElement.clientWidth;
-    const fit = Math.min(w / BASE_W, window.innerHeight / BASE_H);
-    return w < 1400 ? fit : Math.min(1, fit * 0.9);
+    // 平板看的是「觸控裝置」不是視窗寬度：電腦視窗開不滿（側欄、沒全螢幕）也還是電腦，一排 6 本（2026-10-27 乙練）
+    const tablet = window.matchMedia('(pointer: coarse)').matches;
+    if (tablet) return Math.min(w / BASE_W, window.innerHeight / BASE_H);
+    // 電腦：照寬度縮到 90%，畫面多寬都一排 6 本；教室大屏不放大（最多 100%），一排 7 本
+    return Math.min(1, (w / BASE_W) * 0.9);
   };
   const [zoom, setZoom] = useState(read);
   useEffect(() => {
