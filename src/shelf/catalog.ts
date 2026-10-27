@@ -6,6 +6,13 @@ import guoyuCover from './covers/guoyu-6b.jpg';
 import socialCover from './covers/social-5b.jpg';
 import englishCover from './covers/english-6.jpg';
 import mathCover from './covers/math-2b.jpg';
+// 去掉出版社字的封面圖（書櫃新封面用，2026-10-27）
+import guowenArt from './covers/guowen-2b-art.jpg';
+import scienceArt from './covers/science-5b-art.jpg';
+import guoyuArt from './covers/guoyu-6b-art.jpg';
+import socialArt from './covers/social-5b-art.jpg';
+import englishArt from './covers/english-6-art.jpg';
+import mathArt from './covers/math-2b-art.jpg';
 import { applyImport, parseMarkdown } from '../model/markdown';
 import { emptyDoc } from '../model/document';
 import { seedStars } from '../demo/seed';
@@ -23,27 +30,29 @@ export type Textbook = {
   id: string;
   /** 書櫃分區用的科目名稱。 */
   subject: string;
-  /** 卡片左上的一行：學年度＋出版社。 */
+  /** 封面左上的一行：學年度＋出版社＋學制（國小／國中）。 */
   edition: string;
   publisher: string;
   title: string;
   cover: string | null;
+  /** 同一張封面去掉出版社的字：數位教科書疊系統課名、自編與共享放進科目形狀框都用這張。 */
+  art?: string;
   /** 沒有 md＝空白本，只有課名。 */
   md?: string;
 };
 
 export const TEXTBOOKS: Textbook[] = [
-  { id: 'mulan', subject: '國語文', edition: '115 南一', publisher: '南一', title: '國文 2下', cover: guowenCover, md: mulanMd },
-  { id: 'guoyu-6b', subject: '國語文', edition: '115 康軒', publisher: '康軒', title: '國語 6下', cover: guoyuCover },
-  { id: 'guoyu-5a', subject: '國語文', edition: '115 範例', publisher: '範例', title: '國語 5上', cover: null },
-  { id: 'social-5b', subject: '社會', edition: '115 翰林', publisher: '翰林', title: '社會 5下', cover: socialCover },
-  { id: 'social-6a', subject: '社會', edition: '115 範例', publisher: '範例', title: '社會 6上', cover: null },
-  { id: 'english-6', subject: '英語文', edition: '114 康軒', publisher: '康軒', title: 'Wonder World 6', cover: englishCover },
-  { id: 'english-5a', subject: '英語文', edition: '115 範例', publisher: '範例', title: 'English 5上', cover: null },
-  { id: 'demo', subject: '自然科學', edition: '114 南一', publisher: '南一', title: '自然科學 5下', cover: scienceCover, md: demoMd },
-  { id: 'science-6a', subject: '自然科學', edition: '115 範例', publisher: '範例', title: '自然科學 6上', cover: null },
-  { id: 'math-2b', subject: '數學', edition: '114 翰林', publisher: '翰林', title: '數學 2下', cover: mathCover },
-  { id: 'math-5a', subject: '數學', edition: '115 範例', publisher: '範例', title: '數學 5上', cover: null },
+  { id: 'mulan', subject: '國語文', edition: '115 南一 國中', publisher: '南一', title: '國文 2下', cover: guowenCover, art: guowenArt, md: mulanMd },
+  { id: 'guoyu-6b', subject: '國語文', edition: '115 康軒 國小', publisher: '康軒', title: '國語 6下', cover: guoyuCover, art: guoyuArt },
+  { id: 'guoyu-5a', subject: '國語文', edition: '115 範例 國小', publisher: '範例', title: '國語 5上', cover: null },
+  { id: 'social-5b', subject: '社會', edition: '115 翰林 國小', publisher: '翰林', title: '社會 5下', cover: socialCover, art: socialArt },
+  { id: 'social-6a', subject: '社會', edition: '115 範例 國小', publisher: '範例', title: '社會 6上', cover: null },
+  { id: 'english-6', subject: '英語文', edition: '114 康軒 國小', publisher: '康軒', title: 'Wonder World 6', cover: englishCover, art: englishArt },
+  { id: 'english-5a', subject: '英語文', edition: '115 範例 國小', publisher: '範例', title: 'English 5上', cover: null },
+  { id: 'demo', subject: '自然科學', edition: '114 南一 國小', publisher: '南一', title: '自然科學 5下', cover: scienceCover, art: scienceArt, md: demoMd },
+  { id: 'science-6a', subject: '自然科學', edition: '115 範例 國小', publisher: '範例', title: '自然科學 6上', cover: null },
+  { id: 'math-2b', subject: '數學', edition: '114 翰林 國中', publisher: '翰林', title: '數學 2下', cover: mathCover, art: mathArt },
+  { id: 'math-5a', subject: '數學', edition: '115 範例 國小', publisher: '範例', title: '數學 5上', cover: null },
 ];
 
 export const findTextbook = (id: string) => TEXTBOOKS.find((t) => t.id === id) ?? null;

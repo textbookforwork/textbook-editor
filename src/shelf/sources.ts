@@ -15,6 +15,8 @@ export type Source = {
   title: string;
   /** 沒有封面（管理員剛建立的空白本）時，書櫃用科目色的預設封面。 */
   cover: string | null;
+  /** 去掉出版社字的封面圖；沒有就用 cover。 */
+  art?: string;
   /** 內建的原本不能直接改；管理員建立的可以。 */
   builtIn: boolean;
 };
@@ -26,7 +28,7 @@ export const rocYear = () => new Date().getFullYear() - 1911;
 
 export function findSource(id: string): Source | null {
   const t = findTextbook(id);
-  if (t) return { id: t.id, subject: t.subject, edition: t.edition, publisher: t.publisher, title: t.title, cover: t.cover, builtIn: true };
+  if (t) return { id: t.id, subject: t.subject, edition: t.edition, publisher: t.publisher, title: t.title, cover: t.cover, art: t.art, builtIn: true };
   const b = findBook(id);
   if (b && isOriginal(b)) {
     return {

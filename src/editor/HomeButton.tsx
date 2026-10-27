@@ -15,7 +15,7 @@ export const LIME = '#F0FF62';
 export const PEBBLE_PATH =
   'M 11.2 3.0 C 12.66 2.81, 14.21 2.81, 15.72 3.0 C 17.23 3.19, 18.73 3.38, 20.24 4.13 C 21.75 4.88, 23.54 6.2, 24.76 7.52 C 25.99 8.84, 26.98 10.53, 27.59 12.04 C 28.2 13.55, 28.62 15.02, 28.43 16.57 C 28.24 18.12, 27.4 19.82, 26.46 21.37 C 25.52 22.92, 24.15 24.62, 22.78 25.89 C 21.41 27.16, 19.77 28.58, 18.26 29.0 C 16.75 29.42, 15.25 28.85, 13.74 28.43 C 12.23 28.01, 10.73 27.5, 9.22 26.46 C 7.71 25.43, 5.64 23.68, 4.7 22.22 C 3.76 20.76, 3.71 19.21, 3.57 17.7 C 3.43 16.19, 3.71 14.72, 3.85 13.17 C 3.99 11.62, 3.89 9.88, 4.41 8.37 C 4.93 6.86, 5.83 5.02, 6.96 4.13 C 8.09 3.23, 9.74 3.19, 11.2 3.0 Z';
 
-type Shape = 'chinese' | 'english' | 'science' | 'social' | 'math' | 'other';
+export type Shape = 'chinese' | 'english' | 'science' | 'social' | 'math' | 'other';
 
 /**
  * 科目造型：五個科目各一個幾何形狀與顏色，沒設定科目或不在這五科的維持萊姆鵝卵石（品牌主視覺）。
@@ -43,9 +43,9 @@ export function shapeOf(subject?: string): Shape {
 }
 
 /** w、h 是路徑自己的座標範圍；畫的時候等比縮進 32×32 的格子裡置中。 */
-type ShapeDef = { d: string; w: number; h: number; light: string; dark: string };
+export type ShapeDef = { d: string; w: number; h: number; light: string; dark: string };
 
-const SHAPES: Record<Shape, ShapeDef> = {
+export const SHAPES: Record<Shape, ShapeDef> = {
   other: { d: PEBBLE_PATH, w: 32, h: 32, light: LIME, dark: LIME },
   chinese: {
     d: 'M72.05 77.02C50.63 73.57 26.63 72.79 0 74.69L6.88 0L74.61 0L72.05 77.02Z',

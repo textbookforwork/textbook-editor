@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import styled from 'styled-components';
 import { Icon } from '../components/Icon';
-import { LIME, PEBBLE_PATH, SubjectCover, SubjectMark } from '../editor/HomeButton';
+import { LIME, PEBBLE_PATH, SubjectMark } from '../editor/HomeButton';
+import { FramedCover, PublisherCover } from './ShelfCover';
 import { ConfirmDialog } from '../editor/ConfirmDialog';
 import { CoverDialog } from '../editor/ShareDialog';
 import { Toaster, toast } from '../editor/Toast';
@@ -26,7 +27,7 @@ const TABS: { key: ShelfTab; label: string }[] = [
  *
  * 三個分頁是同一份教材的三個階段：數位教科書（原本）→ 建立自編（副本）→ 自編教材 → 共享 → 共享教材。
  * 每個分頁依科目分區，一區只排一列；放不下一列時該區右上才出現「查看全部」，進到那一科的子頁看全部（設計稿「展開更多教科書」3:2021；乙練 2026-10-22 定：一列放得下就不出現）。
- * 自編教材：未共享的排前面（還在編、比較常進出），同一組裡最近改過的在前。
+ * 自編教材：已共享的排前面（乙練 2026-10-27 改），同一組裡最近改過的在前。
  *
  * 兩種身分（右上角頭像切換，見 role.ts）：
  *   老師       在數位教科書按鉛筆＝建立自編（副本），出版社不能改
@@ -39,6 +40,8 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
   const role = useRole();
   const admin = role === 'admin';
   const [creating, setCreating] = useState<Source | null>(null);
+  // 從共享教材建立自編：內容複製那一份共享教材，不是原本
+  const [copyFrom, setCopyFrom] = useState<string | null>(null);
   // 管理員按了哪一區的「建立教材」：科目先帶入那一區
   const [blank, setBlank] = useState<string | null>(null);
   const [covering, setCovering] = useState<MyBook | null>(null);
@@ -50,10 +53,10 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
     // 管理員建立的原本：發布了（shared）才上架給老師；管理員看得到全部
     ...books.filter((b) => isOriginal(b) && (admin || b.shared)).map((b) => findSource(b.id)!),
   ];
-  // 未共享的排前面，同一組裡最近改過的在前
+  // 已共享的排前面，同一組裡最近改過的在前
   const copies = books
     .filter((b) => !isOriginal(b))
-    .sort((a, b) => Number(a.shared) - Number(b.shared) || b.updatedAt - a.updatedAt);
+    .sort((a, b) => Number(b.shared) - Number(a.shared) || b.updatedAt - a.updatedAt);
   const [measureRef, columns] = useGridColumns();
   const shown = tab === 'textbook' ? null : tab === 'shared' ? copies.filter((b) => b.shared) : copies;
 
@@ -158,16 +161,16 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
                 </SeeAll>
               )}
             </SectionHead>
-            <Grid>
+            <Grid style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
               {shown
                 ? s.books.slice(0, limit).map((b) => (
                     <BookCard
                       key={b.id}
                       book={b}
                       source={findSource(b.sourceId)}
-                      showTeacher
                       inSharedTab={tab === 'shared'}
                       onCover={() => setCovering(b)}
+                      onCopy={tab === 'shared' && findSource(b.sourceId) ? () => (setCopyFrom(b.id), setCreating(findSource(b.sourceId))) : undefined}
                       onDelete={() => setDeleting(b)}
                     />
                   ))
@@ -178,14 +181,13 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
                         key={t.id}
                         book={findBook(t.id)!}
                         source={t}
-                        showTeacher={false}
                         onCover={() => setCovering(findBook(t.id))}
                         onCopy={findBook(t.id)?.shared ? () => setCreating(t) : undefined}
                         onDelete={findBook(t.id)?.shared ? undefined : () => setDeleting(findBook(t.id))}
                       />
                     ) : (
                       // 內建的原本一律是已發布；只有管理員需要看到發布狀態
-                      <SourceCard key={t.id} source={t} status={admin ? 'published' : undefined} onCreate={() => setCreating(t)} />
+                      <SourceCard key={t.id} source={t} published={admin} onCreate={() => setCreating(t)} />
                     )
                   )}
             </Grid>
@@ -195,12 +197,13 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
 
       {creating && (
         <CreateDialog
-          source={sourceDoc(creating.id)!}
-          onCancel={() => setCreating(null)}
+          source={sourceDoc(copyFrom ?? creating.id)!}
+          onCancel={() => (setCreating(null), setCopyFrom(null))}
           onCreate={(_, doc) => {
             // 副本的出版社沿用原本（版本管理：副本不能改出版社）
             const book = createBook(creating.id, { ...doc, meta: { ...doc.meta, publisher: creating.publisher } });
             setCreating(null);
+            setCopyFrom(null);
             goEdit(book.id);
           }}
         />
@@ -305,60 +308,69 @@ function UserMenu({ role }: { role: Role }) {
   );
 }
 
-/** 數位教科書的預設封面：管理員剛建立、還沒放封面時，用科目記號加書名。 */
-function CoverImage({ src, subject }: { src: string | null | undefined; title: string; subject: string }) {
-  if (src) return <img src={src} alt="" />;
-  // 預設封面：科目淺色底、中間鏤空科目形狀（見 HomeButton 的 SubjectCover）
+/** 「⋯」：滑過封面才出現；點開是這一本能做的事 */
+function MoreMenu({ items }: { items: { label: string; icon: string; danger?: boolean; run: () => void }[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener('pointerdown', close, true);
+    return () => window.removeEventListener('pointerdown', close, true);
+  }, [open]);
+  if (!items.length) return null;
   return (
-    <Placeholder>
-      <SubjectCover subject={subject} />
-    </Placeholder>
+    <More ref={ref} $open={open} onClick={(e) => e.stopPropagation()}>
+      <MoreBtn type="button" aria-label="更多" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <Icon name="more-horizontal" size={20} />
+      </MoreBtn>
+      {open && (
+        <Menu role="menu">
+          {items.map((it) => (
+            <MenuItem key={it.label} role="menuitem" type="button" $danger={it.danger} onClick={() => (setOpen(false), it.run())}>
+              <Icon name={it.icon as never} size={16} />
+              {it.label}
+            </MenuItem>
+          ))}
+        </Menu>
+      )}
+    </More>
   );
 }
 
-function SourceCard({ source, status, onCreate }: { source: Source; status?: Status; onCreate: () => void }) {
+/**
+ * 數位教科書（原本）：出版社封面去字＋白字課名；沒有封面的範例書用科目形狀框（白色形狀）。
+ * 點封面閱讀；「⋯」裡是建立自編。管理員看，下方標「已發布」。
+ */
+function SourceCard({ source, published, onCreate }: { source: Source; published?: boolean; onCreate: () => void }) {
+  const art = source.art ?? source.cover;
   return (
     <Card>
-      <Cover>
-        <CoverImage src={source.cover} title={source.title} subject={source.subject} />
-        {status && <StatusTag status={status} />}
+      <Cover role="button" tabIndex={0} aria-label={`閱讀「${source.title}」`} onClick={() => (source.builtIn ? goReadTextbook(source.id) : goRead(source.id))}>
+        {art ? (
+          <PublisherCover art={art} edition={source.edition} title={source.title} />
+        ) : (
+          <FramedCover subject={source.subject} art={null} edition={source.edition} title={source.title} seed={source.id} />
+        )}
+        <MoreMenu items={[{ label: '建立自編', icon: 'copy', run: onCreate }]} />
       </Cover>
-      <Body>
-        <Meta>{source.edition}</Meta>
-        <Title title={source.title}>{source.title}</Title>
-        <Actions>
-          <ReadBtn type="button" onClick={() => (source.builtIn ? goReadTextbook(source.id) : goRead(source.id))}>
-            閱讀課本
-            <Icon name="arrow-up-right" size={16} />
-          </ReadBtn>
-          <EditBtn type="button" onClick={onCreate} title="建立自編" aria-label={`用「${source.title}」建立自編`}>
-            <Icon name="pencil" size={16} />
-          </EditBtn>
-        </Actions>
-      </Body>
+      <Below>{published && <Status>已發布</Status>}</Below>
     </Card>
   );
 }
 
-type Status = 'published' | 'shared';
-const STATUS_LABEL: Record<Status, string> = { published: '已發布', shared: '已共享' };
-
 /**
- * 封面左上的狀態徽章：白色霧面膠囊，只有字。
- * 只標成立的狀態（已發布、已共享）；未發布的不掛，已發布的在同一科裡排前面。
+ * 自編、共享教材（副本），以及管理員自己建立的原本。
+ *   自編：科目形狀框露出原書封面；「⋯」＝進入編輯、更換封面、刪除；下方標「已共享」
+ *   共享：同上的封面；「⋯」＝建立自編；下方是分享的老師
+ *   管理員的原本：同數位教科書的封面；「⋯」＝更換封面、建立自編（已發布才有）、刪除（草稿才有）
+ * 點封面一律是閱讀。
  */
-function StatusTag({ status }: { status: Status }) {
-  return (
-    <Tag>
-      {STATUS_LABEL[status]}
-    </Tag>
-  );
-}
-
 function BookCard({
   book,
   source,
-  showTeacher,
   inSharedTab = false,
   onCover,
   onCopy,
@@ -366,81 +378,47 @@ function BookCard({
 }: {
   book: MyBook;
   source: Source | null;
-  /** 自編、共享教材分頁：顯示老師名字。 */
-  showTeacher: boolean;
-  /** 共享教材分頁每本都是共享的，不掛「已共享」標籤。 */
   inSharedTab?: boolean;
   onCover: () => void;
-  /** 管理員已發布的原本才有：建立自編（副本）。未發布的不能建。 */
   onCopy?: () => void;
-  /** 不給就沒有「刪除」：數位教科書（原本）在前台不能刪，只能由後端刪。 */
   onDelete?: () => void;
 }) {
-  const [menu, setMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!menu) return;
-    const close = (e: PointerEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenu(false);
-    };
-    window.addEventListener('pointerdown', close, true);
-    return () => window.removeEventListener('pointerdown', close, true);
-  }, [menu]);
-
+  const original = isOriginal(book);
+  const art = book.cover ?? source?.art ?? source?.cover;
+  const edition = source?.edition ?? '';
+  const items = original
+    ? [
+        { label: '更換封面', icon: 'image', run: onCover },
+        ...(onCopy ? [{ label: '建立自編', icon: 'copy', run: onCopy }] : []),
+        ...(onDelete ? [{ label: '刪除', icon: 'trash', danger: true, run: onDelete }] : []),
+      ]
+    : inSharedTab
+      ? onCopy ? [{ label: '建立自編', icon: 'copy', run: onCopy }] : []
+      : [
+          { label: '進入編輯', icon: 'pencil', run: () => goEdit(book.id) },
+          { label: '更換封面', icon: 'image', run: onCover },
+          ...(onDelete ? [{ label: '刪除', icon: 'trash', danger: true, run: onDelete }] : []),
+        ];
   return (
     <Card>
-      <Cover $hover $menu={menu}>
-        <CoverImage src={book.cover ?? source?.cover} title={book.title} subject={source?.subject ?? ''} />
-        {/* 只標已發布／已共享；未發布不掛標籤。「已共享」是在自編教材分頁裡區分用的，共享教材分頁每本都是，不標 */}
-        {book.shared && !inSharedTab && <StatusTag status={isOriginal(book) ? 'published' : 'shared'} />}
-        {/* 滑過封面：調暗、右上角出現「更多」；點開是編輯封面與刪除（設計稿：維持目前的設計） */}
-        <More ref={menuRef}>
-          <MoreBtn type="button" aria-label="更多" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
-            <Icon name="more-horizontal" size={20} />
-          </MoreBtn>
-          {menu && (
-            <Menu role="menu">
-              <MenuItem role="menuitem" type="button" onClick={() => (setMenu(false), onCover())}>
-                <Icon name="pencil" size={16} />
-                編輯封面
-              </MenuItem>
-              {onCopy && (
-                <MenuItem role="menuitem" type="button" onClick={() => (setMenu(false), onCopy())}>
-                  <Icon name="copy" size={16} />
-                  建立自編
-                </MenuItem>
-              )}
-              {onDelete && (
-                <MenuItem role="menuitem" type="button" $danger onClick={() => (setMenu(false), onDelete())}>
-                  <Icon name="trash" size={16} />
-                  刪除
-                </MenuItem>
-              )}
-            </Menu>
-          )}
-        </More>
-      </Cover>
-      <Body>
-        <Meta>{source?.edition}</Meta>
-        <Title title={book.title}>{book.title}</Title>
-        {showTeacher && (
-          <Teacher>
-            <TeacherAvatar>
-              <Icon name="user" size={16} />
-            </TeacherAvatar>
-            <span>{ROLE_NAME.teacher}老師</span>
-          </Teacher>
+      <Cover role="button" tabIndex={0} aria-label={`閱讀「${book.title}」`} onClick={() => goRead(book.id)}>
+        {original && art ? (
+          <PublisherCover art={art} edition={edition} title={book.title} />
+        ) : (
+          <FramedCover subject={source?.subject ?? ''} art={art} edition={edition} title={book.title} seed={book.id} />
         )}
-        <Actions>
-          <ReadBtn type="button" onClick={() => goRead(book.id)}>
-            閱讀課本
-            <Icon name="arrow-up-right" size={16} />
-          </ReadBtn>
-          <EditBtn type="button" onClick={() => goEdit(book.id)} title="編輯" aria-label={`編輯「${book.title}」`}>
-            <Icon name="pencil" size={16} />
-          </EditBtn>
-        </Actions>
-      </Body>
+        <MoreMenu items={items} />
+      </Cover>
+      <Below>
+        {inSharedTab ? (
+          <>
+            <TeacherAvatar aria-hidden="true">{ROLE_NAME.teacher.slice(0, 1)}</TeacherAvatar>
+            <span>{ROLE_NAME.teacher}老師</span>
+          </>
+        ) : (
+          book.shared && <Status>{original ? '已發布' : '已共享'}</Status>
+        )}
+      </Below>
     </Card>
   );
 }
@@ -570,15 +548,6 @@ const NewBtn = styled.button`
   cursor: pointer;
 
   &:hover { background: ${(p) => p.theme.action.primaryBgHover}; }
-`;
-
-const Placeholder = styled.div`
-  inline-size: 100%;
-  block-size: 100%;
-  border-radius: 0;
-  overflow: hidden;
-
-  svg { display: block; }
 `;
 
 const Avatar = styled.span`
@@ -771,104 +740,6 @@ const Grid = styled.div`
  * 書卡：圓角由卡片統一裁切（封面不另外畫圓角，才不會跟框線錯開露出縫）。
  * 滑過時整張書往上浮起一點、陰影加深，像把書從書櫃抽出來。
  */
-const Card = styled.article`
-  display: flex;
-  flex-direction: column;
-  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
-  border-radius: 12px;
-  background: ${(p) => p.theme.surface.raised};
-  overflow: hidden;
-  transition: transform 0.35s cubic-bezier(0.34, 1.8, 0.64, 1), box-shadow 0.35s ease;
-
-  /* 選書：往上跳一截、微微放大，落下時帶一點回彈；陰影拉長，像書離開書架 */
-  &:hover,
-  &:focus-within {
-    transform: translateY(-14px) scale(1.03);
-    box-shadow: 0 22px 40px rgba(26, 25, 23, 0.2);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    transition: box-shadow 0.25s ease;
-    &:hover, &:focus-within { transform: none; }
-  }
-`;
-
-const Tag = styled.span`
-  position: absolute;
-  inset-block-start: 10px;
-  inset-inline-start: 10px;
-  display: flex;
-  align-items: center;
-  block-size: 24px;
-  padding-inline: 10px;
-  border-radius: ${(p) => p.theme.radius.control};
-  background: color-mix(in srgb, ${(p) => p.theme.surface.raised} 88%, transparent);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 1px 3px rgba(26, 25, 23, 0.12);
-  color: ${(p) => p.theme.text.primary};
-  font-size: ${(p) => p.theme.typography.captionSize};
-  line-height: ${(p) => p.theme.typography.captionLineHeight};
-  font-weight: 500;
-  white-space: nowrap;
-`;
-
-const MoreBtn = styled.button`
-  display: grid;
-  place-items: center;
-  inline-size: 32px;
-  block-size: 32px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: ${(p) => p.theme.surface.raised};
-  color: ${(p) => p.theme.icon.default};
-  cursor: pointer;
-`;
-
-const More = styled.div`
-  position: absolute;
-  inset-block-start: 10px;
-  inset-inline-end: 10px;
-  opacity: 0;
-  transition: opacity 0.15s;
-`;
-
-/** 封面 4:5；自編教材的封面滑過時調暗並出現「更多」 */
-const Cover = styled.div<{ $hover?: boolean; $menu?: boolean }>`
-  position: relative;
-  aspect-ratio: 4 / 5;
-  /* 不讓封面圖的原始高度把框撐開，封面一律照這個比例裁 */
-  min-block-size: 0;
-  border-radius: 0;
-
-  img {
-    display: block;
-    inline-size: 100%;
-    block-size: 100%;
-    object-fit: cover;
-    border-radius: 0;
-  }
-
-  ${(p) =>
-    p.$hover &&
-    `
-    &::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 0;
-      background: rgba(26, 25, 23, 0.35);
-      opacity: ${p.$menu ? 1 : 0};
-      transition: opacity 0.15s;
-      pointer-events: none;
-    }
-    &:hover::after, &:focus-within::after { opacity: 1; }
-    &:hover ${More}, &:focus-within ${More} { opacity: 1; }
-    ${p.$menu ? `& ${More} { opacity: 1; }` : ''}
-  `}
-
-  & > * { z-index: 1; }
-`;
-
 const Menu = styled.div`
   position: absolute;
   inset-block-start: 38px;
@@ -900,103 +771,103 @@ const MenuItem = styled.button<{ $danger?: boolean }>`
   &:hover { background: ${(p) => p.theme.surface.muted}; }
 `;
 
-const Body = styled.div`
+/**
+ * 書卡：沒有白色外框，只有封面＋下方一行狀態。
+ * 滑過時整本往上浮起、微微放大，陰影只落在封面上（下方那行字跟著浮起，但不包進陰影）。
+ */
+const Card = styled.article`
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px;
-  flex: 1;
-`;
-
-const Meta = styled.span`
-  font-size: ${(p) => p.theme.typography.captionSize};
-  color: ${(p) => p.theme.text.secondary};
-`;
-
-const Title = styled.h3`
-  margin: 0;
-  font-size: 18px;
-  line-height: 28px;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-// 發布者：自編與共享分頁都顯示（Figma 3:1909）
-const Teacher = styled.span`
-  display: flex;
-  align-items: center;
-  gap: 4px;
   min-inline-size: 0;
-  font-size: ${(p) => p.theme.typography.captionSize};
-  line-height: ${(p) => p.theme.typography.captionLineHeight};
-  font-weight: 500;
-  color: ${(p) => p.theme.text.secondary};
+  transition: transform 0.35s cubic-bezier(0.34, 1.8, 0.64, 1);
 
-  span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  &:hover,
+  &:focus-within {
+    transform: translateY(-14px) scale(1.03);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover, &:focus-within { transform: none; }
   }
 `;
 
+const More = styled.div<{ $open?: boolean }>`
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+  z-index: 2;
+  opacity: ${(p) => (p.$open ? 1 : 0)};
+  transition: opacity 0.15s;
+  @media (hover: none) { opacity: 1; }
+`;
+
+const MoreBtn = styled.button`
+  display: grid;
+  place-items: center;
+  inline-size: 34px;
+  block-size: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: ${(p) => p.theme.surface.raised};
+  color: ${(p) => p.theme.icon.default};
+  box-shadow: 0 2px 8px rgba(26, 25, 23, 0.14);
+  cursor: pointer;
+`;
+
+/** 封面 4:5；點封面閱讀，滑過才出現「⋯」 */
+const Cover = styled.div`
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(26, 25, 23, 0.08);
+  transition: box-shadow 0.35s ease;
+
+  ${Card}:hover &, ${Card}:focus-within & { box-shadow: 0 22px 40px rgba(26, 25, 23, 0.22); }
+  &:hover ${More}, &:focus-within ${More} { opacity: 1; }
+`;
+
+/** 封面下方一行：自編標「已共享」、共享放分享的老師、管理員看數位教科書標「已發布」；沒有狀態就空著 */
+const Below = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 24px;
+  margin-block-start: 10px;
+  font-size: 15px;
+  color: ${(p) => p.theme.text.primary};
+  min-inline-size: 0;
+
+  span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+`;
+
+const Status = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: ${(p) => p.theme.text.secondary};
+
+  &::before {
+    content: '';
+    inline-size: 7px;
+    block-size: 7px;
+    border-radius: 999px;
+    background: #00A36E;
+  }
+`;
+
+/** 分享的老師：黑底白字頭像（同右上角使用者頭像） */
 const TeacherAvatar = styled.span`
   display: grid;
   place-items: center;
   flex: none;
-  inline-size: 20px;
-  block-size: 20px;
-  border-radius: ${(p) => p.theme.radius.control};
-  background: ${(p) => p.theme.surface.sunken};
-
-  /* Figma 這裡的頭像圖示是 12px，比設計系統最小的 16 還小，只在這裡縮 */
-  svg {
-    inline-size: 12px;
-    block-size: 12px;
-  }
-`;
-
-const Actions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-block-start: auto;
-  padding-block-start: 8px;
-`;
-
-const ReadBtn = styled.button`
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  block-size: 36px;
-  padding: 0 14px 0 16px;
-  min-inline-size: 0;
-  white-space: nowrap;
-  border: none;
+  inline-size: 24px;
+  block-size: 24px;
   border-radius: 999px;
-  background: ${(p) => p.theme.action.primaryBg};
-  color: ${(p) => p.theme.action.primaryText};
-  font: inherit;
-  font-size: ${(p) => p.theme.typography.captionSize};
-  cursor: pointer;
-
-  &:hover { background: ${(p) => p.theme.action.primaryBgHover}; }
-`;
-
-const EditBtn = styled.button`
-  flex: none;
-  display: grid;
-  place-items: center;
-  inline-size: 36px;
-  block-size: 36px;
-  padding: 0;
-  border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.default};
-  border-radius: 999px;
-  background: ${(p) => p.theme.surface.raised};
-  color: ${(p) => p.theme.icon.default};
-  cursor: pointer;
-
-  &:hover { background: ${(p) => p.theme.surface.sunken}; }
+  background: #1A1A1A;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 500;
 `;
