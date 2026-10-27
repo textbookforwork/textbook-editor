@@ -907,19 +907,17 @@ const Below = styled.div`
   span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 `;
 
+/** 「已發布」「已共享」：Lime 膠囊、深色字（品牌主色；不用科目色，免得被看成科目，2026-10-27 乙練） */
 const Status = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: ${(p) => p.theme.text.secondary};
-
-  &::before {
-    content: '';
-    inline-size: 7px;
-    block-size: 7px;
-    border-radius: 999px;
-    background: #00A36E;
-  }
+  block-size: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: ${(p) => p.theme.brand.primary};
+  color: ${(p) => p.theme.text.primary};
+  font-size: 13px;
+  font-weight: 500;
 `;
 
 /** 分享的老師：黑底白字頭像（同右上角使用者頭像） */
