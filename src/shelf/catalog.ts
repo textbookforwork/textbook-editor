@@ -61,13 +61,25 @@ export const findTextbook = (id: string) => TEXTBOOKS.find((t) => t.id === id) ?
 const META_SUBJECT: Record<string, string> = { 國語文: '國語', 英語文: '英語', 自然科學: '自然' };
 
 /** 原本的內容。每次都重新解析，拿到的是乾淨的一份，建副本時改了不會動到原本。 */
+/** 沒有範例內容的書用的章節骨架：[課名, 每課的節] */
+const SKELETON: Record<string, [string[], string[]]> = {
+  國語文: [['第一課', '第二課', '第三課'], ['課文', '語文天地']],
+  社會: [['第 1 課', '第 2 課', '第 3 課'], ['學習重點', '活動']],
+  英語文: [['Unit 1', 'Unit 2', 'Unit 3'], ['Dialogue', 'Practice']],
+  自然科學: [['單元一', '單元二', '單元三'], ['活動一', '活動二']],
+  數學: [['第 1 單元', '第 2 單元', '第 3 單元'], ['例題', '練習']],
+};
+
 export function textbookDoc(t: Textbook): Doc {
   if (!t.md) {
-    // 空白本：只有課名一列
-    const doc = emptyDoc(t.title);
-    const first = doc.rows[0].columns[0].blocks[0];
-    if (first.type === 'text') first.spans = [{ text: t.title }];
-    return { ...doc, meta: { publisher: t.publisher, subject: META_SUBJECT[t.subject] ?? t.subject } };
+    // 沒有範例內容的書：照科目給三課的章節骨架，建立自編時才有章節可以勾（內容是佔位文字）
+    const [lessons, sections] = SKELETON[t.subject] ?? SKELETON['國語文'];
+    const md = [
+      `---\ntitle: ${t.title}\npublisher: ${t.publisher}\nsubject: ${META_SUBJECT[t.subject] ?? t.subject}\n---`,
+      ...lessons.map((l) => [`# ${l}`, ...sections.map((x) => `## ${x}\n\n（${l}${x}的內容）`)].join('\n\n')),
+    ].join('\n\n');
+    const doc = applyImport(emptyDoc(), parseMarkdown(md, { autoPageBreak: true }));
+    return { ...doc, title: t.title, meta: { ...doc.meta, publisher: t.publisher } };
   }
   const doc = applyImport(emptyDoc(), seedStars(withSampleMedia(parseMarkdown(t.md, { autoPageBreak: true }))));
   // 出版社跟著原本走（副本不能改，見 BookSettings）
