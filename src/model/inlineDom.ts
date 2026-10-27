@@ -127,9 +127,17 @@ function spanToHtml(s: InlineSpan, withMarks = true): string {
     );
   }
 
-  const text = esc(s.text);
+  const text = withUprightDigits(esc(s.text));
   return (attrs.length > 0 ? `<span ${attrs.join(' ')}>${text}</span>` : text) + mark;
 }
+
+/**
+ * 數字包一層 data-num，直排時由 GlobalStyle 立起來（2026-10-27 定：直排裡數字直立、英文橫躺）。
+ * 瀏覽器預設把數字跟英文一起轉成橫躺，CSS 選不到單一個字，只能在這裡包。
+ * 這一層不帶任何標記，htmlToSpans 讀回時直接穿過去，存檔不會多出東西；
+ * 量測和畫面都走這裡，所以立起來之後分頁量到的也是立著的高度。
+ */
+const withUprightDigits = (html: string) => html.replace(/[0-9０-９]+/g, (d) => `<span data-num>${d}</span>`);
 
 /** 把使用者編過的 DOM 讀回 spans。相鄰且標記相同的會被合併。 */
 export function htmlToSpans(root: HTMLElement): InlineSpan[] {

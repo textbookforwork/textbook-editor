@@ -196,3 +196,13 @@ describe('段落說明的標記', () => {
     expect(htmlToSpans(el).find((s) => s.noteId)?.noteId).toBe('n1');
   });
 });
+
+describe('直排數字直立', () => {
+  it('數字包一層 data-num，讀回來文字不變、不多標記', () => {
+    const html = spansToHtml([{ text: '西元1997年' }]);
+    expect(html).toContain('<span data-num>1997</span>');
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    expect(htmlToSpans(root)).toEqual([{ text: '西元1997年' }]);
+  });
+});
