@@ -501,7 +501,8 @@ const Page = styled.div`
   min-block-size: calc(100vh / var(--z, 1));
   background: ${(p) => p.theme.surface.backdrop};
   padding: 24px 32px 48px;
-  --card-w: 214px;
+  /* 一排最少要放得下的書寬：筆電視窗沒開滿（約 1200）也能一排 6 本（2026-10-27 乙練） */
+  --card-w: 176px;
   box-sizing: border-box;
 `;
 
