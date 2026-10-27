@@ -22,13 +22,12 @@ type Props = {
   onClose: () => void;
 };
 
-/** 空白行旁邊浮出的小工具：把這一行設成標題，或在下面插一張圖。層級跟課本頁面同一套：章、節、內文、補充 */
+/** 空白行旁邊浮出的小工具：把這一行設成標題，或在下面插一張圖。層級：章、節、內文 */
 const HEADINGS: { label: string; role: TextRole; size: number; weight: number; title: string }[] = [
   // 按鈕本身的字就畫成那個層級的樣子：章最大最粗、往下遞減，「內文」不粗——一眼分得出來
   { label: '章', role: 'lessonTitle', size: 17, weight: 700, title: '章' },
   { label: '節', role: 'sectionTitle', size: 15, weight: 700, title: '節' },
   { label: '內文', role: 'body', size: 13, weight: 400, title: '內文（一般段落）' },
-  { label: '補充', role: 'supplement', size: 12, weight: 400, title: '補充' },
 ];
 
 const emptyBody = () => makeText('', 'body');
@@ -39,7 +38,7 @@ const MIN_MEDIA = 96;
 
 /**
  * 大彈窗的編輯器（照 Figma「彈出頁面」）：接近全螢幕的大視窗，中間像寫文件一樣一行一段——
- * 按 Enter 換下一段、空白段按 Backspace 刪掉；游標所在那一段旁邊浮出章／節／內文／補充／圖片。
+ * 按 Enter 換下一段、空白段按 Backspace 刪掉；游標所在那一段旁邊浮出章／節／內文／圖片。
  * 上方頁籤可以新增頁面，學生看的時候一次一頁、左右翻。
  *
  * 改的是一份草稿，按「儲存」才寫回；按關閉就放棄（老師可以放心試）。
