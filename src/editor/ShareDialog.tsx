@@ -115,15 +115,16 @@ export function CoverDialog({
         )}
         {src && !error ? (
           <Format $bad={false}>
-            拖四個角調整範圍、按住圖片移動位置・<Relink type="button" onClick={pick}>換一張</Relink>
+            拖四個角調整範圍、按住圖片移動位置
           </Format>
         ) : (
           <Format $bad={!!error}>{error ?? '支援 JPG、PNG、GIF 格式，檔案大小不超過 10MB'}</Format>
         )}
 
+        {/* 關閉交給右上角的 ×，左邊放第二個動作：選圖或換一張 */}
         <Pair>
-          <Secondary type="button" onClick={onCancel}>
-            取消
+          <Secondary type="button" onClick={pick}>
+            {src ? '換一張' : '選擇圖片'}
           </Secondary>
           <Secondary type="button" disabled={!cropped} onClick={() => cropped && onConfirm(cropped)} $primary>
             確認上傳
@@ -247,16 +248,6 @@ const Indicator = styled.span`
   gap: 20px;
   padding: 17px;
   svg { inline-size: 60px; block-size: 60px; }
-`;
-
-const Relink = styled.button`
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  color: ${(p) => p.theme.text.accent};
-  text-decoration: underline;
-  cursor: pointer;
 `;
 
 const Format = styled.p<{ $bad: boolean }>`
