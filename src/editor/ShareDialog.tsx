@@ -121,10 +121,10 @@ export function CoverDialog({
           <Format $bad={!!error}>{error ?? '支援 JPG、PNG、GIF 格式，檔案大小不超過 10MB'}</Format>
         )}
 
-        {/* 關閉交給右上角的 ×，左邊放第二個動作：選圖或換一張 */}
+        {/* 上傳區本身就能點、能拖，左邊不再放「選擇圖片」：還沒選圖是取消，選了圖是換一張（編輯器與書櫃共用這個框） */}
         <Pair>
-          <Secondary type="button" onClick={pick}>
-            {src ? '換一張' : '選擇圖片'}
+          <Secondary type="button" onClick={src ? pick : onCancel}>
+            {src ? '換一張' : '取消'}
           </Secondary>
           <Secondary type="button" disabled={!cropped} onClick={() => cropped && onConfirm(cropped)} $primary>
             確認上傳
