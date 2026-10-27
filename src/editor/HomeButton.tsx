@@ -177,7 +177,7 @@ export function SubjectCover({ subject }: { subject?: string }) {
   const def = SHAPES[shapeOf(subject)];
   const id = `cover-${useId().replace(/:/g, '')}`;
   const W = 228;
-  const H = 283;
+  const H = 285; // 4:5
   const k = 120 / Math.max(def.w, def.h);
   const t = `translate(${(W - def.w * k) / 2} ${(H - def.h * k) / 2}) scale(${k})`;
   return (

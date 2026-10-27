@@ -832,10 +832,10 @@ const More = styled.div`
   transition: opacity 0.15s;
 `;
 
-/** 封面 228×283；自編教材的封面滑過時調暗並出現「更多」 */
+/** 封面 4:5；自編教材的封面滑過時調暗並出現「更多」 */
 const Cover = styled.div<{ $hover?: boolean; $menu?: boolean }>`
   position: relative;
-  aspect-ratio: 228 / 283;
+  aspect-ratio: 4 / 5;
   /* 不讓封面圖的原始高度把框撐開，封面一律照這個比例裁 */
   min-block-size: 0;
   border-radius: 0;

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import styled from 'styled-components';
 
-/** 書櫃卡片封面的比例（Figma 卡片圖 228×283），輸出成兩倍大。 */
-export const COVER_RATIO = 228 / 283;
+/** 書櫃卡片封面的比例 4:5（2026-10-27 定）。 */
+export const COVER_RATIO = 4 / 5;
 const OUT_W = 456;
-const OUT_H = 566;
+const OUT_H = 570;
 const MIN_W = 48;
 
 type Rect = { x: number; y: number; w: number; h: number };
