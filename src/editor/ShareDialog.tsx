@@ -199,15 +199,18 @@ export const Pair = styled.div`
   gap: 12px;
 `;
 
-/** 照 Figma Button：48 高、圓角膠囊、左右內距 32。 */
+/**
+ * 對話框底部的成對按鈕：44 高、左右內距 24、14px。
+ * 原本照 Figma Button 48 高、內距 32、16px，黑色實心那顆比對話框標題（18px）還搶眼，縮到跟標題相近的份量（2026-10-27 乙練）。
+ */
 export const Secondary = styled.button<{ $primary?: boolean }>`
-  block-size: ${(p) => p.theme.control.heightLg};
-  padding: 0 ${(p) => p.theme.space.insetXl};
+  block-size: ${(p) => p.theme.control.heightMd};
+  padding: 0 ${(p) => p.theme.space.insetLg};
   border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.action.secondaryBorder};
   border-radius: ${(p) => p.theme.radius.control};
   background: ${(p) => p.theme.action.secondaryBg};
   color: ${(p) => p.theme.action.secondaryText};
-  font-size: ${(p) => p.theme.typography.bodySize};
+  font-size: ${(p) => p.theme.typography.bodySmSize};
   font-weight: 500;
   cursor: pointer;
 
