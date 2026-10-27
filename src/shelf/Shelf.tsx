@@ -352,7 +352,7 @@ function MoreMenu({ items }: { items: { label: string; icon: string; danger?: bo
   return (
     <More ref={ref} $open={open} onClick={(e) => e.stopPropagation()}>
       <MoreBtn type="button" aria-label="更多" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <Icon name="more-horizontal" size={20} />
+        <span><Icon name="more-horizontal" size={20} /></span>
       </MoreBtn>
       {open && (
         <Menu role="menu">
@@ -786,8 +786,8 @@ const Grid = styled.div`
 /** 「⋯」選單：從按鈕那個角往下、往左展開（淡入＋從小放大），不是突然跳出 */
 const Menu = styled.div`
   position: absolute;
-  inset-block-start: 40px;
-  inset-inline-end: 0;
+  inset-block-start: 49px;
+  inset-inline-end: 9px;
   transform-origin: top right;
   animation: shelf-menu-in 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
   @keyframes shelf-menu-in {
@@ -844,8 +844,9 @@ const Card = styled.article`
 
 const More = styled.div<{ $open?: boolean }>`
   position: absolute;
-  inset-block-start: 8px;
-  inset-inline-end: 8px;
+  /* 可點範圍比圓鈕大一圈（52px），點偏一點也不會落到封面變成閱讀 */
+  inset-block-start: -1px;
+  inset-inline-end: -1px;
   z-index: 2;
   opacity: ${(p) => (p.$open ? 1 : 0)};
   transition: opacity 0.15s;
@@ -855,15 +856,22 @@ const More = styled.div<{ $open?: boolean }>`
 const MoreBtn = styled.button`
   display: grid;
   place-items: center;
-  inline-size: 34px;
-  block-size: 34px;
+  inline-size: 52px;
+  block-size: 52px;
   padding: 0;
   border: none;
-  border-radius: 999px;
-  background: ${(p) => p.theme.surface.raised};
+  background: none;
   color: ${(p) => p.theme.icon.default};
-  box-shadow: 0 2px 8px rgba(26, 25, 23, 0.14);
   cursor: pointer;
+  & > span {
+    display: grid;
+    place-items: center;
+    inline-size: 34px;
+    block-size: 34px;
+    border-radius: 999px;
+    background: ${(p) => p.theme.surface.raised};
+    box-shadow: 0 2px 8px rgba(26, 25, 23, 0.14);
+  }
 `;
 
 /** 封面 4:5；點封面閱讀，滑過才出現「⋯」 */
