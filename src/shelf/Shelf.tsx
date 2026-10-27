@@ -432,10 +432,12 @@ function BookCard({
  *   電腦：整頁 90%，一排 6 本
  *   教室大屏：不再放大（最多 100%），一排 7 本
  *   平板（觸控裝置，不看寬度）：不多縮 90%，一排 5 本，字才不會太小
- *   電腦視窗開不滿也算電腦（2026-10-27 改）：只照寬度縮，一排維持 6 本
+ *   電腦（2026-10-27 改）：固定 90%，一排放得下幾本就幾本、最多 6 本（大屏 7 本），視窗收窄時往下流動；平板看觸控不看寬度
  */
 const BASE_W = 1440;
 const BASE_H = 790;
+/** 視窗這麼寬以上算教室大屏：不縮放、一排最多 7 本 */
+const WIDE = 1700;
 
 function usePageZoom() {
   const read = () => {
@@ -443,8 +445,8 @@ function usePageZoom() {
     // 平板看的是「觸控裝置」不是視窗寬度：電腦視窗開不滿（側欄、沒全螢幕）也還是電腦，一排 6 本（2026-10-27 乙練）
     const tablet = window.matchMedia('(pointer: coarse)').matches;
     if (tablet) return Math.min(w / BASE_W, window.innerHeight / BASE_H);
-    // 電腦：照寬度縮到 90%，畫面多寬都一排 6 本；教室大屏不放大（最多 100%），一排 7 本
-    return Math.min(1, (w / BASE_W) * 0.9);
+    // 電腦：固定 90%（教室大屏 100%），書的大小不跟著視窗變；一排放得下幾本就幾本，最多 6 本（大屏 7 本），收窄時往下流動
+    return w >= WIDE ? 1 : 0.9;
   };
   const [zoom, setZoom] = useState(read);
   useEffect(() => {
@@ -691,7 +693,8 @@ function useGridColumns() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const read = () => setColumns(Math.max(1, getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length));
+    // 放得下幾本就幾本，但電腦最多 6 本、教室大屏最多 7 本（多出來的寬度讓書平均變寬）
+    const read = () => setColumns(Math.min(document.documentElement.clientWidth >= WIDE ? 7 : 6, Math.max(1, getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length)));
     read();
     const ro = new ResizeObserver(read);
     ro.observe(el);
