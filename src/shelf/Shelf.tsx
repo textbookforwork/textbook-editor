@@ -198,6 +198,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
       {creating && (
         <CreateDialog
           source={sourceDoc(copyFrom ?? creating.id)!}
+          defaultName={(copyFrom && findBook(copyFrom)?.title) || creating.title}
           onCancel={() => (setCreating(null), setCopyFrom(null))}
           onCreate={(_, doc) => {
             // 副本的出版社沿用原本（版本管理：副本不能改出版社）
@@ -740,10 +741,18 @@ const Grid = styled.div`
  * 書卡：圓角由卡片統一裁切（封面不另外畫圓角，才不會跟框線錯開露出縫）。
  * 滑過時整張書往上浮起一點、陰影加深，像把書從書櫃抽出來。
  */
+/** 「⋯」選單：從按鈕那個角往下、往左展開（淡入＋從小放大），不是突然跳出 */
 const Menu = styled.div`
   position: absolute;
-  inset-block-start: 38px;
+  inset-block-start: 40px;
   inset-inline-end: 0;
+  transform-origin: top right;
+  animation: shelf-menu-in 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  @keyframes shelf-menu-in {
+    from { opacity: 0; transform: translateY(-4px) scale(0.92); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { animation: none; }
   display: flex;
   flex-direction: column;
   gap: 2px;

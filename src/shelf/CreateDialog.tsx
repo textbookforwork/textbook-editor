@@ -8,28 +8,31 @@ import type { Doc } from '../model/types';
 
 /**
  * 建立自編：照 Figma「書櫃」的建立流程。
- *   點了鉛筆 → 跳出這個框，游標停在「自編名稱」
+ *   點了「建立自編」→ 跳出這個框；自編名稱預設跟原本教材一樣（全選，直接打字就換掉，乙練 2026-10-27）
  *   章節預設全選，點 checkbox 可以取消
  *   名稱填了、至少留一節，「建立」才能按 → 建立後直接進編輯器
  */
 export function CreateDialog({
   source,
+  defaultName,
   onCancel,
   onCreate,
 }: {
   /** 原本（數位教科書）的內容。 */
   source: Doc;
+  /** 自編名稱的預設值：書櫃上原本教材的名稱。 */
+  defaultName: string;
   onCancel: () => void;
   onCreate: (name: string, doc: Doc) => void;
 }) {
   const groups = useMemo(() => chaptersOf(source), [source]);
   const allIds = useMemo(() => groups.flatMap((g) => g.sections.map((s) => s.rowId)), [groups]);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(defaultName);
   const [keep, setKeep] = useState(() => new Set(allIds));
   const [open, setOpen] = useState(() => new Set(groups.map((_, i) => i)));
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => ESC(onCancel), [onCancel]);
-  useEffect(() => inputRef.current?.focus(), []);
+  useEffect(() => { inputRef.current?.focus(); inputRef.current?.select(); }, []);
 
   const toggle = (ids: string[], on: boolean) =>
     setKeep((prev) => {
