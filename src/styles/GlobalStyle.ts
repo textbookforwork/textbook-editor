@@ -175,9 +175,6 @@ export const GlobalStyle = createGlobalStyle`
     [data-color='secondary'] { color: ${(p) => p.theme.text.secondary}; }
     /* 任意色值與字體寫在行內 style（spansToHtml 產生），這裡不用列 */
 
-    /* 直排裡數字直立（見 inlineDom 的 withUprightDigits）；橫排時 text-orientation 本來就不起作用 */
-    [data-num] { text-orientation: upright; }
-
     /*
      * 底線、刪除線、上線走 text-decoration，三條可以同時出現，
      * 所以組合要一一列出——text-decoration-line 是一個屬性，後者會蓋掉前者。
