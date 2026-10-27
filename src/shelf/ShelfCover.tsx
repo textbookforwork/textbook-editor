@@ -259,8 +259,10 @@ const Meta = styled.div`
     font-size: 26px;
     line-height: 1.25;
     font-weight: 700;
+    /* 課名最多兩行，再長才「⋯」 */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 `;
