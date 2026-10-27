@@ -1,5 +1,6 @@
 import { primaryButtonCss } from '../buttonStyles';
 import { CompactAction, emptyCompactCss } from './emptyCompact';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Icon } from '../Icon';
 import { pickFile, putFile, urlOf } from '../../editor/assets';
@@ -16,13 +17,50 @@ type Props = {
 /**
  * 聲音。課文朗讀、國文的範讀都走這裡。
  *
- * 編輯畫面上不掛播放器，跟影片同一個理由：一頁多個播放器會拖慢編輯，
- * 而且它們的非同步版面會攪亂分頁量測。真的播放在補充的檢視器裡。
+ * 編輯畫面上不掛 <audio> 播放器，跟影片同一個理由：一頁多個播放器會拖慢編輯，
+ * 而且它們的非同步版面會攪亂分頁量測。播放鍵按了才臨時建一個 Audio 來播，
+ * 全頁共用一個，按下一個就停掉上一個。
  */
+let current: { audio: HTMLAudioElement; stop: () => void } | null = null;
+
 export function AudioBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
   const ready = !!urlOf(block.assetId);
   // 還沒上傳（編輯時）：跟空的圖片、影片同一種虛線框；框太小時只剩音樂符號，點了上傳（見 emptyCompact）
   const empty = !!onPatch && !block.assetId;
+  const [playing, setPlaying] = useState(false);
+  // 同一個元件每次重畫都是同一顆，卸載時才認得出「正在播的是不是我」
+  const stopSelf = useRef(() => setPlaying(false)).current;
+  // 元件被刪掉或換頁卸載時，正在播的要停
+  useEffect(
+    () => () => {
+      if (current?.stop === stopSelf) {
+        current.audio.pause();
+        current = null;
+      }
+    },
+    [stopSelf]
+  );
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (playing) {
+      current?.audio.pause();
+      current = null;
+      return setPlaying(false);
+    }
+    if (current) {
+      current.audio.pause();
+      current.stop();
+    }
+    const a = new Audio(urlOf(block.assetId));
+    a.onended = () => {
+      current = null;
+      setPlaying(false);
+    };
+    current = { audio: a, stop: stopSelf };
+    setPlaying(true);
+    // 被下一段打斷時 play() 會被拒絕，那是預期的
+    a.play().catch(() => {});
+  };
   const upload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const file = await pickFile('audio/*');
@@ -33,8 +71,15 @@ export function AudioBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
   return (
     <Bar style={boxStyle} onPointerDown={onSelect} $empty={empty}>
       {empty && <CompactAction label="上傳音檔" action="upload" kind="music" onClick={upload} />}
-      <Play data-full $ready={ready}>
-        <Icon name="play" size={16} />
+      <Play
+        data-full
+        $ready={ready}
+        disabled={!ready}
+        aria-label={playing ? '暫停' : '播放'}
+        onPointerDown={(e) => ready && e.stopPropagation()}
+        onClick={toggle}
+      >
+        <Icon name={playing ? 'pause' : 'play'} size={16} />
       </Play>
       <Body data-full>
         {/* 還沒上傳時不放「未命名」「尚未上傳」這類占位字：上傳鈕本身就說明了狀態 */}
@@ -69,8 +114,11 @@ const Bar = styled.div<{ $empty: boolean }>`
 `;
 
 /** 播放鍵：跟影片框中間的播放鍵、媒體庫的試聽鍵同一款——白色圓鈕、淡陰影、深色三角形 */
-const Play = styled.span<{ $ready: boolean }>`
+const Play = styled.button<{ $ready: boolean }>`
   display: grid;
+  padding: 0;
+  border: none;
+  cursor: ${(p) => (p.$ready ? 'pointer' : 'default')};
   place-items: center;
   inline-size: 36px;
   block-size: 36px;
