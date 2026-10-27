@@ -70,12 +70,14 @@ export function PopupBadge({ count, onClick, vertical = false, side = 'end' }: P
 const OUT = 'calc(100% + 8px)';
 /**
  * 開頭那一側跟元件的拖曳握把在同一個角落（握把 28px，直排在欄的右上方、橫排在欄的左上方），
- * 所以讓開握把：直排排在握把左邊、橫排排在握把下面。結尾那一側沒有握把，照原位。
+ * 所以讓開握把，排在握把左邊。結尾那一側沒有握把，照原位。
  */
 const PAST_GRIP = '36px';
 const place = (vertical: boolean, side: 'start' | 'end') => {
   if (vertical) return side === 'end' ? `top: ${OUT}; right: 0;` : `bottom: ${OUT}; right: ${PAST_GRIP};`;
-  return side === 'end' ? `left: ${OUT}; top: 0;` : `right: ${OUT}; top: ${PAST_GRIP};`;
+  // 橫排開頭側也對齊元件頂端、排在握把左邊（頁面外側本來就留了 56px 放工具），
+  // 跟結尾側同一個高度。以前排在握把下面，看起來像貼著第二行開頭（2026-10-27 改）
+  return side === 'end' ? `left: ${OUT}; top: 0;` : `right: calc(${OUT} + ${PAST_GRIP}); top: 0;`;
 };
 
 const Badge = styled.button<{ $vertical: boolean; $side: 'start' | 'end' }>`

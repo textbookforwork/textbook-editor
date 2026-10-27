@@ -222,12 +222,12 @@ export function blockBox(
       const inlineSize = ctx.vertical ? blockSize / ratio : blockSize * ratio;
       return { inlineSize: Math.min(inlineSize, webInline), blockSize };
     }
-    // 標籤卡片永遠是橫的（圖示在左、名稱在右），直排時 inline 軸是高、block 軸是寬，
-    // 照橫排的算法會變成一條直的細條。直排沒拖過就給一張橫卡的大小：高 68、寬 300
+    // 直排的標籤卡片跟著直排：圖示在上、名稱直排在下，佔一欄的寬（68）、高 300。
+    // 以前是一張橫卡貼在欄頂，那一欄底下整片空白（2026-10-27 改）
     if (ctx.vertical && block.presentation === 'bookmark') {
       return {
-        inlineSize: block.widthPct != null ? webInline : BOOKMARK_H,
-        blockSize: Math.min(block.blockSize ?? BOOKMARK_VERTICAL_W, ctx.maxBlockSize),
+        inlineSize: block.widthPct != null ? webInline : BOOKMARK_VERTICAL_W,
+        blockSize: Math.min(block.blockSize ?? BOOKMARK_H, ctx.maxBlockSize),
       };
     }
     // 內嵌網頁預設佔滿一整頁：太小的網頁裡的字看不清，老師多半要它單獨一頁給學生操作

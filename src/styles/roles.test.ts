@@ -38,14 +38,14 @@ describe('textFlowStyle：單段書寫方向的盒子', () => {
     expect(textFlowStyle({ writingMode: 'horizontal' }, ctx).flipped).toBe(false);
   });
 
-  it('橫排頁裡的直排段落：高度固定（預設頁的 45%），寬度由內容決定並靠右', () => {
+  it('橫排頁裡的直排段落：高度固定（預設頁的 45%），寬度由內容決定並靠左', () => {
     const f = textFlowStyle({ writingMode: 'vertical' }, ctx);
     expect(f.flipped).toBe(true);
     expect(f.style.writingMode).toBe('vertical-rl');
     expect(f.style.height).toBe('180px');
     expect(f.style.width).toBe('auto');
     expect(f.style.maxWidth).toBe('600px');
-    expect(f.style.marginLeft).toBe('auto');
+    expect(f.style.marginLeft).toBeUndefined();
   });
 
   it('老師設過框高就照他的，但不超過一頁', () => {

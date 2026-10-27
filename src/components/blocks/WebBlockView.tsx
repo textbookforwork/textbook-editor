@@ -61,7 +61,8 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
   useEffect(() => {
     const el = cardRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setCardH(el.offsetHeight || 68));
+    // 卡片的「厚度」：橫排是高、直排是寬（直排卡片是直的）
+    const ro = new ResizeObserver(() => setCardH((vertical ? el.offsetWidth : el.offsetHeight) || 68));
     ro.observe(el);
     return () => ro.disconnect();
   });
@@ -310,6 +311,7 @@ export function WebBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
     <Card
       ref={cardRef}
       style={boxStyle}
+      $vertical={vertical}
       $clickable={!!safe}
       onPointerDown={onSelect}
       // 閱讀時點一下就開；編輯時點一下是選取元件，點兩下才開連結
@@ -434,18 +436,20 @@ const DirectUrlInput = styled.input`
   &:focus-visible { outline: none; }
 `;
 
-const Card = styled.div<{ $clickable?: boolean }>`
+/** 直排書裡整張卡片跟著直排：圖示在上、名稱直排在下。內距用邏輯屬性，兩個方向共用一組數字 */
+const Card = styled.div<{ $clickable?: boolean; $vertical?: boolean }>`
   position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: ${(p) => (p.$vertical ? '12px' : '16px')};
   border: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
   border-radius: ${(p) => p.theme.radius.tile};
   background: ${(p) => p.theme.surface.raised};
-  padding: 8px 16px 8px 8px;
+  padding-block: 8px;
+  padding-inline: 8px 16px;
   color: ${(p) => p.theme.text.secondary};
   box-sizing: border-box;
-  writing-mode: horizontal-tb;
+  writing-mode: ${(p) => (p.$vertical ? 'vertical-rl' : 'horizontal-tb')};
   cursor: ${(p) => (p.$clickable ? 'pointer' : 'default')};
 `;
 

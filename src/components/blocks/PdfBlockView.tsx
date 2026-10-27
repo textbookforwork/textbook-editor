@@ -20,10 +20,8 @@ type Props = {
 /**
  * PDF。
  *
- * 編輯時不真的載入——理由跟影片一樣：瀏覽器的 PDF 檢視器是非同步排版，
- * 載入中與載入後的尺寸會變，分頁量測會被攪亂；一頁上放三份學習單就是
- * 三個檢視器同時跑，編輯會卡住。所以編輯畫面只畫一個示意框，
- * 讓老師看得到檔名、改得了起始頁。
+ * 編輯時也顯示起始頁，但檢視器不吃滑鼠：iframe 會把點擊整個接走，
+ * 老師點 PDF 就選不到元件、叫不出膠囊。起始頁在膠囊上切。
  *
  * 唯讀時用 iframe 交給瀏覽器內建的檢視器，翻頁、縮放都是它的事，
  * 這裡只負責用 #page= 指到老師要的那一頁。
@@ -77,6 +75,7 @@ export function PdfBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
             翻頁改用下面自己的膠囊，長相才跟整個編輯器一致。換頁要重新載入，所以用頁碼當 key */}
         <Viewer
           key={cur}
+          $editing={!!onPatch}
           src={`${url}#page=${cur}&toolbar=0&navpanes=0&view=FitH`}
           title={block.title || 'PDF'}
         />
@@ -244,8 +243,9 @@ const ChangeBtn = styled.button`
   &:hover { background: ${(p) => p.theme.surface.sunken}; color: ${(p) => p.theme.text.primary}; }
 `
 
-const Viewer = styled.iframe`
+const Viewer = styled.iframe<{ $editing: boolean }>`
   display: block;
+  pointer-events: ${(p) => (p.$editing ? 'none' : 'auto')};
   inline-size: 100%;
   block-size: 100%;
   border: none;
