@@ -109,7 +109,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
           地球大廳
         </NavPill>
         <NavPill as="span" title="還沒開放">
-          <Icon name="orbit" size={20} />
+          <Icon name="users" size={20} />
           班級星艦
         </NavPill>
       </Nav>
