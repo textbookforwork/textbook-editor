@@ -206,8 +206,8 @@ export function textFlowStyle(
     overflow: 'hidden',
     ...(ctx.vertical
       ? { width: `${box}px`, height: 'auto', maxHeight: `${ctx.inlineSize}px` }
-      // 橫排頁裡的直排段落靠左：頁面是由左往右讀的，靠右會在左邊留一大片空白（2026-10-27）
-      : { height: `${box}px`, width: 'auto', maxWidth: `${ctx.inlineSize}px` }),
+      // 橫排頁裡的直排段落佔滿欄寬、從右邊開始寫（直排本來就是由右往左；2026-10-27 乙練）
+      : { height: `${box}px`, width: '100%', maxWidth: `${ctx.inlineSize}px` }),
   };
   return { vertical, flipped, style };
 }

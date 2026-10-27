@@ -39,7 +39,7 @@ type InlineProps = {
 export function InlineTextTools({ block, blockId, start, end, afterFont }: InlineProps) {
   const ed = useEditorCtx()!;
   const picked = sliceSpans(block.spans, start, end);
-  const [open, setOpen] = useState<'color' | 'font' | 'kind' | null>(null);
+  const [open, setOpen] = useState<'font' | 'kind' | null>(null);
 
   // 「整段都已經是」才算開著——半段是的時候按下去應該是全部套上
   const all = (f: 'underline' | 'strike' | 'overline' | 'masked') =>
@@ -65,9 +65,7 @@ export function InlineTextTools({ block, blockId, start, end, afterFont }: Inlin
   // 這幾個字有沒有掛補充：有就跟注音一樣亮灰底，不在按鈕上寫掛了什麼
   const linked = popupId ? wordGroupPopups(block, popupId).length > 0 : false;
 
-  const colorRef = useRef<HTMLButtonElement>(null);
   const fontRef = useRef<HTMLButtonElement>(null);
-  const pickerRef = useRef<HTMLInputElement>(null);
 
   const kindRef = useRef<HTMLButtonElement>(null);
   /** 標成某一種：還沒標就新開一則；標過就換種類 */
@@ -99,8 +97,6 @@ export function InlineTextTools({ block, blockId, start, end, afterFont }: Inlin
     ed.dispatch({ type: 'setSpans', blockId, spans: block.spans.map((x) => (x.noteId === note.id ? { ...x, noteId: undefined } : x)) });
     setOpen(null);
   };
-
-  const customColor = color && !SWATCHES.some((s) => s.value === color) ? color : null;
 
   return (
     <>
@@ -162,6 +158,8 @@ export function InlineTextTools({ block, blockId, start, end, afterFont }: Inlin
         </Popover>
       )}
 
+      {/* 顏色放在字體和粗體之間（2026-10-27 乙練） */}
+      <TextColorButton color={color} onPick={(c) => apply({ color: c })} />
       {afterFont}
 
       {/* 注音：按下去直接轉換並標上注音，不需彈出輸入框；全部有注音時再按一次清除 */}
@@ -188,57 +186,13 @@ export function InlineTextTools({ block, blockId, start, end, afterFont }: Inlin
       <ToolBtn $iconOnly $on={all('overline')} onClick={() => toggle('overline')} title="上線（線段 AB）">
         <Icon name="overline" size={20} label="上線" />
       </ToolBtn>
+      {/* 遮住與補充是「讀的時候怎麼互動」，跟前面的字樣式用一條線隔開（同元件膠囊） */}
+      <ToolDivider />
       {/* 遮住這幾個字（像挖空）：閱讀時蓋一條灰底，點了才顯示 */}
       <ToolBtn $iconOnly $on={all('masked')} onClick={() => toggle('masked')} title="遮住：點擊後出現" aria-pressed={all('masked')}>
         <Icon name="eye-off" size={20} label="遮住：點擊後出現" />
       </ToolBtn>
 
-      <ToolBtn
-        ref={colorRef}
-        $iconOnly
-        $open={open === 'color'}
-        onClick={() => setOpen(open === 'color' ? null : 'color')}
-        title="文字顏色"
-        aria-label="文字顏色"
-      >
-        <ColorCircle style={{ background: color ? cssColor(color) : 'var(--ds-text-primary)' }} />
-      </ToolBtn>
-      {open === 'color' && (
-        <Popover anchor={colorRef.current} label="文字顏色" onClose={() => setOpen(null)}>
-          <SwatchRow>
-            {SWATCHES.map((s) => (
-              <Swatch
-                key={s.label}
-                type="button"
-                title={s.label}
-                $on={(color ?? null) === s.value}
-                style={{ background: s.value ? cssColor(s.value) : 'var(--ds-surface-raised)' }}
-                onClick={() => apply({ color: s.value ?? undefined })}
-              >
-                {!s.value && <Icon name="x" size={16} />}
-              </Swatch>
-            ))}
-            {/* 最後一格是選色器（跟當頁背景同一套）。選過的自訂色就留在這一格上 */}
-            <Custom
-              type="button"
-              title="自訂顏色"
-              $on={!!customColor}
-              style={customColor ? { background: customColor } : undefined}
-              onClick={() => pickerRef.current?.click()}
-            >
-              {!customColor && <Icon name="plus" size={16} />}
-              <input
-                ref={pickerRef}
-                type="color"
-                value={customColor ?? '#1a1917'}
-                onChange={(e) => apply({ color: e.target.value })}
-                aria-label="自訂顏色"
-                tabIndex={-1}
-              />
-            </Custom>
-          </SwatchRow>
-        </Popover>
-      )}
 
 
       {/* 補充：直接開右側面板，選起來的字記在 popupPick，面板照標成的種類給欄位 */}
@@ -284,7 +238,7 @@ const ALIGNS: { value: Align; horizontal: string; vertical: string }[] = [
   { value: 'start', horizontal: '靠左', vertical: '靠上' },
   { value: 'center', horizontal: '置中', vertical: '置中' },
   { value: 'end', horizontal: '靠右', vertical: '靠下' },
-  { value: 'justify', horizontal: '左右對齊', vertical: '上下對齊' },
+  { value: 'justify', horizontal: '左右對齊', vertical: '平均' },
 ];
 const ALIGN_ICON = {
   start: 'align-left',
@@ -292,6 +246,64 @@ const ALIGN_ICON = {
   end: 'align-right',
   justify: 'align-justify',
 } as const;
+
+/** 文字顏色：選字時套在選到的字，整段工具列套在整段每個字（2026-10-27 乙練：兩邊都要能選） */
+function TextColorButton({ color, onPick }: { color: string | undefined; onPick: (c: string | undefined) => void }) {
+  const [open, setOpen] = useState(false);
+  const colorRef = useRef<HTMLButtonElement>(null);
+  const pickerRef = useRef<HTMLInputElement>(null);
+  const customColor = color && !SWATCHES.some((s) => s.value === color) ? color : null;
+  return (
+    <>
+  <ToolBtn
+    ref={colorRef}
+    $iconOnly
+    $open={open}
+    onClick={() => setOpen((o) => !o)}
+    title="文字顏色"
+    aria-label="文字顏色"
+  >
+    <ColorCircle style={{ background: color ? cssColor(color) : 'var(--ds-text-primary)' }} />
+  </ToolBtn>
+  {open && (
+    <Popover anchor={colorRef.current} label="文字顏色" onClose={() => setOpen(false)}>
+      <SwatchRow>
+        {SWATCHES.map((s) => (
+          <Swatch
+            key={s.label}
+            type="button"
+            title={s.label}
+            $on={(color ?? null) === s.value}
+            style={{ background: s.value ? cssColor(s.value) : 'var(--ds-surface-raised)' }}
+            onClick={() => onPick(s.value ?? undefined)}
+          >
+            {!s.value && <Icon name="x" size={16} />}
+          </Swatch>
+        ))}
+        {/* 最後一格是選色器（跟當頁背景同一套）。選過的自訂色就留在這一格上 */}
+        <Custom
+          type="button"
+          title="自訂顏色"
+          $on={!!customColor}
+          style={customColor ? { background: customColor } : undefined}
+          onClick={() => pickerRef.current?.click()}
+        >
+          {!customColor && <Icon name="plus" size={16} />}
+          <input
+            ref={pickerRef}
+            type="color"
+            value={customColor ?? '#1a1917'}
+            onChange={(e) => onPick(e.target.value)}
+            aria-label="自訂顏色"
+            tabIndex={-1}
+          />
+        </Custom>
+      </SwatchRow>
+    </Popover>
+  )}
+    </>
+  );
+}
 
 type BlockProps = {
   block: TextBlock;
@@ -313,6 +325,7 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
   // 整段的字型：每個字都同一種才算有值；混用時按鈕顯示「字型」
   const fonts = new Set(block.spans.filter((x) => x.text).map((x) => x.fontFamily ?? null));
   const blockFont = fonts.size <= 1 ? ([...fonts][0] ?? null) : undefined;
+  const colors = new Set(block.spans.filter((x) => x.text).map((x) => x.color ?? null));
   const setBlockFont = (value: string | null) =>
     ed.dispatch({
       type: 'setSpans',
@@ -371,6 +384,12 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
         </Popover>
       )}
 
+      {/* 整段的文字顏色：每個字同色才顯示那個色，混色時顯示預設黑 */}
+      <TextColorButton
+        color={colors.size === 1 ? [...colors][0] ?? undefined : undefined}
+        onPick={(c) => ed.dispatch({ type: 'setSpans', blockId, spans: block.spans.map(({ color: _drop, ...rest }) => (c ? { ...rest, color: c } : rest)) })}
+      />
+
       {/* 字級：直接顯示目前字級數字，用下拉選單調整 */}
       <Dropdown
         variant="tool"
@@ -410,7 +429,7 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
         aria-haspopup="listbox"
         aria-expanded={alignOpen}
       >
-        <Icon name={ALIGN_ICON[currentAlign]} size={20} />
+        <AlignIcon name={ALIGN_ICON[currentAlign]} size={20} $vertical={vertical} />
         <Icon name="chevron-down" size={16} />
       </ToolBtn>
       {alignOpen && (
@@ -428,7 +447,7 @@ export function BlockTextTools({ block, blockId, settings }: BlockProps) {
                 }}
               >
                 {vertical ? a.vertical : a.horizontal}
-                <Icon name={ALIGN_ICON[a.value]} size={16} />
+                <AlignIcon name={ALIGN_ICON[a.value]} size={16} $vertical={vertical} />
               </MenuItem>
             ))}
           </Menu>
@@ -637,3 +656,21 @@ const MenuItem = styled.button<{ $on?: boolean }>`
   &:hover { background: ${(p) => p.theme.surface.muted}; }
 `;
 
+
+/** 直排的對齊圖示：橫排那組轉 90 度（靠左→靠上、靠右→靠下） */
+function AlignIcon({ $vertical, ...rest }: { name: (typeof ALIGN_ICON)[keyof typeof ALIGN_ICON]; size: 16 | 20; $vertical: boolean }) {
+  return (
+    <span style={{ display: 'inline-grid', lineHeight: 0, transform: $vertical ? 'rotate(90deg)' : undefined }}>
+      <Icon {...rest} />
+    </span>
+  );
+}
+
+/** 膠囊裡分組的直線，同 FloatingToolbar 的 Divider */
+const ToolDivider = styled.span`
+  inline-size: 1px;
+  block-size: 20px;
+  margin-inline: 4px;
+  flex-shrink: 0;
+  background: ${(p) => p.theme.border.subtle};
+`;
