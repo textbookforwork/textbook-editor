@@ -46,7 +46,7 @@ const Embed = styled.iframe`
 /* ── 上傳影片的播放器 ─────────────────────────────────────── */
 
 /** 播放中或游標不動多久後把控制列與上方標題收起來（3-5 秒）。 */
-const IDLE_HIDE = 3500;
+const IDLE_HIDE = 3000;
 
 const fmt = (sec: number): string => {
   if (!Number.isFinite(sec) || sec < 0) sec = 0;
@@ -91,7 +91,7 @@ export function UploadedVideoPlayer({
   const [volumeOpen, setVolumeOpen] = useState(false);
 
   // 控制列與上方標題的顯示：
-  // 載入後顯示 3.5 秒淡出；播放中游標靜止 3.5 秒收起；
+  // 載入後顯示 3 秒淡出；播放中游標靜止 3 秒收起；
   // 游標移回畫面時重新浮現（標題與進度條、音量連動）
   const poke = () => {
     setShowControls(true);
