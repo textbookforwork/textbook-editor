@@ -7,6 +7,7 @@ import { SHAPES, shapeOf, type Shape } from '../editor/HomeButton';
  *
  * 兩種封面：
  *   PublisherCover  數位教科書：出版社封面（去掉原本的字）鋪滿，上方漸暗，左上疊白字的出版社＋課名，不套科目框
+ *   PlainCover      數位教科書沒有封面圖：科目色平塗＋課名，也不套科目框
  *   FramedCover     自編、共享：科目色平塗＋紙紋，科目形狀當遮罩框露出原書封面圖；沒有封面圖就是白色形狀
  *
  * 形狀框的位置不是隨機的：每科固定十款（PRESETS），用教材編號算出是第幾款，同一本書永遠同一款。
@@ -168,6 +169,19 @@ export function FramedCover({ subject, art, edition, title, seed }: { subject: s
         )}
       </svg>
       <Meta ref={metaRef} style={{ color: INK[shape] }}>
+        <small>{edition}</small>
+        <b>{title}</b>
+      </Meta>
+    </Frame>
+  );
+}
+
+/** 數位教科書沒有封面圖時（範例書、管理員剛建的空白本）：科目深色平塗＋紙紋＋課名，不套形狀框（形狀框只用在自編、共享） */
+export function PlainCover({ subject, edition, title }: { subject: string; edition: string; title: string }) {
+  const shape = shapeOf(subject);
+  return (
+    <Frame style={{ background: tone(shape, 1) }}>
+      <Meta style={{ color: INK[shape] }}>
         <small>{edition}</small>
         <b>{title}</b>
       </Meta>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import styled from 'styled-components';
 import { Icon } from '../components/Icon';
 import { LIME, PEBBLE_PATH, SubjectMark } from '../editor/HomeButton';
-import { FramedCover, PublisherCover } from './ShelfCover';
+import { FramedCover, PlainCover, PublisherCover } from './ShelfCover';
 import { ConfirmDialog } from '../editor/ConfirmDialog';
 import { CoverDialog } from '../editor/ShareDialog';
 import { Toaster, toast } from '../editor/Toast';
@@ -342,7 +342,7 @@ function MoreMenu({ items }: { items: { label: string; icon: string; danger?: bo
 }
 
 /**
- * 數位教科書（原本）：出版社封面去字＋白字課名；沒有封面的範例書用科目形狀框（白色形狀）。
+ * 數位教科書（原本）：出版社封面去字＋白字課名；沒有封面的範例書用科目色平塗＋課名。數位教科書一律不套形狀框。
  * 點封面閱讀；「⋯」裡是建立自編。管理員看，下方標「已發布」。
  */
 function SourceCard({ source, published, onCreate }: { source: Source; published?: boolean; onCreate: () => void }) {
@@ -353,7 +353,7 @@ function SourceCard({ source, published, onCreate }: { source: Source; published
         {art ? (
           <PublisherCover art={art} edition={source.edition} title={source.title} />
         ) : (
-          <FramedCover subject={source.subject} art={null} edition={source.edition} title={source.title} seed={source.id} />
+          <PlainCover subject={source.subject} edition={source.edition} title={source.title} />
         )}
         <MoreMenu items={[{ label: '建立自編', icon: 'copy', run: onCreate }]} />
       </Cover>
@@ -403,8 +403,8 @@ function BookCard({
   return (
     <Card>
       <Cover role="button" tabIndex={0} aria-label={`閱讀「${book.title}」`} onClick={() => goRead(book.id)}>
-        {original && art ? (
-          <PublisherCover art={art} edition={edition} title={book.title} />
+        {original ? (
+          art ? <PublisherCover art={art} edition={edition} title={book.title} /> : <PlainCover subject={source?.subject ?? ''} edition={edition} title={book.title} />
         ) : (
           <FramedCover subject={source?.subject ?? ''} art={art} edition={edition} title={book.title} seed={book.id} />
         )}
