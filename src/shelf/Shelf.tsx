@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Icon } from '../components/Icon';
 import { LIME, PEBBLE_PATH, SubjectMark } from '../editor/HomeButton';
 import { FramedCover, PlainCover, PublisherCover } from './ShelfCover';
+import { SAMPLE_BOOKS, isSample } from './samples';
 import { ConfirmDialog } from '../editor/ConfirmDialog';
 import { CoverDialog } from '../editor/ShareDialog';
 import { Toaster, toast } from '../editor/Toast';
@@ -54,8 +55,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
     ...books.filter((b) => isOriginal(b) && (admin || b.shared)).map((b) => findSource(b.id)!),
   ];
   // 已共享的排前面，同一組裡最近改過的在前
-  const copies = books
-    .filter((b) => !isOriginal(b))
+  const copies = [...books.filter((b) => !isOriginal(b)), ...SAMPLE_BOOKS]
     .sort((a, b) => Number(b.shared) - Number(a.shared) || b.updatedAt - a.updatedAt);
   const [measureRef, columns] = useGridColumns();
   const shown = tab === 'textbook' ? null : tab === 'shared' ? copies.filter((b) => b.shared) : copies;
@@ -170,7 +170,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
                       source={findSource(b.sourceId)}
                       inSharedTab={tab === 'shared'}
                       onCover={() => setCovering(b)}
-                      onCopy={tab === 'shared' && findSource(b.sourceId) ? () => (setCopyFrom(b.id), setCreating(findSource(b.sourceId))) : undefined}
+                      onCopy={(tab === 'shared' || isSample(b)) && findSource(b.sourceId) ? () => (setCopyFrom(isSample(b) ? null : b.id), setCreating(findSource(b.sourceId))) : undefined}
                       onDelete={() => setDeleting(b)}
                     />
                   ))
@@ -396,13 +396,13 @@ function BookCard({
     : inSharedTab
       ? onCopy ? [{ label: '建立自編', icon: 'copy', run: onCopy }] : []
       : [
-          { label: '進入編輯', icon: 'pencil', run: () => goEdit(book.id) },
-          { label: '更換封面', icon: 'image', run: onCover },
-          ...(onDelete ? [{ label: '刪除', icon: 'trash', danger: true, run: onDelete }] : []),
+          { label: '進入編輯', icon: 'pencil', run: () => (isSample(book) ? onCopy?.() : goEdit(book.id)) },
+          { label: '更換封面', icon: 'image', run: isSample(book) ? () => toast('示範教材不能更換封面') : onCover },
+          ...(onDelete ? [{ label: '刪除', icon: 'trash', danger: true, run: isSample(book) ? () => toast('示範教材不能刪除') : onDelete }] : []),
         ];
   return (
     <Card>
-      <Cover role="button" tabIndex={0} aria-label={`閱讀「${book.title}」`} onClick={() => goRead(book.id)}>
+      <Cover role="button" tabIndex={0} aria-label={`閱讀「${book.title}」`} onClick={() => (isSample(book) ? goReadTextbook(book.sourceId) : goRead(book.id))}>
         {original ? (
           art ? <PublisherCover art={art} edition={edition} title={book.title} /> : <PlainCover subject={source?.subject ?? ''} edition={edition} title={book.title} />
         ) : (
@@ -413,8 +413,8 @@ function BookCard({
       <Below>
         {inSharedTab ? (
           <>
-            <TeacherAvatar aria-hidden="true">{ROLE_NAME.teacher.slice(0, 1)}</TeacherAvatar>
-            <span>{ROLE_NAME.teacher}老師</span>
+            <TeacherAvatar aria-hidden="true">{(isSample(book) ? book.teacher : ROLE_NAME.teacher).slice(0, 1)}</TeacherAvatar>
+            <span>{isSample(book) ? book.teacher : ROLE_NAME.teacher}老師</span>
           </>
         ) : (
           book.shared && <Status>{original ? '已發布' : '已共享'}</Status>
