@@ -1,4 +1,5 @@
-import type { MyBook } from './library';
+import { createBook, findBook, updateBook, type MyBook } from './library';
+import { findSource, sourceDoc } from './sources';
 
 /**
  * 示範用的自編、共享教材（2026-10-27 乙練）：讓書櫃一打開就看得到自編、共享的科目形狀框封面。
@@ -37,3 +38,31 @@ export const SAMPLE_BOOKS: SampleBook[] = SETS.flatMap(([sourceId, titles]) =>
 );
 
 export const isSample = (b: MyBook): b is SampleBook => (b as SampleBook).sample === true;
+
+/** 示範教材按「進入編輯」：第一次就地建一份真的自編（同名、同共享狀態）直接進編輯器，之後沿用那一份 */
+const OPENED_KEY = 'ds-editor:opened-samples:v1';
+const opened = (): Record<string, string> => {
+  try {
+    return JSON.parse(localStorage.getItem(OPENED_KEY) ?? '{}') as Record<string, string>;
+  } catch {
+    return {};
+  }
+};
+export const openedSample = (id: string): string | null => {
+  const bookId = opened()[id];
+  return bookId && findBook(bookId) ? bookId : null;
+};
+export function openSample(b: SampleBook): string | null {
+  const had = openedSample(b.id);
+  if (had) return had;
+  const doc = sourceDoc(b.sourceId);
+  if (!doc) return null;
+  const book = createBook(b.sourceId, { ...doc, title: b.title, meta: { ...doc.meta, publisher: findSource(b.sourceId)?.publisher ?? doc.meta.publisher } });
+  updateBook(book.id, { shared: b.shared });
+  try {
+    localStorage.setItem(OPENED_KEY, JSON.stringify({ ...opened(), [b.id]: book.id }));
+  } catch {
+    // 存不了就每次新建一份，不擋路
+  }
+  return book.id;
+}

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { Icon } from '../components/Icon';
 import { LIME, PEBBLE_PATH, SubjectMark } from '../editor/HomeButton';
 import { FramedCover, PlainCover, PublisherCover } from './ShelfCover';
-import { SAMPLE_BOOKS, isSample } from './samples';
+import { SAMPLE_BOOKS, isSample, openSample, openedSample } from './samples';
 import { ConfirmDialog } from '../editor/ConfirmDialog';
 import { CoverDialog } from '../editor/ShareDialog';
 import { Toaster, toast } from '../editor/Toast';
@@ -59,7 +59,8 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
     ...books.filter((b) => isOriginal(b) && (admin || b.shared)).map((b) => findSource(b.id)!),
   ];
   // 已共享的排前面，同一組裡最近改過的在前
-  const copies = [...books.filter((b) => !isOriginal(b)), ...SAMPLE_BOOKS]
+  // 示範教材進過編輯就換成那份真的自編，不再重複列（共享分頁照列，那是別的老師的）
+  const copies = [...books.filter((b) => !isOriginal(b)), ...SAMPLE_BOOKS.filter((b) => tab === 'shared' || !openedSample(b.id))]
     .sort((a, b) => Number(b.shared) - Number(a.shared) || b.updatedAt - a.updatedAt);
   const [measureRef, columns] = useGridColumns();
   const shown = tab === 'textbook' ? null : tab === 'shared' ? copies.filter((b) => b.shared) : copies;
@@ -101,15 +102,15 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
         <UserMenu role={role} />
       </Top>
 
-      {/* 地球大廳、啟航探索是平台的兩個主要區域；這次只做書櫃（地球大廳），另一個先不能點 */}
+      {/* 地球大廳、班級星艦是平台的兩個主要區域；這次只做書櫃（地球大廳），另一個先不能點（啟航探索留給 V2） */}
       <Nav>
         <NavPill $on aria-current="page">
           <Icon name="book" size={20} />
           地球大廳
         </NavPill>
         <NavPill as="span" title="還沒開放">
-          <Icon name="globe" size={20} />
-          啟航探索
+          <Icon name="orbit" size={20} />
+          班級星艦
         </NavPill>
       </Nav>
 
@@ -431,7 +432,10 @@ function BookCard({
     : inSharedTab
       ? onCopy ? [{ label: '建立自編', icon: 'copy', run: onCopy }] : []
       : [
-          { label: '進入編輯', icon: 'pencil', run: () => (isSample(book) ? onCopy?.() : goEdit(book.id)) },
+          { label: '進入編輯', icon: 'pencil', run: () => {
+            const id = isSample(book) ? openSample(book) : book.id;
+            if (id) goEdit(id);
+          } },
           { label: '更換封面', icon: 'image', run: isSample(book) ? () => toast('示範教材不能更換封面') : onCover },
           ...(onDelete ? [{ label: '刪除', icon: 'trash', danger: true, run: isSample(book) ? () => toast('示範教材不能刪除') : onDelete }] : []),
         ];
