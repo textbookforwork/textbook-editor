@@ -44,15 +44,10 @@ export type Textbook = {
 export const TEXTBOOKS: Textbook[] = [
   { id: 'mulan', subject: '國語文', edition: '115 南一 國中', publisher: '南一', title: '國文 2下', cover: guowenCover, art: guowenArt, md: mulanMd },
   { id: 'guoyu-6b', subject: '國語文', edition: '115 康軒 國小', publisher: '康軒', title: '國語 6下', cover: guoyuCover, art: guoyuArt },
-  { id: 'guoyu-5a', subject: '國語文', edition: '115 範例 國小', publisher: '範例', title: '國語 5上', cover: null },
   { id: 'social-5b', subject: '社會', edition: '115 翰林 國小', publisher: '翰林', title: '社會 5下', cover: socialCover, art: socialArt },
-  { id: 'social-6a', subject: '社會', edition: '115 範例 國小', publisher: '範例', title: '社會 6上', cover: null },
   { id: 'english-6', subject: '英語文', edition: '114 康軒 國小', publisher: '康軒', title: 'Wonder World 6', cover: englishCover, art: englishArt },
-  { id: 'english-5a', subject: '英語文', edition: '115 範例 國小', publisher: '範例', title: 'English 5上', cover: null },
   { id: 'demo', subject: '自然科學', edition: '114 南一 國小', publisher: '南一', title: '自然科學 5下', cover: scienceCover, art: scienceArt, md: demoMd },
-  { id: 'science-6a', subject: '自然科學', edition: '115 範例 國小', publisher: '範例', title: '自然科學 6上', cover: null },
   { id: 'math-2b', subject: '數學', edition: '114 翰林 國中', publisher: '翰林', title: '數學 2下', cover: mathCover, art: mathArt },
-  { id: 'math-5a', subject: '數學', edition: '115 範例 國小', publisher: '範例', title: '數學 5上', cover: null },
 ];
 
 export const findTextbook = (id: string) => TEXTBOOKS.find((t) => t.id === id) ?? null;

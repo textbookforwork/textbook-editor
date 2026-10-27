@@ -28,7 +28,7 @@ const TABS: { key: ShelfTab; label: string }[] = [
  *
  * 三個分頁是同一份教材的三個階段：數位教科書（原本）→ 建立自編（副本）→ 自編教材 → 共享 → 共享教材。
  * 每個分頁依科目分區，一區只排一列；放不下一列時該區右上才出現「查看全部」，進到那一科的子頁看全部（設計稿「展開更多教科書」3:2021；乙練 2026-10-22 定：一列放得下就不出現）。
- * 自編教材：已共享的排前面（乙練 2026-10-27 改），同一組裡最近改過的在前。
+ * 自編教材：未共享的排前面、已共享的排後面（乙練 2026-10-28 改回），同一組裡最近改過的在前。
  *
  * 兩種身分（右上角頭像切換，見 role.ts）：
  *   老師       在數位教科書按鉛筆＝建立自編（副本），出版社不能改
@@ -58,10 +58,10 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
     // 管理員建立的原本：發布了（shared）才上架給老師；管理員看得到全部
     ...books.filter((b) => isOriginal(b) && (admin || b.shared)).map((b) => findSource(b.id)!),
   ];
-  // 已共享的排前面，同一組裡最近改過的在前
+  // 未共享的排前面、已共享的排後面，同一組裡最近改過的在前
   // 示範教材進過編輯就換成那份真的自編，不再重複列（共享分頁照列，那是別的老師的）
   const copies = [...books.filter((b) => !isOriginal(b)), ...SAMPLE_BOOKS.filter((b) => tab === 'shared' || !openedSample(b.id))]
-    .sort((a, b) => Number(b.shared) - Number(a.shared) || b.updatedAt - a.updatedAt);
+    .sort((a, b) => Number(a.shared) - Number(b.shared) || b.updatedAt - a.updatedAt);
   const [measureRef, columns] = useGridColumns();
   const shown = tab === 'textbook' ? null : tab === 'shared' ? copies.filter((b) => b.shared) : copies;
 
