@@ -147,6 +147,36 @@ export function updateBook(id: string, patch: Partial<Pick<MyBook, 'title' | 'co
   write(listBooks().map((b) => (b.id === id ? { ...b, ...patch, updatedAt: Date.now() } : b)));
 }
 
+/**
+ * 內建的數位教科書（catalog.ts）：管理員可以接手編輯或刪除（乙練 2026-10-27）。
+ *   接手＝複製一份成管理員的原本（已發布），書櫃改顯示這一份；內建那份藏起來
+ *   刪除＝藏起來（原型沒有後端，存在這台瀏覽器）
+ * 老師已經從內建那本建的自編還是對得到原本（sourceId 不變）。
+ */
+const HIDDEN_KEY = 'ds-editor:hidden-textbooks:v1';
+const ADOPTED_KEY = 'ds-editor:adopted-textbooks:v1';
+const readJson = <T,>(k: string, d: T): T => { try { return JSON.parse(localStorage.getItem(k) ?? '') as T; } catch { return d; } };
+export const hiddenTextbooks = (): string[] => readJson<string[]>(HIDDEN_KEY, []);
+export function hideTextbook(id: string) {
+  try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...new Set([...hiddenTextbooks(), id])])); } catch { /* 同 write */ }
+  write([...listBooks()]); // 換一份新陣列，書櫃才會重畫
+}
+/** 內建課本 id → 接手後那份原本的 id */
+export const adoptedTextbook = (id: string): string | null => readJson<Record<string, string>>(ADOPTED_KEY, {})[id] ?? null;
+/** 反查：這本管理員原本是從哪本內建課本接手的 */
+export const adoptedFrom = (bookId: string): string | null =>
+  Object.entries(readJson<Record<string, string>>(ADOPTED_KEY, {})).find(([, b]) => b === bookId)?.[0] ?? null;
+export function adoptTextbook(id: string, doc: Doc, meta: { subject: string; publisher: string; cover: string | null }): MyBook {
+  const had = adoptedTextbook(id);
+  const existing = had ? findBook(had) : null;
+  if (existing) return existing;
+  const book = createBook('', doc, { subject: meta.subject, publisher: meta.publisher });
+  updateBook(book.id, { cover: meta.cover, shared: true });
+  try { localStorage.setItem(ADOPTED_KEY, JSON.stringify({ ...readJson<Record<string, string>>(ADOPTED_KEY, {}), [id]: book.id })); } catch { /* 同 write */ }
+  hideTextbook(id);
+  return findBook(book.id)!;
+}
+
 export function deleteBook(id: string) {
   try {
     localStorage.removeItem(bookKey(id));

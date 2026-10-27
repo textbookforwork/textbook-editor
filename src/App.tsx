@@ -66,9 +66,11 @@ type Props = {
   startReading?: boolean;
   /** 唯讀：只能閱讀，沒有返回編輯（數位教科書的原本）。 */
   readOnly?: boolean;
+  /** 唯讀時左欄的「進入自編」（只有管理員讀數位教科書時有） */
+  onEnterEdit?: () => void;
 };
 
-export function App({ bookId, initialDoc, startReading = false, readOnly = false }: Props) {
+export function App({ bookId, initialDoc, startReading = false, readOnly = false, onEnterEdit }: Props) {
   const [preview, setPreview] = useState(startReading || readOnly);
   const [current, setCurrent] = useState(0);
   const [importing, setImporting] = useState(false);
@@ -258,7 +260,8 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
           scale={reflow ? reflow.zoom : scale}
           pageSize={reflow?.size}
           stageRef={stageRef}
-          onExit={readOnly ? undefined : () => setPreview(false)}
+          onExit={readOnly ? onEnterEdit : () => setPreview(false)}
+          exitLabel={readOnly ? '進入自編' : undefined}
           onGoRow={jumpToRow}
         />
       ) : (

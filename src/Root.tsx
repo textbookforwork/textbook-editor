@@ -3,9 +3,10 @@ import { App } from './App';
 import { loadDoc } from './editor/persist';
 import { Shelf } from './shelf/Shelf';
 import { findTextbook, textbookDoc } from './shelf/catalog';
-import { findBook } from './shelf/library';
+import { adoptTextbook, findBook } from './shelf/library';
 import { sourceDoc } from './shelf/sources';
-import { goShelf, useRoute } from './shelf/nav';
+import { goEdit, goShelf, useRoute } from './shelf/nav';
+import { useRole } from './shelf/role';
 import { Login } from './shelf/Login';
 import { useSignedIn } from './shelf/session';
 
@@ -16,6 +17,7 @@ import { useSignedIn } from './shelf/session';
 export function Root() {
   const route = useRoute();
   const signedIn = useSignedIn();
+  const admin = useRole() === 'admin';
 
   const book = route.page === 'edit' || route.page === 'read' ? findBook(route.id) : null;
   const textbook = route.page === 'readTextbook' ? findTextbook(route.id) : null;
@@ -35,7 +37,12 @@ export function Root() {
     return <App key={`${route.page}-${book.id}`} bookId={book.id} initialDoc={doc} startReading={route.page === 'read'} />;
   }
   if (textbook) {
-    return <App key={`book-${textbook.id}`} bookId={null} initialDoc={textbookDoc(textbook)} readOnly />;
+    const doc = textbookDoc(textbook);
+    // 管理員讀數位教科書，左欄多一顆「進入自編」：接手成自己的原本再進編輯（同書櫃「⋯」的進入編輯）
+    const enterEdit = admin
+      ? () => goEdit(adoptTextbook(textbook.id, doc, { subject: textbook.subject, publisher: textbook.publisher, cover: textbook.art ?? textbook.cover }).id)
+      : undefined;
+    return <App key={`book-${textbook.id}`} bookId={null} initialDoc={doc} readOnly onEnterEdit={enterEdit} />;
   }
   if (route.page !== 'shelf') return null;
   return <Shelf tab={route.tab} subject={route.subject} />;

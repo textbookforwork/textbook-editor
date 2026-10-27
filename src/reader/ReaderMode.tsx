@@ -36,6 +36,8 @@ type Props = {
   /** 回到編輯。閱讀模式沒有頂部列，左上角的鵝卵石就是出口。 */
   /** 不給就沒有「返回編輯」（唯讀的數位教科書）。 */
   onExit?: () => void;
+  /** 左欄那顆離開閱讀的按鈕要寫什麼，預設「返回編輯」 */
+  exitLabel?: string;
   /** 目次點了跳到那一段所在的頁。 */
   onGoRow: (rowId: string) => void;
   /** 流式排版：頁面大小跟著螢幕走（App 的 reflowSize），要跟分頁用的同一個。不給就是固定頁座標。 */
@@ -69,7 +71,7 @@ function Supplements(props: Omit<ComponentProps<typeof SupplementPanel>, 'onOpen
  * 筆跡畫在頁面上方的透明層，不碰頁面的 DOM；逐句聚焦與補充面板照舊，
  * 沒拿工具時點頁面還是它們在接。
  */
-export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, onGoRow, pageSize }: Props) {
+export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, exitLabel, onGoRow, pageSize }: Props) {
   const page = pages[Math.min(current, pages.length - 1)];
   const size = pageSize ?? PAGE_SIZE[doc.settings.aspectRatio];
 
@@ -256,6 +258,7 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, o
       <ReaderRail
         subject={doc.meta.subject}
         onExit={onExit}
+        exitLabel={exitLabel}
         outlineOpen={outlineOpen}
         onOutline={() => {
           setOutlineOpen((v) => !v);

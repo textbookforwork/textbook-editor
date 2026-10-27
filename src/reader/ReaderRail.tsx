@@ -9,6 +9,7 @@ type Props = {
   /** 左上角鵝卵石：閱讀模式沒有頂部列，它就是「回到編輯」。 */
   /** 不給就沒有「返回編輯」（唯讀的數位教科書）。 */
   onExit?: () => void;
+  exitLabel?: string;
   outlineOpen: boolean;
   onOutline: () => void;
   /** 這一頁的補充有幾項。0 項時按鈕仍在，只是沒有數字。 */
@@ -51,6 +52,7 @@ type Props = {
 export function ReaderRail({
   subject,
   onExit,
+  exitLabel = RAIL_TOOL_META.exit.label,
   supplementCount,
   supplementOpen,
   onSupplements,
@@ -180,9 +182,9 @@ export function ReaderRail({
         <PinSlot>
           <Tile type="button" $editing={toolboxOpen}
               tabIndex={toolboxOpen ? -1 : undefined}
-              aria-disabled={toolboxOpen || undefined} onClick={onExit} title="返回編輯">
+              aria-disabled={toolboxOpen || undefined} onClick={onExit} title={exitLabel}>
             <Icon name={RAIL_TOOL_META.exit.icon} size={20} />
-            <span>{RAIL_TOOL_META.exit.label}</span>
+            <span>{exitLabel}</span>
           </Tile>
           {toolboxOpen && <UnpinBtn tool="exit" onUnpin={onUnpin} />}
         </PinSlot>

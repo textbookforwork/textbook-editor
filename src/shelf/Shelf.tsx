@@ -13,7 +13,7 @@ import { findSource, sourceDoc, type Source } from './sources';
 import { ROLE_NAME, setRole, useRole, type Role } from './role';
 import { BlankDialog, SUBJECTS } from './BlankDialog';
 import { emptyDoc } from '../model/document';
-import { createBook, deleteBook, findBook, isOriginal, listBooks, subscribeLibrary, updateBook, type MyBook } from './library';
+import { adoptedFrom, adoptTextbook, createBook, deleteBook, findBook, hiddenTextbooks, hideTextbook, isOriginal, listBooks, subscribeLibrary, updateBook, type MyBook } from './library';
 import { goEdit, goRead, goReadTextbook, goShelf, type ShelfTab } from './nav';
 import { signOut } from './session';
 
@@ -47,10 +47,14 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
   const [blank, setBlank] = useState<string | null>(null);
   const [covering, setCovering] = useState<MyBook | null>(null);
   const [deleting, setDeleting] = useState<MyBook | null>(null);
+  const [deletingTextbook, setDeletingTextbook] = useState<Source | null>(null);
+  /** 管理員接手內建課本：複製一份成自己的原本（已發布），之後照一般原本編輯、換封面、刪除 */
+  const adopt = (t: Source) => adoptTextbook(t.id, sourceDoc(t.id)!, { subject: t.subject, publisher: t.publisher, cover: t.art ?? t.cover });
 
   // 數位教科書＝內建的原本＋管理員建立的原本；自編與共享只列副本
   const sources: Source[] = [
-    ...TEXTBOOKS.map((t) => findSource(t.id)!),
+    // 管理員接手或刪掉的內建課本不再列（接手後那份在下面「管理員建立的原本」裡）
+    ...TEXTBOOKS.filter((t) => !hiddenTextbooks().includes(t.id)).map((t) => findSource(t.id)!),
     // 管理員建立的原本：發布了（shared）才上架給老師；管理員看得到全部
     ...books.filter((b) => isOriginal(b) && (admin || b.shared)).map((b) => findSource(b.id)!),
   ];
@@ -183,11 +187,21 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
                         source={t}
                         onCover={() => setCovering(findBook(t.id))}
                         onCopy={findBook(t.id)?.shared ? () => setCreating(t) : undefined}
-                        onDelete={findBook(t.id)?.shared ? undefined : () => setDeleting(findBook(t.id))}
+                        onDelete={() => setDeleting(findBook(t.id))}
                       />
                     ) : (
                       // 內建的原本一律是已發布；只有管理員需要看到發布狀態
-                      <SourceCard key={t.id} source={t} published={admin} onCreate={() => setCreating(t)} />
+                      <SourceCard
+                        key={t.id}
+                        source={t}
+                        published={admin}
+                        onCreate={() => setCreating(t)}
+                        admin={admin ? {
+                          edit: () => goEdit(adopt(t).id),
+                          cover: () => setCovering(adopt(t)),
+                          remove: () => setDeletingTextbook(t),
+                        } : undefined}
+                      />
                     )
                   )}
             </Grid>
@@ -233,10 +247,23 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
           }}
         />
       )}
+      {deletingTextbook && (
+        <ConfirmDialog
+          title={`刪除「${deletingTextbook.title}」？`}
+          message="這本已經發布，老師可能正在用；老師建好的自編會留著。刪除後無法復原。"
+          confirmLabel="刪除"
+          onCancel={() => setDeletingTextbook(null)}
+          onConfirm={() => {
+            hideTextbook(deletingTextbook.id);
+            setDeletingTextbook(null);
+            toast('已刪除');
+          }}
+        />
+      )}
       {deleting && (
         <ConfirmDialog
           title={`刪除「${deleting.title}」？`}
-          message={isOriginal(deleting) ? '這本還沒發布，老師看不到。刪除後無法復原。' : '刪除後無法復原。'}
+          message={isOriginal(deleting) ? (deleting.shared ? '這本已經發布，老師可能正在用；老師建好的自編會留著。刪除後無法復原。' : '這本還沒發布，老師看不到。刪除後無法復原。') : '刪除後無法復原。'}
           confirmLabel="刪除"
           onCancel={() => setDeleting(null)}
           onConfirm={() => {
@@ -343,9 +370,9 @@ function MoreMenu({ items }: { items: { label: string; icon: string; danger?: bo
 
 /**
  * 數位教科書（原本）：出版社封面去字＋白字課名；沒有封面的範例書用科目色平塗＋課名。數位教科書一律不套形狀框。
- * 點封面閱讀；「⋯」裡是建立自編。管理員看，下方標「已發布」。
+ * 點封面閱讀；「⋯」裡是建立自編。管理員多「進入編輯」「更換封面」「刪除」，下方標「已發布」。
  */
-function SourceCard({ source, published, onCreate }: { source: Source; published?: boolean; onCreate: () => void }) {
+function SourceCard({ source, published, onCreate, admin }: { source: Source; published?: boolean; onCreate: () => void; admin?: { edit: () => void; cover: () => void; remove: () => void } }) {
   const art = source.art ?? source.cover;
   return (
     <Card>
@@ -355,7 +382,12 @@ function SourceCard({ source, published, onCreate }: { source: Source; published
         ) : (
           <PlainCover subject={source.subject} edition={source.edition} title={source.title} />
         )}
-        <MoreMenu items={[{ label: '建立自編', icon: 'copy', run: onCreate }]} />
+        <MoreMenu items={admin ? [
+          { label: '進入編輯', icon: 'pencil', run: admin.edit },
+          { label: '更換封面', icon: 'image', run: admin.cover },
+          { label: '建立自編', icon: 'copy', run: onCreate },
+          { label: '刪除', icon: 'trash', danger: true, run: admin.remove },
+        ] : [{ label: '建立自編', icon: 'copy', run: onCreate }]} />
       </Cover>
       <Below>{published && <Status>已發布</Status>}</Below>
     </Card>
@@ -386,9 +418,12 @@ function BookCard({
 }) {
   const original = isOriginal(book);
   const art = book.cover ?? source?.art ?? source?.cover;
-  const edition = source?.edition ?? '';
+  // 接手的內建課本沿用原本的版次（含國小／國中）
+  const from = original ? adoptedFrom(book.id) : null;
+  const edition = (from && findSource(from)?.edition) || (source?.edition ?? '');
   const items = original
     ? [
+        { label: '進入編輯', icon: 'pencil', run: () => goEdit(book.id) },
         { label: '更換封面', icon: 'image', run: onCover },
         ...(onCopy ? [{ label: '建立自編', icon: 'copy', run: onCopy }] : []),
         ...(onDelete ? [{ label: '刪除', icon: 'trash', danger: true, run: onDelete }] : []),
