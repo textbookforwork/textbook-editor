@@ -55,6 +55,6 @@ export function sourceDoc(id: string): Doc | null {
   // 10-27 前從「只有課名」的內建課本接手或複製的存檔沒有章節，建立自編時沒得勾：改用那本課本現在的章節骨架
   const root = adoptedFrom(id) ?? findBook(id)?.sourceId;
   const base = root ? findTextbook(root) : null;
-  if (base && !base.md && chaptersOf(doc).length === 0) return { ...textbookDoc(base), title: doc.title };
+  if (base && !base.md && chaptersOf(doc).every((g) => g.sections.length === 0)) return { ...textbookDoc(base), title: doc.title };
   return { ...doc, rows: doc.rows };
 }
