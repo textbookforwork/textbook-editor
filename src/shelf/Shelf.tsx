@@ -908,14 +908,14 @@ const Below = styled.div`
   span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 `;
 
-/** 「已發布」「已共享」：淺萊姆膠囊（brand-primary-tint，2026-10-28 乙練要淺一點）、深色字（品牌主色；不用科目色，免得被看成科目，2026-10-27 乙練） */
+/** 「已發布」「已共享」：萊姆膠囊（品牌主色 #F0FF62；試過淺萊姆，乙練 2026-10-28 定回亮的）、深色字（品牌主色；不用科目色，免得被看成科目，2026-10-27 乙練） */
 const Status = styled.span`
   display: inline-flex;
   align-items: center;
   block-size: 24px;
   padding: 0 10px;
   border-radius: 999px;
-  background: ${(p) => p.theme.brand.primaryTint};
+  background: ${(p) => p.theme.brand.primary};
   color: ${(p) => p.theme.text.primary};
   font-size: 13px;
   font-weight: 500;
