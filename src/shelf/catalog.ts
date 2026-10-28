@@ -2,14 +2,12 @@ import mulanMd from '../../design/sample-mulan.md?raw';
 import demoMd from '../../design/sample-demo.md?raw';
 import guowenCover from './covers/guowen-2b.jpg';
 import scienceCover from './covers/science-5b.jpg';
-import guoyuCover from './covers/guoyu-6b.jpg';
 import socialCover from './covers/social-5b.jpg';
 import englishCover from './covers/english-6.jpg';
 import mathCover from './covers/math-2b.jpg';
 // 去掉出版社字的封面圖（書櫃新封面用，2026-10-27）
 import guowenArt from './covers/guowen-2b-art.jpg';
 import scienceArt from './covers/science-5b-art.jpg';
-import guoyuArt from './covers/guoyu-6b-art.jpg';
 import socialArt from './covers/social-5b-art.jpg';
 import englishArt from './covers/english-6-art.jpg';
 import mathArt from './covers/math-2b-art.jpg';
@@ -43,7 +41,6 @@ export type Textbook = {
 
 export const TEXTBOOKS: Textbook[] = [
   { id: 'mulan', subject: '國語文', edition: '115 南一 國中', publisher: '南一', title: '國文 2下', cover: guowenCover, art: guowenArt, md: mulanMd },
-  { id: 'guoyu-6b', subject: '國語文', edition: '115 康軒 國小', publisher: '康軒', title: '國語 6下', cover: guoyuCover, art: guoyuArt },
   { id: 'social-5b', subject: '社會', edition: '115 翰林 國小', publisher: '翰林', title: '社會 5下', cover: socialCover, art: socialArt },
   { id: 'english-6', subject: '英語文', edition: '114 康軒 國小', publisher: '康軒', title: 'Wonder World 6', cover: englishCover, art: englishArt },
   { id: 'demo', subject: '自然科學', edition: '114 南一 國小', publisher: '南一', title: '自然科學 5下', cover: scienceCover, art: scienceArt, md: demoMd },
