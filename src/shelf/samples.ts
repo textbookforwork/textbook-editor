@@ -1,4 +1,4 @@
-import { createBook, findBook, updateBook, type MyBook } from './library';
+import { createBook, deleteBook, findBook, updateBook, type MyBook } from './library';
 import { findSource, sourceDoc } from './sources';
 
 /**
@@ -52,6 +52,26 @@ export const openedSample = (id: string): string | null => {
   const bookId = opened()[id];
   return bookId && findBook(bookId) ? bookId : null;
 };
+/**
+ * 拿掉的示範教材（2026-10-28 國語五本：國語還沒有課文，建出來是一本空的橫排）。
+ * 之前按過「進入編輯」建出來的那一份也一起刪掉，書櫃上不留空的國語自編。只刪從示範建的，老師自己建的不動
+ */
+const RETIRED = ['sample-guoyu-6b-'];
+(function dropRetired() {
+  const map = opened();
+  const gone = Object.keys(map).filter((k) => RETIRED.some((p) => k.startsWith(p)));
+  if (gone.length === 0) return;
+  for (const k of gone) {
+    if (findBook(map[k])) deleteBook(map[k]);
+    delete map[k];
+  }
+  try {
+    localStorage.setItem(OPENED_KEY, JSON.stringify(map));
+  } catch {
+    // 存不了就下次再刪
+  }
+})();
+
 export function openSample(b: SampleBook): string | null {
   const had = openedSample(b.id);
   if (had) return had;
