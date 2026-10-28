@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { revealBlock } from './reveal';
 import { createPortal } from 'react-dom';
 import styled, { css } from 'styled-components';
 import { Icon } from '../components/Icon';
@@ -296,6 +297,7 @@ function LeftCardModal({
       });
       openTableInsert(null);
       ed.select(table.id);
+      revealBlock(table.id);
     } else {
       onClose();
     }

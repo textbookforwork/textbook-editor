@@ -11,7 +11,9 @@ await cardMore(p, '國文 2下').click(); await p.waitForTimeout(300);
 await p.getByRole('menuitem', { name: /建立自編/ }).click(); await p.waitForTimeout(600);
 const dlg = p.getByRole('dialog', { name: '建立自編' });
 await ring(p, [dlg]); await shot(p, '43-create.png'); await unring(p);
-await dlg.getByRole('button', { name: '取消' }).click(); await p.waitForTimeout(400);
+await dlg.getByPlaceholder('請輸入自編名稱').fill('木蘭詩');
+await dlg.getByRole('button', { name: '建立', exact: true }).click(); await p.waitForTimeout(2500);
+await p.goto('https://textbookforwork.github.io/textbook-editor/#/shelf/textbook'); await p.waitForTimeout(1500);
 // 45：自編教材
 await p.getByRole('tab', { name: '自編教材' }).click(); await p.waitForTimeout(800);
 await shot(p, '45-shelf-own.png');
@@ -21,12 +23,13 @@ await ring(p, [seeAll]); await shot(p, '56-shelf-see-all.png'); await unring(p);
 await seeAll.click(); await p.waitForTimeout(900);
 await shot(p, '57-shelf-subject.png');
 // 46、47：自編換封面
-await p.getByRole('button', { name: /返回|回到書櫃|上一頁/ }).first().click().catch(() => p.goBack()); await p.waitForTimeout(800);
-await cardMore(p, '國文 2上').click(); await p.waitForTimeout(300);
+await p.goto('https://textbookforwork.github.io/textbook-editor/#/shelf/mine'); await p.waitForTimeout(1500);
+await cardMore(p, '木蘭詩').click(); await p.waitForTimeout(300);
 await p.getByRole('menuitem', { name: /更換封面/ }).click(); await p.waitForTimeout(600);
 let cd = p.getByRole('dialog').last();
 await ring(p, [cd]); await shot(p, '46-cover-upload.png'); await unring(p);
-await cd.locator('input[type=file]').setInputFiles(IMG + 'cover.png'); await p.waitForTimeout(900);
+const [fc] = await Promise.all([p.waitForEvent('filechooser'), cd.getByRole('button').filter({ hasText: /上傳|選擇|拖曳/ }).first().click()]);
+await fc.setFiles(IMG + 'mulan-silk-painting.jpg'); await p.waitForTimeout(1200);
 cd = p.getByRole('dialog').last();
 await ring(p, [cd]); await shot(p, '47-cover-crop.png'); await unring(p);
 await cd.getByRole('button', { name: '換一張' }).evaluate(() => {}).catch(() => {});

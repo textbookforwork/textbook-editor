@@ -28,6 +28,7 @@ import { BookSettings } from './editor/BookSettings';
 import { EditStage } from './editor/EditStage';
 import { PageBackgroundButton } from './editor/PageBackgroundButton';
 import { seedStars } from './demo/seed';
+import { revealBlock } from './editor/reveal';
 import { withSampleMedia } from './editor/sampleMedia';
 import { contentBox } from './model/pageSize';
 import { gapBefore } from './model/spacing';
@@ -348,19 +349,6 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
   );
 }
 
-/**
- * 插進來的元件可能落在畫面外（插入點在別頁、或這一頁裝不下被推到下一頁），
- * 老師會以為沒插進去。等它畫出來就捲到看得見的地方，並選取它。
- */
-function revealBlock(id: string) {
-  let tries = 30;
-  const run = () => {
-    const el = document.querySelector<HTMLElement>(`[data-block-id="${id}"]`);
-    if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    else if (--tries > 0) requestAnimationFrame(run);
-  };
-  requestAnimationFrame(run);
-}
 
 /**
  * 媒體庫面板。掛在編輯區最外層，不綁在單一 RowView 上——

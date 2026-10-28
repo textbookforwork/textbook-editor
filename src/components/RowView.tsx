@@ -11,6 +11,7 @@ import { FlowResizeHandle, ResizeHandles, resizeModeOf, type Handle } from '../e
 import { textFlowStyle, FLOW_SHARE_OF_PAGE } from '../styles/roles';
 import { usePopupViewer } from '../viewer/PopupViewer';
 import { readyElementPopups, readyPopups } from '../model/popups';
+import { revealBlock } from '../editor/reveal';
 import { PopupBadge } from './PopupBadge';
 import { MaskCover } from './MaskCover';
 import { useParagraphIndex, useParaFocus } from './ParagraphContext';
@@ -145,6 +146,8 @@ export function RowView({
     }
     const block = fitTwoPerPage(blockFor(key, table), settings);
     ed?.dispatch({ type: 'insertRow', index, blocks: [block] });
+    // 插進來的元件不在畫面裡時，畫布捲過去，不釘在原地
+    revealBlock(block.id);
     // 插入文字後直接可以打字：選取新段落、把游標放進去。新的列要等分頁重算、畫出來才有
     // DOM，所以接下來幾幀內找它，找到可以編輯的那一塊就聚焦（最多試約半秒）
     if (block.type === 'text' && ed) {
