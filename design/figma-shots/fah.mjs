@@ -35,17 +35,4 @@ await p.keyboard.press('Escape'); await p.mouse.click(1430, 880); await p.waitFo
 await p.locator('button[title^="發布到書櫃"]').click(); await p.waitForTimeout(700);
 const dlg5 = p.getByRole('dialog', { name: '教材已發布' });
 await ring(p, [dlg5, p.locator('button[aria-pressed="true"]', { hasText: '已發布' })]); await shot(p, 'fa5h.png');
-// fa6：已發布的數位教科書，管理員從書櫃「⋯」→ 進入編輯
-await p.keyboard.press('Escape'); await p.waitForTimeout(300);
-await p.getByRole('button', { name: '回首頁' }).click(); await p.waitForTimeout(1200);
-await p.getByRole('tab', { name: '數位教科書' }).click(); await p.waitForTimeout(800);
-const more = cardMore(p, '自然科學 5下');
-await more.evaluate(e => e.scrollIntoView({ block: 'center' })); await more.click(); await p.waitForTimeout(400);
-const edit = p.getByRole('menuitem', { name: /進入編輯/ });
-await p.mouse.move(1430, 890);
-await ring(p, [edit]); await shot(p, 'fa6h.png'); await unring(p);
-// fa7：直接進編輯器改這本
-await edit.click(); await p.waitForTimeout(2500);
-await p.mouse.move(1430, 890);
-await ring(p, [p.locator('main [data-page-index="0"]').first()]); await shot(p, 'fa7h.png');
 await b.close();

@@ -1,3 +1,4 @@
+// 大彈窗編輯 → 閱讀 9 步。對應 Figma：r1～r9（181:78、181:80、181:83、181:86、181:89、181:92、181:95、181:98、181:101）
 import { start, login, ring, unring, shot, makeCopy } from './common.mjs';
 const IMG = decodeURIComponent(new URL('./assets/', import.meta.url).pathname) + '夏季大三角.png';
 const { b, p } = await start(); p.setDefaultTimeout(8000);

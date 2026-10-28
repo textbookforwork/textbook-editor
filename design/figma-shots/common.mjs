@@ -24,7 +24,8 @@ export async function unring(p) { await p.evaluate(() => document.querySelectorA
 export async function shot(p, name) { await p.screenshot({ path: SHOTS + name }); console.log('saved', name); }
 export async function buttons(p) { return p.evaluate(() => [...document.querySelectorAll('button,[role=button],a,[role=tab]')].filter(e=>e.offsetParent).map(e => (e.innerText||'').trim().slice(0,20) + '|' + (e.getAttribute('aria-label')||'') + '|' + (e.title||''))); }
 export async function makeCopy(p, src, name) {
-  await p.getByRole('button', { name: `用「${src}」建立自編` }).click();
+  await cardMore(p, src).click(); await p.waitForTimeout(300);
+  await p.getByRole('menuitem', { name: /建立自編/ }).click(); await p.waitForTimeout(500);
   await p.getByPlaceholder('請輸入自編名稱').fill(name);
   await p.getByRole('dialog').getByRole('button', { name: '建立', exact: true }).click();
   await p.waitForTimeout(2500);

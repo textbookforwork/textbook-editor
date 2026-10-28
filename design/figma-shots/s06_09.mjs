@@ -40,6 +40,8 @@ await p.keyboard.press('Escape'); await p.mouse.click(5, 600);
 const bgBtn = p.locator('main button[aria-label="當頁背景"]').first();
 await bgBtn.evaluate(e => e.scrollIntoView({ block: 'center' })); await p.waitForTimeout(400);
 await bgBtn.click(); await p.waitForTimeout(500);
+// 先點一個色票，面板才會出現「清除」：清除在左、上傳圖片在右
+await p.locator('[role="dialog"][aria-label="當頁背景"] button').nth(5).click(); await p.waitForTimeout(400);
 await ring(p, [bgBtn, p.locator('[role="dialog"][aria-label="當頁背景"]')]); await shot(p, 's08-bg-panel.png'); await unring(p);
 await p.keyboard.press('Escape'); await p.mouse.click(5, 600); await p.waitForTimeout(300);
 // s09

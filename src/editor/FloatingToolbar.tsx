@@ -328,6 +328,12 @@ function BlockCapsule() {
         </>
       )}
 
+      {/* 前面有這種元件自己的工具時，跟後面的補充、遮住、換頁、刪除用一條線隔開（文字、圖形、線段在自己那段後面已經畫了） */}
+      {(block.type === 'image' ||
+        block.type === 'table' ||
+        block.type === 'web' ||
+        ((block.type === 'pdf' || block.type === 'audio') && !!block.assetId)) && <Divider />}
+
       {/* Pop-up 是元件的屬性不是另一種元件，所以入口在元件的膠囊上，
           不在插入選單裡。影片／聲音／網頁本身就有互動，不能再掛 */}
       {canHavePopup(block.type) && (
