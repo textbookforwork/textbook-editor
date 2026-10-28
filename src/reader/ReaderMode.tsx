@@ -1,4 +1,4 @@
-import { readyElementPopups, readyPopups } from '../model/popups';
+import { readyPopups } from '../model/popups';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type RefObject } from 'react';
 import { resetMasks } from '../viewer/masks';
 import styled, { createGlobalStyle } from 'styled-components';
@@ -18,7 +18,8 @@ import { Toolbox } from './Toolbox';
 import { RAIL_TOOLS, loadPinned, savePinned, type InkTool, type RailTool } from './tools';
 import { useInk } from './useInk';
 import { ParaFocusCtx, type ParaFocus } from '../components/ParagraphContext';
-import { PARA_NOTE_KINDS, markPopups, markRange, markReady, paraButtons, paragraphIndex, rangeKindOf, sentenceNotesOf } from '../model/paragraphs';
+import { PARA_NOTE_KINDS, markPopups, markRange, markReady, paraAudio, paraButtons, paraSupplements, paragraphIndex, rangeKindOf, sentenceNotesOf } from '../model/paragraphs';
+import { urlOf } from '../editor/assets';
 import { findBlock } from '../model/document';
 import { defaultLineHeight, defaultSizeOf } from '../styles/roles';
 import { ReadSettings } from './ReadSettings';
@@ -411,6 +412,8 @@ function ParaRail({ doc, focus, sentenceId }: { doc: Doc; focus: { id: string; e
   const viewer = usePopupViewer();
   const hit = findBlock(doc, focus.id);
   const block = hit?.block.type === 'text' ? hit.block : null;
+  const audio = block && !sentenceId ? paraAudio(block) : null;
+  const player = useParaAudio(audio ? urlOf(audio.assetId) : undefined);
   if (!block || !viewer) return null;
   const sentence = sentenceId ? block.rangeNotes?.find((n) => n.id === sentenceId) ?? null : null;
   const buttons = sentence ? sentenceButtons(block, sentence) : paraButtons(block);
@@ -420,7 +423,7 @@ function ParaRail({ doc, focus, sentenceId }: { doc: Doc; focus: { id: string; e
   // 泡泡對準整個段落元件；句子對準那幾個字
   const anchor = (sentence && focus.el.querySelector<HTMLElement>(`[data-note="${sentence.id}"]`)) || focus.el;
   const notes = sentence ? sentenceNotesOf(sentence) : block.paraNotes;
-  const popups = sentence ? markPopups(block, sentence.id) : readyElementPopups(block);
+  const popups = sentence ? markPopups(block, sentence.id) : paraSupplements(block);
   return (
     // data-para-hit：在頁面裡按這條，不算「點段落以外的地方」，聚焦不會被放掉
     <Rail data-para-hit aria-label={sentence ? '這一句的說明' : no ? `第 ${no} 段的說明` : '這一段的說明'}>
@@ -428,8 +431,13 @@ function ParaRail({ doc, focus, sentenceId }: { doc: Doc; focus: { id: string; e
         <RailBtn
           key={b.key}
           type="button"
-          aria-label={b.name}
+          aria-label={b.key === 'play' ? `${player.playing ? '暫停' : '播放'}${audio?.title ? ` ${audio.title}` : ''}` : b.name}
+          aria-pressed={b.key === 'play' ? player.playing : undefined}
           onClick={() => {
+            if (b.key === 'play') {
+              player.toggle();
+              return;
+            }
             if (b.key === 'bu') {
               viewer.open({ ...block, popups }, anchor);
               return;
@@ -439,11 +447,49 @@ function ParaRail({ doc, focus, sentenceId }: { doc: Doc; focus: { id: string; e
           }}
         >
           {/* 補充用左欄「補充資源」同一個圖示，其餘是旨修句問的字 */}
-          {b.key === 'bu' ? <Icon name="blocks" size={20} /> : b.btn}
+          {b.key === 'play' ? (
+            <>
+              {/* 外圈畫播到哪，跟補充資源面板的播放鍵同一個樣子 */}
+              {player.playing && (
+                <PlayRing viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="17" pathLength={1} strokeDasharray={`${player.progress} 1`} />
+                </PlayRing>
+              )}
+              <Icon name={player.playing ? 'pause' : 'play'} size={20} />
+            </>
+          ) : b.key === 'bu' ? (
+            <Icon name="blocks" size={20} />
+          ) : (
+            b.btn
+          )}
         </RailBtn>
       ))}
     </Rail>
   );
+}
+
+/** 整段的聲音就地播放：換段、放掉聚焦（膠囊收起）就停。 */
+function useParaAudio(src: string | undefined) {
+  const audio = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const stop = () => {
+    audio.current?.pause();
+    audio.current = null;
+    setPlaying(false);
+    setProgress(0);
+  };
+  useEffect(() => stop, [src]);
+  const toggle = () => {
+    if (playing || !src) return stop();
+    const a = new Audio(src);
+    a.ontimeupdate = () => setProgress(a.duration ? a.currentTime / a.duration : 0);
+    a.onended = stop;
+    audio.current = a;
+    setPlaying(true);
+    a.play().catch(() => {});
+  };
+  return { playing, progress, toggle };
 }
 
 /** 標成句子的那幾個字：填了的旨修句問，加上連到這幾個字的補充時的「補」。跟整段同一個順序。 */
@@ -475,7 +521,20 @@ const Rail = styled.nav`
 `;
 
 /** 字本身就是按鈕，不再各畫一個圓。圓 40，加上膠囊四邊的 4，手指點的範圍是 48（平板的下限 44 以上） */
+const PlayRing = styled.svg`
+  position: absolute;
+  inset: 2px;
+  transform: rotate(-90deg);
+  pointer-events: none;
+  circle {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+  }
+`;
+
 const RailBtn = styled.button`
+  position: relative;
   display: grid;
   place-items: center;
   inline-size: 40px;

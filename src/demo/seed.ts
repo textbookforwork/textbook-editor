@@ -225,6 +225,9 @@ function seedGuowen(result: ImportResult): ImportResult {
   // ── 課文 ──
   // 補充分三層掛：整段（段落的「補」）、標成句子的字（句子的「補」）、標成生字詞或沒標的幾個字（點字彈出）。
   // 整段只留跟整段有關的；講某一句、某個詞的，掛到那幾個字上（見下面的 wordMarks）
+  // 聲音：整段的課文朗讀，閱讀時膠囊最上面是播放鍵
+  put('唧唧復唧唧', [{ id: 'ml-pop-recite-1', kind: 'audio', title: '第一段朗讀', assetId: 'sample-audio-mulan-recite-1' }]);
+  put('東市買駿馬', [{ id: 'ml-pop-recite-2', kind: 'audio', title: '第二段朗讀', assetId: 'sample-audio-mulan-recite-2' }]);
   // 影片：多個（整段）
   put('萬里赴戎機', [
     { id: 'ml-pop-video-1', kind: 'video', title: '敦煌的漢代長城', source: 'upload', ref: 'sample-video-mulan-wall' },

@@ -33,4 +33,12 @@ describe('圓形按鈕', () => {
     const withPop: TextBlock = { ...b, popups: [{ id: 'p', kind: 'text', title: '', body: '補充' }] };
     expect(paraButtons(withPop).map((x) => x.btn)).toEqual(['旨', '問', '補']);
   });
+
+  it('整段掛聲音：最上面一顆播放；只有那一個聲音就不出「補」', () => {
+    const b: TextBlock = { ...para('x', 'start'), paraNotes: { zhi: '段旨' } };
+    const audio = { id: 'a', kind: 'audio' as const, title: '朗讀', assetId: 'x.mp3' };
+    expect(paraButtons({ ...b, popups: [audio] }).map((x) => x.key)).toEqual(['play', 'zhi']);
+    const text = { id: 't', kind: 'text' as const, title: '', body: '補充' };
+    expect(paraButtons({ ...b, popups: [audio, text] }).map((x) => x.key)).toEqual(['play', 'zhi', 'bu']);
+  });
 });
