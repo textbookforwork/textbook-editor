@@ -932,4 +932,6 @@ const TeacherAvatar = styled.span`
   color: #FFFFFF;
   font-size: 12px;
   font-weight: 500;
+  /* 行高收成 1，中文字才會在圓的正中間（沿用外層行高會往下掉） */
+  line-height: 1;
 `;
