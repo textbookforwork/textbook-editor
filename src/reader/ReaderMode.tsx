@@ -1,4 +1,4 @@
-import { readyPopups } from '../model/popups';
+import { readyElementPopups, readyPopups } from '../model/popups';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type RefObject } from 'react';
 import { resetMasks } from '../viewer/masks';
 import styled, { createGlobalStyle } from 'styled-components';
@@ -18,7 +18,7 @@ import { Toolbox } from './Toolbox';
 import { RAIL_TOOLS, loadPinned, savePinned, type InkTool, type RailTool } from './tools';
 import { useInk } from './useInk';
 import { ParaFocusCtx, type ParaFocus } from '../components/ParagraphContext';
-import { PARA_NOTE_KINDS, markPopups, markRange, markReady, paraAudio, paraButtons, paraSupplements, paragraphIndex, rangeKindOf, sentenceNotesOf } from '../model/paragraphs';
+import { PARA_NOTE_KINDS, markPopups, markRange, markReady, paraButtons, paragraphIndex, rangeKindOf, sentenceNotesOf } from '../model/paragraphs';
 import { urlOf } from '../editor/assets';
 import { findBlock } from '../model/document';
 import { defaultLineHeight, defaultSizeOf } from '../styles/roles';
@@ -412,8 +412,8 @@ function ParaRail({ doc, focus, sentenceId }: { doc: Doc; focus: { id: string; e
   const viewer = usePopupViewer();
   const hit = findBlock(doc, focus.id);
   const block = hit?.block.type === 'text' ? hit.block : null;
-  const audio = block && !sentenceId ? paraAudio(block) : null;
-  const player = useParaAudio(audio ? urlOf(audio.assetId) : undefined);
+  // 朗讀是整段的；聚焦到段裡的句子時膠囊換成那一句的，不放播放鍵
+  const player = useParaAudio(block?.readAloud && !sentenceId ? urlOf(block.readAloud) : undefined);
   if (!block || !viewer) return null;
   const sentence = sentenceId ? block.rangeNotes?.find((n) => n.id === sentenceId) ?? null : null;
   const buttons = sentence ? sentenceButtons(block, sentence) : paraButtons(block);
@@ -423,7 +423,7 @@ function ParaRail({ doc, focus, sentenceId }: { doc: Doc; focus: { id: string; e
   // 泡泡對準整個段落元件；句子對準那幾個字
   const anchor = (sentence && focus.el.querySelector<HTMLElement>(`[data-note="${sentence.id}"]`)) || focus.el;
   const notes = sentence ? sentenceNotesOf(sentence) : block.paraNotes;
-  const popups = sentence ? markPopups(block, sentence.id) : paraSupplements(block);
+  const popups = sentence ? markPopups(block, sentence.id) : readyElementPopups(block);
   return (
     // data-para-hit：在頁面裡按這條，不算「點段落以外的地方」，聚焦不會被放掉
     <Rail data-para-hit aria-label={sentence ? '這一句的說明' : no ? `第 ${no} 段的說明` : '這一段的說明'}>
@@ -431,10 +431,10 @@ function ParaRail({ doc, focus, sentenceId }: { doc: Doc; focus: { id: string; e
         <RailBtn
           key={b.key}
           type="button"
-          aria-label={b.key === 'play' ? `${player.playing ? '暫停' : '播放'}${audio?.title ? ` ${audio.title}` : ''}` : b.name}
-          aria-pressed={b.key === 'play' ? player.playing : undefined}
+          aria-label={b.key === 'read' ? `${player.playing ? '暫停' : '播放'}朗讀` : b.name}
+          aria-pressed={b.key === 'read' ? player.playing : undefined}
           onClick={() => {
-            if (b.key === 'play') {
+            if (b.key === 'read') {
               player.toggle();
               return;
             }
@@ -447,7 +447,7 @@ function ParaRail({ doc, focus, sentenceId }: { doc: Doc; focus: { id: string; e
           }}
         >
           {/* 補充用左欄「補充資源」同一個圖示，其餘是旨修句問的字 */}
-          {b.key === 'play' ? (
+          {b.key === 'read' ? (
             <>
               {/* 外圈畫播到哪，跟補充資源面板的播放鍵同一個樣子 */}
               {player.playing && (

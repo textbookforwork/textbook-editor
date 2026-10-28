@@ -225,9 +225,6 @@ function seedGuowen(result: ImportResult): ImportResult {
   // ── 課文 ──
   // 補充分三層掛：整段（段落的「補」）、標成句子的字（句子的「補」）、標成生字詞或沒標的幾個字（點字彈出）。
   // 整段只留跟整段有關的；講某一句、某個詞的，掛到那幾個字上（見下面的 wordMarks）
-  // 聲音：整段的課文朗讀，閱讀時膠囊最上面是播放鍵
-  put('唧唧復唧唧', [{ id: 'ml-pop-recite-1', kind: 'audio', title: '第一段朗讀', assetId: 'sample-audio-mulan-recite-1' }]);
-  put('東市買駿馬', [{ id: 'ml-pop-recite-2', kind: 'audio', title: '第二段朗讀', assetId: 'sample-audio-mulan-recite-2' }]);
   // 影片：多個（整段）
   put('萬里赴戎機', [
     { id: 'ml-pop-video-1', kind: 'video', title: '敦煌的漢代長城', source: 'upload', ref: 'sample-video-mulan-wall' },
@@ -254,10 +251,15 @@ function seedGuowen(result: ImportResult): ImportResult {
   put('互文是', backs);
 
   // 課文六段標成段落，段旨照各段內容寫，不另外延伸
-  const paras = new Map<string, Pick<TextBlock, 'paragraph' | 'paraNotes'>>();
+  const paras = new Map<string, Pick<TextBlock, 'paragraph' | 'paraNotes' | 'readAloud'>>();
+  // 前兩段有朗讀（系統語音念的），閱讀時膠囊最上面是播放鍵；其餘段落沒有，看得出差別
+  const READ_ALOUD: Record<string, string> = {
+    唧唧復唧唧: 'sample-audio-mulan-recite-1',
+    東市買駿馬: 'sample-audio-mulan-recite-2',
+  };
   const mark = (head: string, paraNotes: TextBlock['paraNotes']) => {
     const b = find(head);
-    if (b) paras.set(b.id, { paragraph: 'start', paraNotes });
+    if (b) paras.set(b.id, { paragraph: 'start', paraNotes, ...(READ_ALOUD[head] ? { readAloud: READ_ALOUD[head] } : {}) });
   };
   // 旨修句問的組合每段不同，閱讀時右下角膠囊的按鈕數跟著變：兩顆、三顆、四顆都有
   mark('唧唧復唧唧', {

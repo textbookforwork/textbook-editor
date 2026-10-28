@@ -52,24 +52,13 @@ export function hanNumber(n: number): string {
 /** 段號照書寫方向：橫排阿拉伯數字，直排國字。 */
 export const paraLabel = (no: number, vertical: boolean) => (vertical ? hanNumber(no) : String(no));
 
-/** 掛在整段上的聲音（課文朗讀這類）：閱讀時膠囊直接放播放鍵，不必先開泡泡。只取第一個，其餘照舊進「補」。 */
-export const paraAudio = (block: TextBlock): Extract<PopupItem, { kind: 'audio' }> | null =>
-  readyElementPopups(block).find((p): p is Extract<PopupItem, { kind: 'audio' }> => p.kind === 'audio') ?? null;
-
-/** 整段的補充扣掉放到播放鍵的那一個，這些才進「補」。 */
-export const paraSupplements = (block: TextBlock) => {
-  const audio = paraAudio(block);
-  return readyElementPopups(block).filter((p) => p !== audio);
-};
-
-/** 這一段閱讀時有哪幾顆按鈕：整段有聲音時最上面一顆播放，接著填了字的說明，有其他補充再加「補」。 */
-export function paraButtons(block: TextBlock): { key: ParaNoteKind | 'bu' | 'play'; btn: string; name: string }[] {
+/** 這一段閱讀時有哪幾顆按鈕：有朗讀時最上面一顆播放鍵，接著填了字的說明，有補充再加「補」。 */
+export function paraButtons(block: TextBlock): { key: ParaNoteKind | 'bu' | 'read'; btn: string; name: string }[] {
   const notes = PARA_NOTE_KINDS.filter((k) => block.paraNotes?.[k.key]?.trim());
-  const audio = paraAudio(block);
   return [
-    ...(audio ? [{ key: 'play' as const, btn: '▶', name: '播放' }] : []),
+    ...(block.readAloud ? [{ key: 'read' as const, btn: '讀', name: '朗讀' }] : []),
     ...notes,
-    ...(paraSupplements(block).length > 0 ? [{ key: 'bu' as const, btn: '補', name: '補充' }] : []),
+    ...(readyElementPopups(block).length > 0 ? [{ key: 'bu' as const, btn: '補', name: '補充' }] : []),
   ];
 }
 

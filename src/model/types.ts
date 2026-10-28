@@ -235,6 +235,8 @@ export type TextBlock = BlockBase & {
   paragraph?: 'start';
   /** 段落的說明，閱讀時一種一顆圓形按鈕。 */
   paraNotes?: ParaNotes;
+  /** 這一段的朗讀音檔（媒體庫的 assetId）。不算補充：閱讀時膠囊最上面直接是播放鍵。 */
+  readAloud?: string | null;
   /** 框選幾個字標的說明（例如某一句的主旨）。字上記 noteId，內容存這裡；閱讀時點那幾個字彈出。 */
   rangeNotes?: RangeNote[];
   /** 對齊。用邏輯值，直排時 start 是上、end 是下。沒設＝start。 */
