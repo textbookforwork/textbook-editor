@@ -252,10 +252,14 @@ function seedGuowen(result: ImportResult): ImportResult {
 
   // 課文六段標成段落，段旨照各段內容寫，不另外延伸
   const paras = new Map<string, Pick<TextBlock, 'paragraph' | 'paraNotes' | 'readAloud'>>();
-  // 前兩段有朗讀（系統語音念的），閱讀時膠囊最上面是播放鍵；其餘段落沒有，看得出差別
+  // 六段都有朗讀（系統語音念的），閱讀時膠囊最上面是播放鍵
   const READ_ALOUD: Record<string, string> = {
     唧唧復唧唧: 'sample-audio-mulan-recite-1',
     東市買駿馬: 'sample-audio-mulan-recite-2',
+    萬里赴戎機: 'sample-audio-mulan-recite-3',
+    歸來見天子: 'sample-audio-mulan-recite-4',
+    爺孃聞女來: 'sample-audio-mulan-recite-5',
+    雄兔腳撲朔: 'sample-audio-mulan-recite-6',
   };
   const mark = (head: string, paraNotes: TextBlock['paraNotes']) => {
     const b = find(head);

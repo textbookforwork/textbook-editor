@@ -52,8 +52,9 @@ export function seedSampleLibrary() {
   addSampleAsset({ assetId: 'sample-audio-mulan-loom', kind: 'audio', name: '織布機的聲音.mp3' }, fileUrl('mulan-loom-sound.mp3'));
   addSampleAsset({ assetId: 'sample-audio-mulan-neigh', kind: 'audio', name: '馬的嘶鳴.mp3' }, fileUrl('mulan-horse-neigh.mp3'));
   // 課文朗讀是系統語音（美佳）念的，破音字用同音字餵給它才念得對
-  addSampleAsset({ assetId: 'sample-audio-mulan-recite-1', kind: 'audio', name: '木蘭詩第一段朗讀.mp3' }, fileUrl('mulan-recite-1.mp3'));
-  addSampleAsset({ assetId: 'sample-audio-mulan-recite-2', kind: 'audio', name: '木蘭詩第二段朗讀.mp3' }, fileUrl('mulan-recite-2.mp3'));
+  ['一', '二', '三', '四', '五', '六'].forEach((no, i) =>
+    addSampleAsset({ assetId: `sample-audio-mulan-recite-${i + 1}`, kind: 'audio', name: `木蘭詩第${no}段朗讀.mp3` }, fileUrl(`mulan-recite-${i + 1}.mp3`))
+  );
   addSampleAsset({ assetId: 'sample-audio-vega', kind: 'audio', name: '三顆主角星.mp3' }, fileUrl('vega.mp3'));
   addSampleAsset({ assetId: 'sample-web-wiki', kind: 'web', name: '維基百科：夏季大三角', url: 'https://zh.wikipedia.org/zh-tw/夏季大三角' });
   addSampleAsset({ assetId: 'sample-web-cwa', kind: 'web', name: '中央氣象署', url: 'https://www.cwa.gov.tw' });
