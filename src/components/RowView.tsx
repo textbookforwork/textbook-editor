@@ -146,8 +146,9 @@ export function RowView({
     }
     const block = fitTwoPerPage(blockFor(key, table), settings);
     ed?.dispatch({ type: 'insertRow', index, blocks: [block] });
-    // 插進來的元件不在畫面裡時，畫布捲過去，不釘在原地
+    // 插進來的元件不在畫面裡時，畫布捲過去，不釘在原地；非文字的元件也直接選取，膠囊跟著出來
     revealBlock(block.id);
+    if (block.type !== 'text') ed?.select(block.id);
     // 插入文字後直接可以打字：選取新段落、把游標放進去。新的列要等分頁重算、畫出來才有
     // DOM，所以接下來幾幀內找它，找到可以編輯的那一塊就聚焦（最多試約半秒）
     if (block.type === 'text' && ed) {
