@@ -1,3 +1,5 @@
+// PDF 七步。對應 Figma：p1(181:51) p2(181:54) p3=el-pdf-picker(129:23) p4(181:56) p5(181:59) p6=el-pdf-block(129:26) p7(181:62)
+// node pdf_flow.mjs import（p1～p5）／ PW_CHANNEL=chromium node pdf_flow.mjs embed（p6、p7；PDF 要完整 Chromium 才畫得出來）
 import { start, login, ring, unring, shot, makeCopy } from './common.mjs';
 const PDF = decodeURIComponent(new URL('./assets/', import.meta.url).pathname) + '觀星學習單.pdf';
 const mode = process.argv[2]; // 'import' or 'embed'
@@ -50,7 +52,7 @@ if (mode === 'import') {
   await blk.evaluate(e => { const o = { bubbles: true, pointerId: 1, isPrimary: true }; e.firstElementChild.dispatchEvent(new PointerEvent('pointerdown', o)); e.firstElementChild.dispatchEvent(new PointerEvent('pointerup', o)); e.firstElementChild.dispatchEvent(new MouseEvent('click', { bubbles: true })); }); await p.waitForTimeout(600);
   const cap = p.locator('button[title="刪除"]').locator('xpath=ancestor::*[.//button[@title="更換 PDF 檔案"]][1]');
   console.log('cap', await cap.count(), await cap.innerText().catch(()=>''));
-  await p.mouse.move(1430, 890); await p.waitForTimeout(3000);
+  await p.mouse.move(1430, 890); await p.waitForTimeout(8000);
   await ring(p, (await cap.count()) ? [blk, cap] : [blk]); await shot(p, 'p6.png'); await unring(p);
   await p.getByRole('button', { name: '閱讀模式' }).click(); await p.waitForTimeout(2500);
   // find page with pdf

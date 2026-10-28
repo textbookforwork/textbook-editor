@@ -1,3 +1,4 @@
+// 圖說開關。對應 Figma：g09a 橫排(181:46) g09b 直排・木蘭詩(181:49)。只重拍直排：SKIPA=1 node g09.mjs
 import { open, insertAfter, ring, unring, shot, IMG } from './gcommon.mjs';
 // g09a horizontal
 if (!process.env.SKIPA) {

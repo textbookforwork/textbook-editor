@@ -1,0 +1,13 @@
+import { open, shot } from './gcommon.mjs';
+const { b, p } = await open('自然科學 5下', '多欄');
+console.log(p.url());
+const keys = await p.evaluate(() => Object.keys(localStorage).map(k => k + ' ' + localStorage.getItem(k).length));
+console.log(keys);
+const lib = await p.evaluate(() => localStorage.getItem('ds-editor:library:v1'));
+console.log(lib.slice(0, 600));
+const bk = await p.evaluate(() => Object.keys(localStorage).find(k => k.startsWith('ds-editor:book:')));
+const doc = await p.evaluate((k) => JSON.parse(localStorage.getItem(k)), bk);
+console.log(Object.keys(doc), JSON.stringify(doc.rows?.[4] ?? doc).slice(0, 800));
+await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(1500);
+console.log(p.url()); await shot(p, '_probe.png');
+await b.close();

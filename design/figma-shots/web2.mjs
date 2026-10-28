@@ -1,3 +1,7 @@
+// 網頁元件：插入標籤 → 切內嵌，一次出兩張（s07-web-tag-<suffix>、s07-web-embed-<suffix>）。
+// 對應 Figma：自然 w1 標籤(171:29) w3 內嵌(171:35)；國文 16-vertical-web 標籤(116:7) w4 內嵌(171:37)
+// node web2.mjs '自然科學 5下' 自然 1 https://stellarium-web.org 'Stellarium Web 線上星圖' h
+// node web2.mjs '國文 2下' 木蘭詩 2 'https://zh.wikisource.org/zh-hant/木蘭詩' '木蘭詩－維基文庫' v
 import { start, login, ring, unring, shot, makeCopy } from './common.mjs';
 const [,, src, name, rowN, url, title, suffix] = process.argv;
 const { b, p } = await start(); p.setDefaultTimeout(8000);

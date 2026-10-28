@@ -1,7 +1,8 @@
+// 共用：開瀏覽器、登入、建自編、圈橘框、存圖。PW_CHANNEL=chromium 改用完整 Chromium（headless shell 畫不出 PDF）
 import { chromium } from '/Users/elaine/.claude/skills/gstack/node_modules/playwright/index.mjs';
 export const SHOTS = decodeURIComponent(new URL('./out/', import.meta.url).pathname);
 export async function start() {
-  const b = await chromium.launch();
+  const b = await chromium.launch({ ...(process.env.PW_CHANNEL ? { channel: process.env.PW_CHANNEL } : {}), args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
   const p = await b.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
   p.on('pageerror', e => console.log('PAGEERR', e.message));
   return { b, p };

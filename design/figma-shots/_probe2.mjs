@@ -1,0 +1,12 @@
+import { open, shot } from './gcommon.mjs';
+const { b, p } = await open('自然科學 5下', '自然');
+const rows = await p.evaluate(() => [...document.querySelectorAll('main [data-row-index]')].map(r => r.getAttribute('data-row-index') + ': ' + (r.querySelector('img')?'IMG ':'') + (r.querySelector('table')?'TABLE ':'') + (r.querySelector('iframe')?'IFRAME ':'') + (r.querySelector('video')?'VIDEO ':'') + (r.innerText||'').replace(/\s+/g,' ').slice(0,40)));
+console.log(rows.join('\n'));
+const img = p.locator('main [data-row-index="4"] [data-block-id]').first();
+await img.evaluate(e => e.scrollIntoView({ block: 'center' })); await p.waitForTimeout(300);
+await img.click(); await p.waitForTimeout(600);
+const cap = await p.evaluate(() => { const del = [...document.querySelectorAll('button[title="刪除"]')].find(b => b.offsetParent); let c = del.parentElement; while (c && c.querySelectorAll('button').length < 3) c = c.parentElement; return c.outerHTML.slice(0, 3000); });
+console.log(cap);
+await p.mouse.move(1430,890);
+await shot(p, '_probe.png');
+await b.close();

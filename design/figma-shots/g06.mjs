@@ -1,3 +1,5 @@
+// 元件膠囊（影片、聲音、網頁、表格）＋圈膠囊。對應 Figma：g06a(181:28) g06b(181:31) g06c(181:34) g06e(181:37)；g06d 沒有對應節點
+// PDF 要畫出來得用完整 Chromium：PW_CHANNEL=chromium node g06.mjs
 import { start, login, shot, makeCopy, unring } from './common.mjs';
 const { b, p } = await start(); p.setDefaultTimeout(8000);
 await p.route('**/api.microlink.io/**', r => r.abort());

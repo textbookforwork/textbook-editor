@@ -1,3 +1,4 @@
+// 表格欄選單與放不下的提示。對應 Figma：g11a(181:104) g11b(181:107)
 import { open, ring, unring, shot } from './gcommon.mjs';
 const { b, p } = await open('自然科學 5下', '自然');
 const tbl = p.locator('main [data-row-index="7"] [data-block-id]').first();
@@ -5,7 +6,7 @@ await tbl.evaluate(e => e.scrollIntoView({ block: 'center' })); await p.waitForT
 const tb = await tbl.boundingBox();
 await p.mouse.click(tb.x + tb.width - 6, tb.y + tb.height / 2); await p.waitForTimeout(500);
 const h = p.getByRole('button', { name: '第 3 欄' }).or(p.locator('[aria-label="第 3 欄"]')).first();
-console.log('handle', await h.count(), await h.boundingBox(), await h.isVisible()); await p.screenshot({ path: '../shots/x-g11-sel.png' });
+console.log('handle', await h.count(), await h.boundingBox(), await h.isVisible());
 const hb = await h.boundingBox();
 await p.mouse.click(hb.x + hb.width / 2, hb.y + hb.height / 2); await p.waitForTimeout(500);
 const menu = p.locator('[data-table-menu]');

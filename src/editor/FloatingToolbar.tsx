@@ -247,9 +247,9 @@ function BlockCapsule() {
               ed.dispatch({ type: 'patchBlock', blockId: id, blockType: 'pdf', patch: { assetId: putFile(file), title: file.name, page: 1 } });
             }}
             title="更換 PDF 檔案"
+            $icon
           >
-            更換
-            <Icon name="upload" size={20} />
+            <Icon name="upload" size={20} label="更換 PDF 檔案" />
           </Btn>
         </>
       )}
@@ -263,13 +263,13 @@ function BlockCapsule() {
             ed.dispatch({ type: 'patchBlock', blockId: id, blockType: 'audio', patch: { assetId: putFile(file), title: file.name } });
           }}
           title="更換音檔"
+          $icon
         >
-          更換
-          <Icon name="upload" size={20} />
+          <Icon name="upload" size={20} label="更換音檔" />
         </Btn>
       )}
 
-      {/* 網頁：放置「更改網址」，後接「標籤」與「內嵌」（膠囊上用短字，完整說法在 title） */}
+      {/* 網頁：「更改網址」只放圖示（跟 PDF、聲音的換檔一樣，膠囊上換內容的動作都是一顆圖示），後接「標籤」與「內嵌」 */}
       {block.type === 'web' && (
         <>
           <Btn
@@ -286,8 +286,9 @@ function BlockCapsule() {
               setEditingWebBlockId(editingWebId === id ? null : id);
             }}
             title="更改網址"
+            $icon
           >
-            更改網址
+            <Icon name="link" size={20} label="更改網址" />
           </Btn>
           <Btn
             $on={block.chosen !== false && block.presentation === 'bookmark'}

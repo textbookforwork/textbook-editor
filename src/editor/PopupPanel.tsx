@@ -789,7 +789,7 @@ function ReadAloudRow({ assetId, onChange }: { assetId: string | null; onChange:
           if (file) onChange(putFile(file));
         }}
       >
-        {assetId ? '更換' : '上傳音檔'}
+        {assetId ? '更換音檔' : '上傳音檔'}
         {!assetId && <Icon name="upload" size={16} />}
       </ReadPick>
     </ReadRow>

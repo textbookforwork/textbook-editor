@@ -1,3 +1,4 @@
+// 聲音播放中。對應 Figma：g15(181:124)
 import { open, insertAfter, ring, unring, shot, IMG } from './gcommon.mjs';
 const { b, p } = await open('自然科學 5下', '自然');
 await insertAfter(p, 1, '聲音');
