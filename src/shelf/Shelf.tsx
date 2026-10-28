@@ -442,7 +442,8 @@ function BookCard({
   return (
     <Card>
       <Cover role="button" tabIndex={0} aria-label={`閱讀「${book.title}」`} onClick={() => (isSample(book) ? goReadTextbook(book.sourceId) : goRead(book.id))}>
-        {original ? (
+        {/* 原本有封面圖、或老師自己上傳了封面：整張鋪滿完整顯示，不套科目形狀框（形狀框只用在沒上傳封面的自編、共享，2026-10-28 乙練） */}
+        {original || book.cover ? (
           art ? <PublisherCover art={art} edition={edition} title={book.title} /> : <PlainCover subject={source?.subject ?? ''} edition={edition} title={book.title} />
         ) : (
           <FramedCover subject={source?.subject ?? ''} art={art} edition={edition} title={book.title} seed={book.id} />
