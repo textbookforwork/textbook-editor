@@ -13,7 +13,7 @@ import { findSource, sourceDoc, type Source } from './sources';
 import { ROLE_NAME, setRole, useRole, type Role } from './role';
 import { BlankDialog, SUBJECTS } from './BlankDialog';
 import { emptyDoc } from '../model/document';
-import { adoptedFrom, adoptTextbook, createBook, deleteBook, findBook, hiddenTextbooks, hideTextbook, isOriginal, listBooks, subscribeLibrary, updateBook, type MyBook } from './library';
+import { adoptedFrom, adoptTextbook, createBook, deleteBook, findBook, hiddenTextbooks, hideTextbook, isOriginal, listBooks, nextFrame, subscribeLibrary, updateBook, type MyBook } from './library';
 import { goEdit, goRead, goReadTextbook, goShelf, type ShelfTab } from './nav';
 import { signOut } from './session';
 
@@ -217,7 +217,9 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
           onCancel={() => (setCreating(null), setCopyFrom(null))}
           onCreate={(_, doc) => {
             // 副本的出版社沿用原本（版本管理：副本不能改出版社）
-            const book = createBook(creating.id, { ...doc, meta: { ...doc.meta, publisher: creating.publisher } });
+            // 形狀框接在這本原書已用掉的款後面（示範副本先占了前幾款）
+            const used = SAMPLE_BOOKS.filter((s) => s.sourceId === creating.id).length;
+            const book = createBook(creating.id, { ...doc, meta: { ...doc.meta, publisher: creating.publisher } }, undefined, nextFrame(creating.id, used));
             setCreating(null);
             setCopyFrom(null);
             goEdit(book.id);
@@ -446,7 +448,7 @@ function BookCard({
         {original || book.cover ? (
           art ? <PublisherCover art={art} edition={edition} title={book.title} /> : <PlainCover subject={source?.subject ?? ''} edition={edition} title={book.title} />
         ) : (
-          <FramedCover subject={source?.subject ?? ''} art={art} edition={edition} title={book.title} seed={book.id} />
+          <FramedCover subject={source?.subject ?? ''} art={art} edition={edition} title={book.title} seed={book.id} frame={book.frame} />
         )}
         <MoreMenu items={items} />
       </Cover>

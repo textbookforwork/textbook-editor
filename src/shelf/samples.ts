@@ -26,6 +26,7 @@ export const SAMPLE_BOOKS: SampleBook[] = SETS.flatMap(([sourceId, titles]) =>
     id: `sample-${sourceId}-${i}`,
     kind: 'copy' as const,
     sourceId,
+    frame: i % 10,
     title,
     cover: null,
     shared: i % 2 === 0,
@@ -56,7 +57,8 @@ export function openSample(b: SampleBook): string | null {
   if (had) return had;
   const doc = sourceDoc(b.sourceId);
   if (!doc) return null;
-  const book = createBook(b.sourceId, { ...doc, title: b.title, meta: { ...doc.meta, publisher: findSource(b.sourceId)?.publisher ?? doc.meta.publisher } });
+  // 沿用示範那本的形狀框，進編輯前後封面長得一樣
+  const book = createBook(b.sourceId, { ...doc, title: b.title, meta: { ...doc.meta, publisher: findSource(b.sourceId)?.publisher ?? doc.meta.publisher } }, undefined, b.frame);
   updateBook(book.id, { shared: b.shared });
   try {
     localStorage.setItem(OPENED_KEY, JSON.stringify({ ...opened(), [b.id]: book.id }));

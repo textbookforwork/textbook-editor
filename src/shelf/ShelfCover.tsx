@@ -10,7 +10,8 @@ import { SHAPES, shapeOf, type Shape } from '../editor/HomeButton';
  *   PlainCover      數位教科書沒有封面圖：科目色平塗＋課名，也不套科目框
  *   FramedCover     自編、共享：科目色平塗＋紙紋，科目形狀當遮罩框露出原書封面圖；沒有封面圖就是白色形狀
  *
- * 形狀框的位置不是隨機的：每科固定十款（PRESETS），用教材編號算出是第幾款，同一本書永遠同一款。
+ * 形狀框的位置不是隨機的：每科固定十款（PRESETS）。同一本原書的第 n 份副本用第 n 款（存在 MyBook.frame），
+ * 幾位老師副本同一本，框裡露出同一張封面也看得出是不同份；舊資料沒存，用教材編號算。
  * 十款的水平位置左三、中四、右三，避免整排都擠在同一側（2026-10-27 乙練）。
  * 游標移到封面上，形狀框像探照燈跟著游標走、放大、轉一點；移開慢慢回原位。封面圖本身不動。
  */
@@ -100,25 +101,23 @@ function tone(shape: Shape, level: number) {
   return `rgb(${mix.map((v) => Math.round(v)).join(',')})`;
 }
 
-/** 教材編號 → 第幾款（0–9） */
+/** 舊資料沒存第幾款：教材編號 → 0–9 */
 export function presetIndex(id: string) {
-  // 示範書（samples.ts）照它在那一科的順序各用一款，同一科十本不會撞款（雜湊十本難免重複，2026-10-28）
-  const sample = /^sample-.+-(\d+)$/.exec(id);
-  if (sample) return Number(sample[1]) % 10;
   let h = 2166136261;
   for (const c of id) { h ^= c.codePointAt(0)!; h = Math.imul(h, 16777619); }
   return (h >>> 0) % 10;
 }
 
-export function FramedCover({ subject, art, edition, title, seed }: { subject: string; art: string | null | undefined; edition: string; title: string; seed: string }) {
+export function FramedCover({ subject, art, edition, title, seed, frame }: { subject: string; art: string | null | undefined; edition: string; title: string; seed: string; frame?: number }) {
   const shape = shapeOf(subject);
   const def = SHAPES[shape];
-  const [cx, cy0, rot, size, flip, level] = PRESETS[shape === 'other' ? 'chinese' : shape][presetIndex(seed)];
+  const idx = frame ?? presetIndex(seed);
+  const [cx, cy0, rot, size, flip, level] = PRESETS[shape === 'other' ? 'chinese' : shape][idx];
   const cy = cy0 * Y;
   const maskRef = useRef<SVGPathElement>(null);
   const metaRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
-  const clipId = `frame-${seed.replace(/[^a-zA-Z0-9]/g, '')}-${presetIndex(seed)}`;
+  const clipId = `frame-${seed.replace(/[^a-zA-Z0-9]/g, '')}-${idx}`;
 
   // 探照燈：只在滑過、或還沒回到原位時跑動畫
   useEffect(() => {

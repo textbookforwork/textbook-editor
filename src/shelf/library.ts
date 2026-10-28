@@ -22,6 +22,8 @@ export type MyBook = {
   subject?: string;
   publisher?: string;
   title: string;
+  /** 副本：書櫃形狀框用第幾款（0–9），建副本時定下來就不變。舊資料沒有，用編號算。 */
+  frame?: number;
   /** 老師上傳並裁切過的封面；沒有就用原本的封面。 */
   cover: string | null;
   shared: boolean;
@@ -121,13 +123,27 @@ export function saveBookDoc(id: string, doc: Doc): boolean {
 
 export const isOriginal = (b: MyBook) => b.kind === 'original';
 
-export function createBook(sourceId: string, doc: Doc, original?: { subject: string; publisher: string }): MyBook {
+/**
+ * 同一本原書被建了幾份副本：第 n 份用第 n 款形狀框，10 份以內不撞款（2026-10-28 乙練）。
+ * 只記一個數字，刪副本也不倒回，免得新副本撞到留下來的。start＝這本原書已經被示範副本用掉幾款。
+ */
+const readJson = <T,>(k: string, d: T): T => { try { return JSON.parse(localStorage.getItem(k) ?? '') as T; } catch { return d; } };
+const FRAME_KEY = 'ds-editor:frame-count:v1';
+export function nextFrame(sourceId: string, start = 0): number {
+  const counts = readJson<Record<string, number>>(FRAME_KEY, {});
+  const n = counts[sourceId] ?? start;
+  try { localStorage.setItem(FRAME_KEY, JSON.stringify({ ...counts, [sourceId]: n + 1 })); } catch { /* 同 write */ }
+  return n % 10;
+}
+
+export function createBook(sourceId: string, doc: Doc, original?: { subject: string; publisher: string }, frame?: number): MyBook {
   const now = Date.now();
   const book: MyBook = {
     id: `book-${now.toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     kind: original ? 'original' : 'copy',
     ...original,
     sourceId,
+    ...(original ? {} : { frame: frame ?? nextFrame(sourceId) }),
     title: doc.title,
     cover: null,
     shared: false,
@@ -155,7 +171,6 @@ export function updateBook(id: string, patch: Partial<Pick<MyBook, 'title' | 'co
  */
 const HIDDEN_KEY = 'ds-editor:hidden-textbooks:v1';
 const ADOPTED_KEY = 'ds-editor:adopted-textbooks:v1';
-const readJson = <T,>(k: string, d: T): T => { try { return JSON.parse(localStorage.getItem(k) ?? '') as T; } catch { return d; } };
 export const hiddenTextbooks = (): string[] => readJson<string[]>(HIDDEN_KEY, []);
 export function hideTextbook(id: string) {
   try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...new Set([...hiddenTextbooks(), id])])); } catch { /* 同 write */ }
