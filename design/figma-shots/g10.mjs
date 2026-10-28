@@ -1,0 +1,11 @@
+import { open, ring, unring, shot, IMG } from './gcommon.mjs';
+const { b, p } = await open('自然科學 5下', '自然');
+const bgBtn = p.locator('main button[aria-label="當頁背景"]').first();
+await bgBtn.click(); await p.waitForTimeout(400);
+const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.getByRole('button', { name: '上傳圖片' }).click()]);
+await fc.setFiles(IMG + 'light.png'); await p.waitForTimeout(1500);
+await p.keyboard.press('Escape'); await p.mouse.click(1430, 880); await p.waitForTimeout(500);
+await p.mouse.move(1430, 890);
+const pg = p.locator('main [data-page-index="0"]').first();
+await ring(p, [pg, bgBtn]); await shot(p, 'g10.png');
+await b.close();

@@ -1,0 +1,22 @@
+import { open, ring, unring, shot } from './gcommon.mjs';
+import { textPoint } from './common3.mjs';
+const { b, p } = await open('自然科學 5下', '自然');
+const sel = 'main [data-row-index="1"]';
+const a = await textPoint(p, sel, '一閃一閃的光點', 0);
+const z = await textPoint(p, sel, '一閃一閃的光點', 6);
+await p.mouse.move(a.x - 8, a.y); await p.mouse.down();
+await p.mouse.move(z.x, z.y, { steps: 8 }); await p.mouse.move(z.x + 8, z.y, { steps: 2 }); await p.mouse.up();
+await p.waitForTimeout(700);
+await p.evaluate(() => {
+  const r = getSelection().getRangeAt(0).getBoundingClientRect();
+  const d = document.createElement('div'); d.setAttribute('data-ring-box', '1');
+  Object.assign(d.style, { position: 'fixed', left: (r.left - 6) + 'px', top: (r.top - 6) + 'px', width: (r.width + 12) + 'px', height: (r.height + 12) + 'px', border: '4px solid #FF854A', borderRadius: '8px', zIndex: 99999, pointerEvents: 'none', boxSizing: 'border-box' });
+  document.body.appendChild(d);
+  const bold = [...document.querySelectorAll('button')].find(e => e.title && e.title.startsWith('粗體') && e.offsetParent);
+  let c = bold; while (c && c.querySelectorAll('button').length < 6) c = c.parentElement;
+  c.style.outline = '4px solid #FF854A'; c.style.outlineOffset = '4px';
+});
+await shot(p, 'g14.png');
+console.log(await p.evaluate(() => getSelection().toString()));
+console.log(await p.evaluate(() => [...document.querySelectorAll('button')].filter(e => e.offsetParent && e.getBoundingClientRect().y < 400 && e.getBoundingClientRect().y > 200).map(e => (e.innerText || '').trim() + '|' + e.title)));
+await b.close();

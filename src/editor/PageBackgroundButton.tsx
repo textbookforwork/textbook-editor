@@ -121,7 +121,14 @@ export function PageBackgroundButton({ value, disabled, onChange }: Props) {
                 />
               </Custom>
             </Row>
+            {/* 成對時主要按鈕在右：清除在左、上傳圖片在右 */}
             <Actions>
+              {has && (
+                <Act type="button" onClick={() => onChange(null)}>
+                  清除
+                  <Icon name="x" size={16} />
+                </Act>
+              )}
               <UploadAct
                 type="button"
                 onClick={async () => {
@@ -134,12 +141,6 @@ export function PageBackgroundButton({ value, disabled, onChange }: Props) {
                 上傳圖片
                 <Icon name="upload" size={16} />
               </UploadAct>
-              {has && (
-                <Act type="button" onClick={() => onChange(null)}>
-                  清除
-                  <Icon name="x" size={16} />
-                </Act>
-              )}
             </Actions>
           </Pop>,
           document.body

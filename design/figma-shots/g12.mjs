@@ -1,0 +1,18 @@
+import { open, insertAfter, ring, unring, shot, dragFile, IMG } from './gcommon.mjs';
+const { b, p } = await open('自然科學 5下', '自然');
+await insertAfter(p, 1, '媒體庫');
+await p.waitForTimeout(3000);
+const drop = p.locator('button[aria-label^="上傳圖片：拖曳或選取檔案"]');
+console.log('drop', await drop.count());
+await p.mouse.move(1000, 890);
+await ring(p, [drop]); await shot(p, 'g12a.png'); await unring(p);
+await dragFile(p, 'button[aria-label^="上傳圖片：拖曳或選取檔案"]', IMG + 'sky.png', 'image/png', ['dragenter', 'dragover']);
+await p.waitForTimeout(300);
+await ring(p, [drop]); await shot(p, 'g12b.png'); await unring(p);
+await dragFile(p, 'button[aria-label^="上傳圖片：拖曳或選取檔案"]', IMG + 'sky.png', 'image/png', ['dragleave']);
+await p.waitForTimeout(200);
+const [fc] = await Promise.all([p.waitForEvent('filechooser'), drop.click()]);
+await fc.setFiles(IMG + 'sky.png'); await p.waitForTimeout(350);
+console.log('busy', await drop.getAttribute('aria-busy'));
+await ring(p, [drop]); await shot(p, 'g12c.png');
+await b.close();

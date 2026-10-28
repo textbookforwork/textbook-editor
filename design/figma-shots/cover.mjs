@@ -1,0 +1,16 @@
+import { chromium } from '/Users/elaine/.claude/skills/gstack/node_modules/playwright/index.mjs';
+const exe = process.env.HOME + '/Library/Caches/ms-playwright/chromium-1208/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';
+const b = await chromium.launch({ executablePath: exe });
+const p = await b.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+await p.goto('http://localhost:5199/'); await p.waitForTimeout(1500);
+await p.fill('input >> nth=0', 'a@b.c'); await p.fill('input[type=password]', 'x');
+await p.click('text=進入數位教科書'); await p.waitForTimeout(2000); console.log('in');
+await p.locator('[aria-label^="用「國文 2下」建立自編"]').first().click({force:true}); await p.waitForTimeout(500); console.log('pencil'); await p.locator('[role=dialog] input').first().fill('木蘭詩');
+await p.getByRole('button', { name: '建立', exact: true }).click(); await p.waitForTimeout(2500); console.log('created'); await p.screenshot({path: process.argv[2]+'/cv-ed.png'});
+await p.getByRole('button', { name: '共享' }).first().click(); await p.waitForTimeout(600); console.log('shared');
+await p.getByRole('button', { name: '前往上傳' }).click(); await p.waitForTimeout(600);
+await p.screenshot({ path: process.argv[2] + '/cover-empty.png' });
+const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('text=選擇圖片').click()]);
+await fc.setFiles(process.argv[3]); await p.waitForTimeout(1200);
+await p.screenshot({ path: process.argv[2] + '/cover-picked.png' });
+await b.close();
