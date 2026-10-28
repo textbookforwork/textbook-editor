@@ -85,7 +85,7 @@ export function PopupPanel() {
   const [confirmChange, setConfirmChange] = useState(false);
   const paraIndex = useParagraphIndex();
   // 段落面板一排五顆圓（旨修句問補），一次只展開一顆。null＝還沒選，照「第一個還沒填的」決定
-  const [paraTab, setParaTab] = useState<ParaNoteKind | 'bu' | 'read' | null>(null);
+  const [paraTab, setParaTab] = useState<ParaNoteKind | 'bu' | null>(null);
   const pickKey = ed?.popupPick ? `${ed.popupPick.start}-${ed.popupPick.end}` : '';
   useEffect(() => setParaTab(null), [blockId, pickKey]);
 
@@ -137,12 +137,10 @@ export function PopupPanel() {
   };
   const pickKind = pickNote ? rangeKindOf(pickNote) : null;
   const showDots = !!paraBlock && (!pick || pickKind === 'sentence');
-  // 整段才有朗讀（框選的句子沒有），排第一顆，跟閱讀時膠囊最上面的播放鍵同一個位置
-  const dotKeys: (ParaNoteKind | 'bu' | 'read')[] = [...(pick ? [] : (['read'] as const)), ...PARA_NOTE_KINDS.map((k) => k.key), 'bu'];
+  const dotKeys: (ParaNoteKind | 'bu')[] = [...PARA_NOTE_KINDS.map((k) => k.key), 'bu'];
   const noteValue = (k: ParaNoteKind) =>
     (pick && pickNote ? sentenceNotesOf(pickNote)[k] : paraBlock?.paraNotes?.[k]) ?? '';
-  const filledOf = (k: ParaNoteKind | 'bu' | 'read') =>
-    k === 'read' ? !!paraBlock?.readAloud : k === 'bu' ? shown.length > 0 : !!noteValue(k).trim();
+  const filledOf = (k: ParaNoteKind | 'bu') => (k === 'bu' ? shown.length > 0 : !!noteValue(k).trim());
   // 沒選過：展開第一個還沒填的；全部填了就展開段旨
   const activeTab = paraTab ?? dotKeys.find((k) => !filledOf(k)) ?? 'zhi';
   const showSupp = !showDots || activeTab === 'bu';
@@ -212,12 +210,19 @@ export function PopupPanel() {
               有內容是黑色實心、沒填是白底；點一顆才在下面展開編輯。框選的字標成句子時，是那個句子的。
               名稱不寫在圓下面，放在滑過的提示與報讀裡
             */}
+            {/* 朗讀不是說明也不是補充：整段才有，自成一行放在圓鈕上面（框選的句子沒有） */}
+            {!pick && (
+              <ReadAloudRow
+                assetId={paraBlock.readAloud ?? null}
+                onChange={(readAloud) => ed.dispatch({ type: 'patchBlock', blockId, blockType: 'text', patch: { readAloud } })}
+              />
+            )}
             {showDots && (
               <>
                 <Dots role="tablist" aria-label={pick ? `「${quote}」的說明` : `第 ${paraNo} 段的說明`}>
                   {dotKeys.map((key) => {
-                    const meta = key === 'bu' || key === 'read' ? null : PARA_NOTE_KINDS.find((k) => k.key === key)!;
-                    const name = meta ? meta.name : key === 'read' ? '朗讀' : '補充';
+                    const meta = key === 'bu' ? null : PARA_NOTE_KINDS.find((k) => k.key === key)!;
+                    const name = meta ? meta.name : '補充';
                     return (
                       <DotBtn
                         key={key}
@@ -230,36 +235,15 @@ export function PopupPanel() {
                         $on={activeTab === key}
                         onClick={() => {
                           setParaTab(key);
-                          if (key !== 'bu' && key !== 'read') focusFirstField(`note-${key}`);
+                          if (key !== 'bu') focusFirstField(`note-${key}`);
                         }}
                       >
-                        {meta ? meta.btn : <Icon name={key === 'read' ? 'play' : 'blocks'} size={20} />}
+                        {meta ? meta.btn : <Icon name="blocks" size={20} />}
                       </DotBtn>
                     );
                   })}
                 </Dots>
-                {activeTab === 'read' && (
-                  <List>
-                    <NoteCard data-popup-id="note-read" $open>
-                      <NoteRowHead>
-                        <NoteName>朗讀</NoteName>
-                      </NoteRowHead>
-                      <Upload
-                        done={!!paraBlock.readAloud}
-                        label={paraBlock.readAloud ? '更換音檔' : '上傳音檔'}
-                        onPick={async () => {
-                          const file = await pickFile('audio/*');
-                          if (!file) return;
-                          ed.dispatch({ type: 'patchBlock', blockId, blockType: 'text', patch: { readAloud: putFile(file) } });
-                        }}
-                      />
-                      {paraBlock.readAloud && (
-                        <audio controls src={urlOf(paraBlock.readAloud)} style={{ inlineSize: '100%' }} />
-                      )}
-                    </NoteCard>
-                  </List>
-                )}
-                {activeTab !== 'bu' && activeTab !== 'read' && (() => {
+                {activeTab !== 'bu' && (() => {
                   const k = PARA_NOTE_KINDS.find((x) => x.key === activeTab)!;
                   return (
                     <List key={k.key}>
@@ -762,6 +746,81 @@ function Field({
   // 卡片頭的圖示已經說明是網頁或影片，欄位上不再寫一次「網址」；名稱只留給螢幕報讀
   return <Input aria-label={label} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />;
 }
+
+/**
+ * 段落的朗讀：一行。左邊試聽鍵（跟閱讀時膠囊最上面那顆同一個播放圖示），右邊上傳或更換。
+ * 沒上傳時試聽鍵是白的，跟沒填的圓鈕同一套記號，一眼看得出這段缺朗讀。
+ */
+function ReadAloudRow({ assetId, onChange }: { assetId: string | null; onChange: (id: string | null) => void }) {
+  const audio = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const stop = () => {
+    audio.current?.pause();
+    audio.current = null;
+    setPlaying(false);
+  };
+  useEffect(() => stop, [assetId]);
+  const toggle = () => {
+    if (playing || !assetId) return stop();
+    const a = new Audio(urlOf(assetId));
+    a.onended = stop;
+    audio.current = a;
+    setPlaying(true);
+    a.play().catch(() => {});
+  };
+  return (
+    <ReadRow>
+      <DotBtn
+        type="button"
+        $filled={!!assetId}
+        $on={false}
+        disabled={!assetId}
+        aria-label={assetId ? (playing ? '暫停朗讀' : '試聽朗讀') : '朗讀（還沒上傳）'}
+        title={assetId ? '試聽' : '還沒上傳'}
+        onClick={toggle}
+      >
+        <Icon name={playing ? 'pause' : 'play'} size={20} />
+      </DotBtn>
+      <NoteName>朗讀</NoteName>
+      <ReadPick
+        type="button"
+        onClick={async () => {
+          const file = await pickFile('audio/*');
+          if (file) onChange(putFile(file));
+        }}
+      >
+        {assetId ? '更換' : '上傳音檔'}
+        {!assetId && <Icon name="upload" size={16} />}
+      </ReadPick>
+    </ReadRow>
+  );
+}
+
+const ReadRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px ${(p) => p.theme.space.insetXs} ${(p) => p.theme.space.gapSm};
+  margin-block-end: ${(p) => p.theme.space.gapSm};
+  border-block-end: ${(p) => p.theme.border.widthDefault} solid ${(p) => p.theme.border.subtle};
+`;
+
+const ReadPick = styled.button`
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: ${(p) => p.theme.surface.sunken};
+  color: ${(p) => p.theme.text.primary};
+  font: inherit;
+  font-size: var(--ds-typography-body-sm-size);
+  cursor: pointer;
+  &:hover { background: ${(p) => p.theme.surface.muted}; }
+`;
 
 function Upload({
   done,
