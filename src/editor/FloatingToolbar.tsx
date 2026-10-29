@@ -217,29 +217,9 @@ function BlockCapsule() {
         </Btn>
       )}
 
-      {/* PDF：翻到要給學生看的那一頁（就是學生打開時的起始頁），與更換檔案 */}
+      {/* PDF：膠囊上只留更換檔案（翻頁、頁碼拿掉了：2026-10-29 乙練說擋視線） */}
       {block.type === 'pdf' && block.assetId && (
         <>
-          <Btn
-            onClick={() =>
-              ed.dispatch({ type: 'patchBlock', blockId: id, blockType: 'pdf', patch: { page: Math.max(1, (block.page ?? 1) - 1) } })
-            }
-            disabled={(block.page ?? 1) <= 1}
-            title="上一頁"
-            aria-label="上一頁"
-          >
-            <Icon name="chevron-left" size={20} />
-          </Btn>
-          <PageNum>第 {block.page ?? 1} 頁</PageNum>
-          <Btn
-            onClick={() =>
-              ed.dispatch({ type: 'patchBlock', blockId: id, blockType: 'pdf', patch: { page: (block.page ?? 1) + 1 } })
-            }
-            title="下一頁"
-            aria-label="下一頁"
-          >
-            <Icon name="chevron-right" size={20} />
-          </Btn>
           <Btn
             onClick={async () => {
               const file = await pickFile('application/pdf');
@@ -527,14 +507,6 @@ const Btn = styled.button<{ $on?: boolean; $open?: boolean; $icon?: boolean }>`
   &:hover {
     background: ${(p) => (p.$on ? p.theme.surface.muted : p.theme.surface.sunken)};
   }
-`;
-
-const PageNum = styled.span`
-  flex: none;
-  padding: 0 2px;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  color: ${(p) => p.theme.text.secondary};
 `;
 
 const Divider = styled.span`

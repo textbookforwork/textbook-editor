@@ -15,12 +15,12 @@ import { primaryButtonCss } from '../buttonStyles';
  * 框的寬高是外面給的（boxStyle），size 容器不會改變它的尺寸，分頁量到的不變。
  * 套在空白框本身：它的直接子元素裡要有 data-full 與 data-compact 兩組。
  */
-export const emptyCompactCss = css`
+const compactCss = (query: string) => css`
   container-type: size;
   & > [data-compact] {
     display: none;
   }
-  @container (max-width: 200px) or (max-height: 150px) {
+  @container ${query} {
     & > [data-full],
     & > [data-alt] {
       display: none;
@@ -49,6 +49,11 @@ export const emptyCompactCss = css`
     }
   }
 `;
+
+export const emptyCompactCss = compactCss('(max-width: 200px) or (max-height: 150px)');
+
+/** 聲音框本來就是一條扁的膠囊（橫排矮、直排窄）：只有長邊也不到 150 才縮成音符（播放鍵＋上傳鈕大約要這麼寬），不然整組上傳鈕永遠被藏起來 */
+export const emptyCompactWidthCss = compactCss('(max-width: 150px) and (max-height: 150px)');
 
 /**
  * 小框裡的那一顆：平常是「動作名稱＋動作圖示」（上傳圖片 ↑），

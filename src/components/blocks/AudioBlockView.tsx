@@ -1,5 +1,5 @@
 import { primaryButtonCss } from '../buttonStyles';
-import { CompactAction, emptyCompactCss } from './emptyCompact';
+import { CompactAction, emptyCompactWidthCss } from './emptyCompact';
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Icon } from '../Icon';
@@ -70,7 +70,19 @@ export function AudioBlockView({ block, boxStyle, onPatch, onSelect }: Props) {
 
   return (
     <Bar style={boxStyle} onPointerDown={onSelect} $empty={empty}>
-      {empty && <CompactAction label="上傳音檔" action="upload" kind="music" onClick={upload} />}
+      {empty && (
+        <CompactAction
+          label="上傳音檔"
+          action="upload"
+          kind="music"
+          // 跟圖片、影片的小框一樣：按下時先選取、擋掉整列的拖曳，不然點了沒反應
+          onPointerDown={(e) => {
+            onSelect?.();
+            e.stopPropagation();
+          }}
+          onClick={upload}
+        />
+      )}
       <Play
         data-full
         $ready={ready}
@@ -107,7 +119,7 @@ const Bar = styled.div<{ $empty: boolean }>`
     ${(p) => (p.$empty ? p.theme.border.default : p.theme.border.subtle)};
   border-radius: 999px;
   background: ${(p) => (p.$empty ? p.theme.surface.page : p.theme.surface.sunken)};
-  ${(p) => p.$empty && emptyCompactCss}
+  ${(p) => p.$empty && emptyCompactWidthCss}
   /* 只剩一顆（小框）時置中 */
   ${(p) => p.$empty && '@container (max-width: 200px) or (max-height: 150px) { justify-content: center; padding: 0; }'}
   writing-mode: horizontal-tb;
