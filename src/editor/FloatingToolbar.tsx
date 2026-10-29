@@ -13,7 +13,7 @@ import { setTablePanel, useTableSelection } from './TablePanel';
 import { useEditingWebBlockId, setEditingWebBlockId } from '../components/blocks/WebBlockView';
 import type { TextRole } from '../model/types';
 import { useParagraphIndex } from '../components/ParagraphContext';
-import { pickFile, putFile } from './assets';
+import { pickFile, putFile, putImage, urlOf, youtubeId } from './assets';
 import { setCroppingId, useCroppingId } from '../components/blocks/ImageCropper';
 
 /**
@@ -96,6 +96,9 @@ function BlockCapsule() {
   if (!hit || !rect) return null;
   const { block, row } = hit;
   const paraNo = paraIndex.get(id)?.no ?? null;
+  // 影片有沒有內容，判斷跟影片元件一樣：YouTube 認得出影片編號、或上傳的檔還在
+  const hasVideo =
+    block.type === 'video' && (block.source === 'youtube' ? !!youtubeId(block.ref) : !!urlOf(block.ref));
 
   return (
     <Capsule
@@ -162,6 +165,22 @@ function BlockCapsule() {
           <LineTools block={block} blockId={id} />
           <Divider />
         </>
+      )}
+
+      {/* 圖片：更換（有圖才有）。舊圖的裁切範圍套在新圖上會錯，一起清掉 */}
+      {block.type === 'image' && block.assetId && (
+        <Btn
+          onClick={async () => {
+            const file = await pickFile('image/*');
+            if (!file) return;
+            const { assetId, aspectRatio } = await putImage(file);
+            ed.dispatch({ type: 'patchBlock', blockId: id, blockType: 'image', patch: { assetId, aspectRatio, crop: undefined } });
+          }}
+          title="更換圖片"
+          $icon
+        >
+          <Icon name="upload" size={20} label="更換圖片" />
+        </Btn>
       )}
 
       {/* 圖片：裁切（有圖才有） */}
@@ -232,6 +251,21 @@ function BlockCapsule() {
             <Icon name="upload" size={20} label="更換 PDF 檔案" />
           </Btn>
         </>
+      )}
+
+      {/* 影片：已經有影片時換檔在這裡（YouTube 的也能換成上傳的檔） */}
+      {block.type === 'video' && hasVideo && (
+        <Btn
+          onClick={async () => {
+            const file = await pickFile('video/*');
+            if (!file) return;
+            ed.dispatch({ type: 'patchBlock', blockId: id, blockType: 'video', patch: { source: 'upload', ref: putFile(file), title: file.name } });
+          }}
+          title="更換影片"
+          $icon
+        >
+          <Icon name="upload" size={20} label="更換影片" />
+        </Btn>
       )}
 
       {/* 聲音：已經有檔案時，換檔在這裡（元件本身只放播放鍵與檔名） */}
@@ -313,6 +347,7 @@ function BlockCapsule() {
       {(block.type === 'image' ||
         block.type === 'table' ||
         block.type === 'web' ||
+        (block.type === 'video' && hasVideo) ||
         ((block.type === 'pdf' || block.type === 'audio') && !!block.assetId)) && <Divider />}
 
       {/* Pop-up 是元件的屬性不是另一種元件，所以入口在元件的膠囊上，
