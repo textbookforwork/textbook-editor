@@ -20,17 +20,19 @@ export function BlankDialog({
   /** 從哪一區按的：科目先帶入，還是可以改。 */
   subject?: string;
   onCancel: () => void;
-  onCreate: (v: { name: string; subject: string; publisher: string }) => void;
+  onCreate: (v: { name: string; subject: string; publisher: string; stage: string }) => void;
 }) {
   const [name, setName] = useState('');
   const [subject, setSubject] = useState(initialSubject && SUBJECTS.includes(initialSubject) ? initialSubject : SUBJECTS[0]);
   const [publisher, setPublisher] = useState('');
+  // 學制：書卡左上要寫「115 南一 國中」，少了它就沒有年段（2026-11-03）
+  const [stage, setStage] = useState('國小');
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => ESC(onCancel), [onCancel]);
   useEffect(() => inputRef.current?.focus(), []);
 
   const ready = name.trim().length > 0 && publisher.trim().length > 0;
-  const create = () => ready && onCreate({ name: name.trim(), subject, publisher: publisher.trim() });
+  const create = () => ready && onCreate({ name: name.trim(), subject, publisher: publisher.trim(), stage });
 
   return createPortal(
     <Scrim onClick={onCancel}>
@@ -58,6 +60,17 @@ export function BlankDialog({
         <Field>
           <span>出版社</span>
           <Input value={publisher} placeholder="請輸入出版社名稱" onChange={(e) => setPublisher(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} />
+        </Field>
+
+        <Field as="div">
+          <span>學制</span>
+          <Chips role="radiogroup" aria-label="學制">
+            {['國小', '國中'].map((s) => (
+              <Chip key={s} type="button" role="radio" aria-checked={stage === s} $on={stage === s} onClick={() => setStage(s)}>
+                {s}
+              </Chip>
+            ))}
+          </Chips>
         </Field>
 
         <Pair>

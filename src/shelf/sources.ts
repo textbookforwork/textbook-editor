@@ -27,6 +27,16 @@ const RENAMED_SUBJECT: Record<string, string> = { 英語: '英語文' };
 /** 民國學年度：卡片左上「115 南一」那一個數字。 */
 export const rocYear = () => new Date().getFullYear() - 1911;
 
+/** 管理員建立或接手的原本：卡片左上要有學年度、出版社、國小／國中（2026-11-03 乙練抓到少了年段）。
+ *  接手內建課本的沿用那本的版次；自己建立的從教材設定讀學制。 */
+function originalEdition(b: NonNullable<ReturnType<typeof findBook>>): string {
+  const from = adoptedFrom(b.id);
+  const t = from ? findTextbook(from) : null;
+  if (t) return t.edition;
+  const stage = loadBookDoc(b.id)?.meta?.stage ?? '';
+  return [new Date(b.createdAt).getFullYear() - 1911, b.publisher ?? '', stage].filter(Boolean).join(' ');
+}
+
 export function findSource(id: string): Source | null {
   const t = findTextbook(id);
   if (t) return { id: t.id, subject: t.subject, edition: t.edition, publisher: t.publisher, title: t.title, cover: t.cover, art: t.art, builtIn: true };
@@ -36,7 +46,7 @@ export function findSource(id: string): Source | null {
       id: b.id,
       // 科目改過名（2026-10-22「英語」→「英語文」），舊資料讀出來時對到新名字，書櫃才不會分成兩區
       subject: RENAMED_SUBJECT[b.subject ?? ''] ?? b.subject ?? '其他',
-      edition: `${new Date(b.createdAt).getFullYear() - 1911} ${b.publisher ?? ''}`.trim(),
+      edition: originalEdition(b),
       publisher: b.publisher ?? '',
       title: b.title,
       cover: b.cover,

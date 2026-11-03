@@ -230,11 +230,11 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
         <BlankDialog
           subject={blank || undefined}
           onCancel={() => setBlank(null)}
-          onCreate={({ name, subject, publisher }) => {
+          onCreate={({ name, subject, publisher, stage }) => {
             const doc = emptyDoc(name);
             const first = doc.rows[0].columns[0].blocks[0];
             if (first.type === 'text') first.spans = [{ text: name }];
-            const book = createBook('', { ...doc, meta: { publisher, subject: metaSubject(subject) } }, { subject, publisher });
+            const book = createBook('', { ...doc, meta: { publisher, stage, subject: metaSubject(subject) } }, { subject, publisher });
             setBlank(null);
             goEdit(book.id);
           }}
