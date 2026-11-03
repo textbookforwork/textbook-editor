@@ -126,8 +126,8 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
           </Tabs>
           {admin && tab === 'textbook' && (
             <NewBtn type="button" onClick={() => setBlank('')}>
-              建立教材
               <Icon name="plus" size={16} />
+              建立教材
             </NewBtn>
           )}
         </TabRow>}
@@ -587,7 +587,7 @@ const NewBtn = styled.button`
   align-items: center;
   gap: 6px;
   block-size: 40px;
-  padding: 0 18px 0 20px;
+  padding: 0 20px 0 16px; /* ＋在左邊（2026-11-03 乙練），左邊少留一點 */
   border: none;
   border-radius: 999px;
   background: ${(p) => p.theme.action.primaryBg};

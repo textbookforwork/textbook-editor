@@ -369,8 +369,8 @@ export function RichPopupModal({ pages: initial, onSave, onClose }: Props) {
             ))}
           </TabsScroll>
           <AddPage type="button" onClick={addPage}>
-            新增頁面
             <Icon name="plus" size={16} />
+            新增頁面
           </AddPage>
           <HeadActions>
           {/* 儲存放在標題列右邊（一般大小的黑色按鈕），不另外佔一整條底部 */}

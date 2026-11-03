@@ -411,8 +411,8 @@ export function PopupPanel() {
         <AddWrap ref={addRef} $open={false}>
           {shown.length > 0 && shown[0].kind === 'rich' ? null : shown.length > 0 ? (
             <AddBtn type="button" $open={false} onClick={() => addKind(shown[0].kind)}>
-              新增{MEASURE[shown[0].kind]}
               <Icon name="plus" size={16} />
+              新增{MEASURE[shown[0].kind]}
             </AddBtn>
           ) : (
             <AddMenu role="menu">

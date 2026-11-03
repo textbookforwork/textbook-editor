@@ -46,6 +46,17 @@ export function BlankDialog({
         </Field>
 
         <Field as="div">
+          <span>學制</span>
+          <Chips role="radiogroup" aria-label="學制">
+            {['國小', '國中'].map((s) => (
+              <Chip key={s} type="button" role="radio" aria-checked={stage === s} $on={stage === s} onClick={() => setStage(s)}>
+                {s}
+              </Chip>
+            ))}
+          </Chips>
+        </Field>
+
+        <Field as="div">
           <span>科目</span>
           <Chips role="radiogroup" aria-label="科目">
             {SUBJECTS.map((s) => (
@@ -60,17 +71,6 @@ export function BlankDialog({
         <Field>
           <span>出版社</span>
           <Input value={publisher} placeholder="請輸入出版社名稱" onChange={(e) => setPublisher(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} />
-        </Field>
-
-        <Field as="div">
-          <span>學制</span>
-          <Chips role="radiogroup" aria-label="學制">
-            {['國小', '國中'].map((s) => (
-              <Chip key={s} type="button" role="radio" aria-checked={stage === s} $on={stage === s} onClick={() => setStage(s)}>
-                {s}
-              </Chip>
-            ))}
-          </Chips>
         </Field>
 
         <Pair>
