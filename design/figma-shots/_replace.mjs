@@ -1,0 +1,12 @@
+import { open, shot, IMG } from './gcommon.mjs';
+const { b, p } = await open('自然科學 5下', '星星的世界');
+const blk = p.locator('main [data-row-index="4"] [data-block-id]').first();
+await blk.evaluate(e => e.scrollIntoView({ block: 'center' })); await p.waitForTimeout(400);
+const bb = await blk.boundingBox(); await p.mouse.click(bb.x + bb.width/2, bb.y + bb.height/2); await p.waitForTimeout(600);
+const before = await blk.locator('img').first().getAttribute('src');
+const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('button[title="更換圖片"]').click()]);
+await fc.setFiles(IMG + 'sky.png'); await p.waitForTimeout(1200);
+const after = await blk.locator('img').first().getAttribute('src');
+console.log('changed', before !== after);
+await p.mouse.move(1430, 890); await shot(p, '_replace-image.png');
+await b.close();
