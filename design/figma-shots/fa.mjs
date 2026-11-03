@@ -1,3 +1,4 @@
+// 流程 A（直排・國文）：管理員建立教材 → 匯入 md → 匯入完成 → 編輯 → 發布。對應 Figma：flowA-1～5（94:6、94:10、94:14、94:18、94:22）
 import { start, login, ring, unring, shot, cardMore } from './common.mjs';
 const { b, p } = await start(); p.setDefaultTimeout(8000);
 await p.route('**/api.microlink.io/**', r => r.abort());
@@ -9,6 +10,7 @@ const dlg = p.getByRole('dialog', { name: '建立教材' });
 await dlg.getByPlaceholder('請輸入教材名稱').fill('木蘭詩');
 await dlg.getByRole('radio', { name: '國語文' }).click().catch(e => console.log('no 國語文 chip'));
 await dlg.getByPlaceholder('請輸入出版社名稱').fill('範例');
+await dlg.getByRole('radio', { name: '國中' }).click(); // 學制（2026-11-03 新增）：木蘭詩是國中課文
 await ring(p, [dlg]); await shot(p, 'fa1.png'); await unring(p);
 await dlg.getByRole('button', { name: '建立', exact: true }).click(); await p.waitForTimeout(2500);
 // fa2

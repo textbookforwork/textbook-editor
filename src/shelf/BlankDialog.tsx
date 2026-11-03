@@ -41,8 +41,13 @@ export function BlankDialog({
         <Title>建立教材</Title>
 
         <Field>
+          <span>出版社</span>
+          <Input ref={inputRef} value={publisher} placeholder="請輸入出版社名稱" onChange={(e) => setPublisher(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} />
+        </Field>
+
+        <Field>
           <span>教材名稱</span>
-          <Input ref={inputRef} value={name} placeholder="請輸入教材名稱" onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} />
+          <Input value={name} placeholder="請輸入教材名稱" onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} />
         </Field>
 
         <Field as="div">
@@ -66,11 +71,6 @@ export function BlankDialog({
               </Chip>
             ))}
           </Chips>
-        </Field>
-
-        <Field>
-          <span>出版社</span>
-          <Input value={publisher} placeholder="請輸入出版社名稱" onChange={(e) => setPublisher(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} />
         </Field>
 
         <Pair>

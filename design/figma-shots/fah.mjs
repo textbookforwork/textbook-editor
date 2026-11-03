@@ -1,3 +1,4 @@
+// 流程 A（橫排・自然）：同 fa.mjs。對應 Figma：flowA-1-h～5-h（185:4～185:8）
 import { start, login, ring, unring, shot, cardMore } from './common.mjs';
 const { b, p } = await start(); p.setDefaultTimeout(8000);
 await p.route('**/api.microlink.io/**', r => r.abort());
@@ -9,6 +10,7 @@ const dlg = p.getByRole('dialog', { name: '建立教材' });
 await dlg.getByPlaceholder('請輸入教材名稱').fill('自然');
 await dlg.getByRole('radio', { name: '自然科學' }).click().catch(e => console.log('no 國語文 chip'));
 await dlg.getByPlaceholder('請輸入出版社名稱').fill('範例');
+// 學制（2026-11-03 新增）留預設「國小」
 await ring(p, [dlg]); await shot(p, 'fa1h.png'); await unring(p);
 await dlg.getByRole('button', { name: '建立', exact: true }).click(); await p.waitForTimeout(2500);
 // fa2

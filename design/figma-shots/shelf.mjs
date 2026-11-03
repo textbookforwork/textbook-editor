@@ -46,6 +46,7 @@ const d53 = p.getByRole('dialog', { name: '建立教材' });
 await d53.getByPlaceholder('請輸入教材名稱').fill('國文 3上');
 await d53.getByRole('radio', { name: '國語文' }).click().catch(() => {});
 await d53.getByPlaceholder('請輸入出版社名稱').fill('南一');
+await d53.getByRole('radio', { name: '國中' }).click(); // 學制（2026-11-03 新增）：國文 3上 是國中
 await ring(p, [d53]); await shot(p, '53-admin-create.png'); await unring(p);
 await d53.getByRole('button', { name: '建立', exact: true }).click(); await p.waitForTimeout(2500);
 // 55：發布
