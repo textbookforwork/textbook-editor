@@ -31,8 +31,8 @@ export type Shape = 'chinese' | 'english' | 'science' | 'social' | 'math' | 'oth
 const SUBJECTS: Record<Exclude<Shape, 'other'>, string[]> = {
   chinese: ['國語', '國文', '國語文'],
   english: ['英語', '英文', '英語文'],
-  science: ['自然', '自然科學'],
-  social: ['社會', '歷史', '地理'],
+  science: ['自然', '自然科學', '理化', '生物', '地科'], // 國中分科歸自然
+  social: ['社會', '歷史', '地理', '公民'], // 國中分科歸社會
   math: ['數學'],
 };
 

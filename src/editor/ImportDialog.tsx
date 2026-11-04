@@ -73,9 +73,7 @@ export function ImportDialog({ samples, onApply, onClose }: Props) {
       <Sheet role="dialog" aria-modal="true" aria-label="匯入 .md 檔" onClick={(e) => e.stopPropagation()}>
         <Head>
           <span>匯入 .md 檔</span>
-          <Close type="button" onClick={onClose} aria-label="關閉" title="關閉">
-            <Icon name="x" size={24} label="關閉" />
-          </Close>
+          {/* 不放 ×：底下有「取消」（有取消就不放 ×，乙練） */}
         </Head>
 
         <Drop
@@ -154,18 +152,6 @@ const Head = styled.div`
   justify-content: space-between;
   font-size: ${(p) => p.theme.typography.bodyLgSize};
   line-height: ${(p) => p.theme.typography.bodyLgLineHeight};
-`;
-
-const Close = styled.button`
-  display: grid;
-  place-items: center;
-  inline-size: 24px;
-  block-size: 24px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: ${(p) => p.theme.icon.default};
-  cursor: pointer;
 `;
 
 /** 跟媒體庫的上傳框同一款：虛線框、置中一顆黑色上傳鈕、下面一行格式；檔案拖進來時框變深、底變灰 */
