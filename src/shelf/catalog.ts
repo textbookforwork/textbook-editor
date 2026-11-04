@@ -16,6 +16,7 @@ import { emptyDoc } from '../model/document';
 import { seedStars } from '../demo/seed';
 import { withSampleMedia } from '../editor/sampleMedia';
 import type { Doc } from '../model/types';
+import { AREA_TO_SUBJECT } from '../model/subjects';
 
 /**
  * 書櫃「數位教科書」分頁：出版社／系統管理員上稿的原本，老師只能閱讀或建立副本（自編教材）。
@@ -49,8 +50,6 @@ export const TEXTBOOKS: Textbook[] = [
 
 export const findTextbook = (id: string) => TEXTBOOKS.find((t) => t.id === id) ?? null;
 
-/** 書櫃分區的科目名稱 → 教材設定裡的科目（決定回首頁鈕的造型）。 */
-const META_SUBJECT: Record<string, string> = { 國語文: '國語', 英語文: '英語', 自然科學: '自然' };
 
 /** 原本的內容。每次都重新解析，拿到的是乾淨的一份，建副本時改了不會動到原本。 */
 /** 沒有範例內容的書用的章節骨架：[課名, 每課的節] */
@@ -67,7 +66,7 @@ export function textbookDoc(t: Textbook): Doc {
     // 沒有範例內容的書：照科目給三課的章節骨架，建立自編時才有章節可以勾（內容是佔位文字）
     const [lessons, sections] = SKELETON[t.subject] ?? SKELETON['國語文'];
     const md = [
-      `---\ntitle: ${t.title}\npublisher: ${t.publisher}\nsubject: ${META_SUBJECT[t.subject] ?? t.subject}\n---`,
+      `---\ntitle: ${t.title}\npublisher: ${t.publisher}\nsubject: ${AREA_TO_SUBJECT[t.subject] ?? t.subject}\n---`,
       ...lessons.map((l) => [`# ${l}`, ...sections.map((x) => `## ${x}\n\n（${l}${x}的內容）`)].join('\n\n')),
     ].join('\n\n');
     const doc = applyImport(emptyDoc(), parseMarkdown(md, { autoPageBreak: true }));

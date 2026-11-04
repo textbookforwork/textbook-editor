@@ -7,6 +7,7 @@ import { Dropdown } from './Dropdown';
 import { PanelBody as Body, PanelClose as Ghost, PanelDrawer as Drawer, PanelHead as Head, PanelTitle as Title, fieldCss, useExclusivePanel } from './SidePanel';
 import { SegmentedControl } from '../components/SegmentedControl';
 import type { Doc, DocMeta, DocSettings } from '../model/types';
+import { STAGES, subjectsOf } from '../model/subjects';
 
 type Props = {
   doc: Doc;
@@ -40,7 +41,8 @@ export function BookSettings({ doc, onPatch, onMeta, onClose, onImport, publishe
   const meta = doc.meta;
   // 年級依教育階段列：國小一到六年級、國中一到三年級（課本上就是這樣寫的）
   const grades = meta.stage === '國中' ? ['1', '2', '3'] : ['1', '2', '3', '4', '5', '6'];
-  const subjects = SUBJECTS[meta.stage === '國中' ? '國中' : '國小'];
+  // 沒選學制（測試推廣不限學制）列國小國中全部科目
+  const subjects = subjectsOf(meta.stage);
   // 舊資料的科目不在清單裡（例：生活）也要列出來，不然一打開就看不到原本的值
   const subjectOptions =
     meta.subject && !subjects.includes(meta.subject) ? [meta.subject, ...subjects] : subjects;
@@ -119,13 +121,13 @@ export function BookSettings({ doc, onPatch, onMeta, onClose, onImport, publishe
                 aria-label="教育階段"
                 placeholder="階段"
                 value={meta.stage ?? ''}
-                options={['國小', '國中'].map((x) => ({ value: x, label: x }))}
+                options={STAGES.map((x) => ({ value: x, label: x }))}
                 // 換階段時年級、科目可能不在新的清單裡（國小 5 年級 → 國中、國語 → 國文），一起清掉
                 onChange={(v) =>
                   onMeta({
                     stage: v || undefined,
                     grade: undefined,
-                    subject: meta.subject && SUBJECTS[v === '國中' ? '國中' : '國小'].includes(meta.subject) ? meta.subject : undefined,
+                    subject: meta.subject && subjectsOf(v || undefined).includes(meta.subject) ? meta.subject : undefined,
                   })
                 }
               />
@@ -180,11 +182,6 @@ export function BookSettings({ doc, onPatch, onMeta, onClose, onImport, publishe
  * 外觀照 Figma 自編頁「目次＿彈窗」：圓角 20、淡白底、只靠陰影浮起來，不畫外框也不畫標題分隔線。
  * 從視窗頂端 8px 起，整個蓋住頂部列右側的按鈕（不露出啟用中的黃底）；高度跟著內容走，碰到視窗底才捲。
  */
-/** 科目依教育階段列主科。 */
-const SUBJECTS: Record<'國小' | '國中', string[]> = {
-  國小: ['國語', '英語', '數學', '自然', '社會'],
-  國中: ['國文', '英文', '數學', '歷史', '地理'],
-};
 
 const Input = styled.input`
   ${fieldCss}

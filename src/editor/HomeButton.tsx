@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import styled from 'styled-components';
 import { goShelf } from '../shelf/nav';
+import { areaOf } from '../model/subjects';
 
 /**
  * 回首頁：預設是一顆品牌色 Lime 的有機鵝卵石，依科目換成橘、綠、藍的造型（見 shapeOf）。
@@ -28,18 +29,18 @@ export type Shape = 'chinese' | 'english' | 'science' | 'social' | 'math' | 'oth
  * 顏色分兩種用法（乙練定的）：書櫃的科目標題用深色，閱讀與自編的回首頁鈕用淺色。
  * 深淺兩色照 Figma「色彩與形狀」的輔助色配對（node 13:500 的 SECONDARY）。2026-10-22 試套，還沒上線。
  */
-const SUBJECTS: Record<Exclude<Shape, 'other'>, string[]> = {
-  chinese: ['國語', '國文', '國語文'],
-  english: ['英語', '英文', '英語文'],
-  science: ['自然', '自然科學', '理化', '生物', '地科'], // 國中分科歸自然
-  social: ['社會', '歷史', '地理', '公民'], // 國中分科歸社會
-  math: ['數學'],
+/** 書櫃分區 → 造型。國中分科先對到分區（理化、生物、地科→自然科學；歷史、地理、公民→社會），清單在 model/subjects。 */
+const AREA_SHAPE: Record<string, Exclude<Shape, 'other'>> = {
+  國語文: 'chinese',
+  英語文: 'english',
+  自然科學: 'science',
+  社會: 'social',
+  數學: 'math',
 };
 
 export function shapeOf(subject?: string): Shape {
-  if (!subject) return 'other';
-  const hit = (Object.keys(SUBJECTS) as (keyof typeof SUBJECTS)[]).find((k) => SUBJECTS[k].includes(subject));
-  return hit ?? 'other';
+  const area = areaOf(subject);
+  return (area && AREA_SHAPE[area]) || 'other';
 }
 
 /** w、h 是路徑自己的座標範圍；畫的時候等比縮進 32×32 的格子裡置中。 */

@@ -36,17 +36,20 @@ SHA=$(git rev-parse --short HEAD)
 # 線上 repo 屬於 textbookforwork 帳號；推完切回原本的帳號
 PREV=$(gh api user --jq .login)
 gh auth switch -u textbookforwork >/dev/null
-trap 'gh auth switch -u "$PREV" >/dev/null' EXIT
+# 切回帳號不能蓋掉腳本本身的結束碼（逾時要以 1 結束）
+trap 'rc=$?; gh auth switch -u "${PREV}" >/dev/null || true; exit $rc' EXIT
 git -c http.postBuffer=524288000 -c credential.helper= -c credential.helper='!gh auth git-credential' \
   push -q origin main
 
 # GitHub Actions 建置完會在 gh-pages 留一筆「發佈網站 <sha>」
 for _ in $(seq 1 60); do
   if gh api "repos/$REPO/commits?sha=gh-pages" --jq '.[0].commit.message' | grep -q "$SHA"; then
-    echo "已上線：$SHA $MSG"
+    echo "已上線：${SHA} ${MSG}"
     exit 0
   fi
   sleep 10
 done
-echo "推上去了（$SHA），但十分鐘內沒看到發佈完成，去 GitHub Actions 看" >&2
+# 變數一律加大括號：bash 3.2 會把緊接在後的全形字（例：「）」）當成變數名的一部分，變成 unbound variable
+echo "部署逾時：已推上 ${REPO}（${SHA}），但十分鐘內沒看到 GitHub Pages 發佈完成。" >&2
+echo "請到 https://github.com/${REPO}/actions 看建置結果，失敗（例如 500）就重跑那一次。" >&2
 exit 1

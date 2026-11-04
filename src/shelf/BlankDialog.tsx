@@ -4,8 +4,13 @@ import styled from 'styled-components';
 import { ESC, Pair, Scrim, Secondary, Sheet } from '../editor/ShareDialog';
 import { SubjectMark } from '../editor/HomeButton';
 
-/** 書櫃的科目分區，也是書櫃上由上到下的順序（乙練定的：國語文、社會、英語文、自然科學、數學）。 */
-export const SUBJECTS = ['國語文', '社會', '英語文', '自然科學', '數學'];
+import { SHELF_AREAS, STAGES, areaOf, subjectsOf } from '../model/subjects';
+
+/** 書櫃的科目分區（清單在 model/subjects）。 */
+export const SUBJECTS = SHELF_AREAS;
+
+/** 這個學制裡第一個屬於該分區的科目：從書櫃某一區按「建立教材」時先帶入。 */
+const pick = (stage: string, area?: string) => subjectsOf(stage).find((s) => areaOf(s) === area) ?? subjectsOf(stage)[0];
 
 /**
  * 系統管理員的「建立教材」：從空白本開始，建的是數位教科書（原本）。
@@ -17,13 +22,14 @@ export function BlankDialog({
   onCancel,
   onCreate,
 }: {
-  /** 從哪一區按的：科目先帶入，還是可以改。 */
+  /** 從哪一區按的（書櫃分區）：先帶入該區的科目，還是可以改。 */
   subject?: string;
   onCancel: () => void;
   onCreate: (v: { name: string; subject: string; publisher: string; stage: string }) => void;
 }) {
   const [name, setName] = useState('');
-  const [subject, setSubject] = useState(initialSubject && SUBJECTS.includes(initialSubject) ? initialSubject : SUBJECTS[0]);
+  // 科目照學制列（2026-11-03 定案的學制科目），回傳的是科目本身（例：理化），書櫃分區由呼叫端換算
+  const [subject, setSubject] = useState(() => pick('國小', initialSubject));
   const [publisher, setPublisher] = useState('');
   // 學制：書卡左上要寫「115 南一 國中」，少了它就沒有年段（2026-11-03）
   const [stage, setStage] = useState('國小');
@@ -53,8 +59,19 @@ export function BlankDialog({
         <Field as="div">
           <span>學制</span>
           <Chips role="radiogroup" aria-label="學制">
-            {['國小', '國中'].map((s) => (
-              <Chip key={s} type="button" role="radio" aria-checked={stage === s} $on={stage === s} onClick={() => setStage(s)}>
+            {STAGES.map((s) => (
+              <Chip
+                key={s}
+                type="button"
+                role="radio"
+                aria-checked={stage === s}
+                $on={stage === s}
+                // 換學制時科目不在新清單裡（國語 → 國中），換成同一區的科目（國文）
+                onClick={() => {
+                  setStage(s);
+                  if (!subjectsOf(s).includes(subject)) setSubject(pick(s, areaOf(subject)));
+                }}
+              >
                 {s}
               </Chip>
             ))}
@@ -64,7 +81,7 @@ export function BlankDialog({
         <Field as="div">
           <span>科目</span>
           <Chips role="radiogroup" aria-label="科目">
-            {SUBJECTS.map((s) => (
+            {subjectsOf(stage).map((s) => (
               <Chip key={s} type="button" role="radio" aria-checked={subject === s} $on={subject === s} onClick={() => setSubject(s)}>
                 <SubjectMark subject={s} size={16} />
                 {s}

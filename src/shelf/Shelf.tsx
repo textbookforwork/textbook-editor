@@ -12,6 +12,7 @@ import { TEXTBOOKS } from './catalog';
 import { findSource, sourceDoc, type Source } from './sources';
 import { ROLE_NAME, setRole, useRole, type Role } from './role';
 import { BlankDialog, SUBJECTS } from './BlankDialog';
+import { areaOf } from '../model/subjects';
 import { emptyDoc } from '../model/document';
 import { adoptedFrom, adoptTextbook, createBook, deleteBook, findBook, hiddenTextbooks, hideTextbook, isOriginal, listBooks, nextFrame, subscribeLibrary, updateBook, type MyBook } from './library';
 import { goEdit, goRead, goReadTextbook, goShelf, type ShelfTab } from './nav';
@@ -234,7 +235,8 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
             const doc = emptyDoc(name);
             const first = doc.rows[0].columns[0].blocks[0];
             if (first.type === 'text') first.spans = [{ text: name }];
-            const book = createBook('', { ...doc, meta: { publisher, stage, subject: metaSubject(subject) } }, { subject, publisher });
+            // 教材設定存科目本身（理化），書櫃用它所屬的分區（自然科學）
+            const book = createBook('', { ...doc, meta: { publisher, stage, subject } }, { subject: areaOf(subject) ?? subject, publisher });
             setBlank(null);
             goEdit(book.id);
           }}
@@ -281,8 +283,6 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
   );
 }
 
-/** 書櫃分區的科目名稱 → 教材設定裡的科目（決定左上角回首頁鈕的形狀）。 */
-const metaSubject = (subject: string) => ({ 國語文: '國語', 英語文: '英語', 自然科學: '自然' })[subject] ?? subject;
 
 /** 右上角：名字＋頭像，點了切換身分或登出。 */
 function UserMenu({ role }: { role: Role }) {
