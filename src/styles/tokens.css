@@ -1,15 +1,15 @@
 /* 由 scripts/build-tokens.mjs 產生，請勿手動編輯。 */
-/* 來源：design/tokens.raw.txt（Figma「2. Semantic」collection，184 個變數） */
+/* 來源：design/tokens.raw.txt（Figma「2. Semantic」collection，197 個變數） */
 
 :root {
-  --ds-action-accent-bg: #F0FF62;
   --ds-action-accent-bg-active: #C5D154;
   --ds-action-accent-bg-hover: #D6E459;
+  --ds-action-accent-bg: #F0FF62;
   --ds-action-accent-focus-ring: #1A1A1A;
   --ds-action-accent-text: #1A1A1A;
-  --ds-action-danger-bg: #D63020;
   --ds-action-danger-bg-active: #AE2417;
   --ds-action-danger-bg-hover: #AE2417;
+  --ds-action-danger-bg: #D63020;
   --ds-action-danger-focus-ring: #1A1A1A;
   --ds-action-danger-text: #FFFFFF;
   --ds-action-disabled-bg: #F5F5F5;
@@ -18,19 +18,19 @@
   --ds-action-ghost-bg-hover: #F5F5F5;
   --ds-action-ghost-focus-ring: #5A6E00;
   --ds-action-ghost-text: #1A1A1A;
-  --ds-action-inverse-bg: #FFFFFF;
   --ds-action-inverse-bg-active: #F5F5F5;
   --ds-action-inverse-bg-hover: #F5F5F5;
+  --ds-action-inverse-bg: #FFFFFF;
   --ds-action-inverse-text: #1A1A1A;
   --ds-action-outline-border: #CDCDCD;
-  --ds-action-primary-bg: #1A1A1A;
   --ds-action-primary-bg-active: #525252;
   --ds-action-primary-bg-hover: #3B3B3B;
+  --ds-action-primary-bg: #1A1A1A;
   --ds-action-primary-focus-ring: #5A6E00;
   --ds-action-primary-text: #FAFAFA;
-  --ds-action-secondary-bg: #FFFFFF;
   --ds-action-secondary-bg-active: #F5F5F5;
   --ds-action-secondary-bg-hover: #F5F5F5;
+  --ds-action-secondary-bg: #FFFFFF;
   --ds-action-secondary-border: #CDCDCD;
   --ds-action-secondary-focus-ring: #5A6E00;
   --ds-action-secondary-text: #1A1A1A;
@@ -49,14 +49,14 @@
   --ds-border-width-icon: 1.5px;
   --ds-border-width-selected: 2px;
   --ds-brand-accent-on-light: #5A6E00;
-  --ds-brand-primary: #F0FF62;
   --ds-brand-primary-active: #C5D154;
   --ds-brand-primary-hover: #D6E459;
-  --ds-brand-primary-tint: #F6FF99;
   --ds-brand-primary-tint-subtle: #FBFFD0;
-  --ds-brand-secondary: #1A1A1A;
+  --ds-brand-primary-tint: #F6FF99;
+  --ds-brand-primary: #F0FF62;
   --ds-brand-secondary-active: #525252;
   --ds-brand-secondary-hover: #3B3B3B;
+  --ds-brand-secondary: #1A1A1A;
   --ds-control-circle-inline-lg: 40px;
   --ds-control-circle-inline-md: 32px;
   --ds-control-counter-md: 20px;
@@ -92,6 +92,8 @@
   --ds-radius-none: 0px;
   --ds-radius-panel: 20px;
   --ds-radius-tile: 12px;
+  --ds-score-badge-bg: #1A1A1A;
+  --ds-score-badge-text: #F0FF62;
   --ds-shadow-card: 0 4px 20px rgba(26, 25, 23, 0.07);
   --ds-shadow-float: 0 28px 80px rgba(26, 25, 23, 0.22);
   --ds-shadow-popover: 0 0 0 1px #E5E5E5, 0 2px 6px rgba(26, 25, 23, 0.06), 0 12px 32px rgba(26, 25, 23, 0.14);
@@ -109,6 +111,16 @@
   --ds-space-inset-xs: 8px;
   --ds-space-stack-lg: 24px;
   --ds-space-stack-md: 16px;
+  --ds-subject-chinese-soft: #FFC2A5;
+  --ds-subject-chinese-strong: #FF854A;
+  --ds-subject-english-soft: #FCDD9D;
+  --ds-subject-english-strong: #F3C11B;
+  --ds-subject-math-soft: #82E6F8;
+  --ds-subject-math-strong: #03C5E9;
+  --ds-subject-science-soft: #66E497;
+  --ds-subject-science-strong: #00A36E;
+  --ds-subject-social-soft: #CEA8FF;
+  --ds-subject-social-strong: #7F6CDF;
   --ds-surface-accent-strong: #3F4D00;
   --ds-surface-backdrop: #F2F2F2;
   --ds-surface-brand: #F0FF62;
@@ -128,13 +140,14 @@
   --ds-text-primary: #1A1A1A;
   --ds-text-secondary: #6A6A6A;
   --ds-text-tertiary: #757575;
-  --ds-tool-accent: #1A66C2;
+  --ds-timer-urgent: #D63020;
   --ds-tool-accent-hover: #14539E;
-  --ds-tool-border: #1A66C2;
+  --ds-tool-accent: #1A66C2;
   --ds-tool-border-subtle: #8CB2E0;
+  --ds-tool-border: #1A66C2;
   --ds-tool-on-accent: #FFFFFF;
-  --ds-tool-surface: #E8F1FC;
   --ds-tool-surface-subtle: #F4F8FD;
+  --ds-tool-surface: #E8F1FC;
   --ds-typography-body-lg-line-height: 28px;
   --ds-typography-body-lg-size: 18px;
   --ds-typography-body-lg-weight: 400;
@@ -151,7 +164,7 @@
   --ds-typography-display-number-line-height: 56px;
   --ds-typography-display-number-size: 48px;
   --ds-typography-display-number-weight: 700;
-  --ds-typography-font-display: "Space Grotesk", "Noto Sans TC", "PingFang TC", "Hiragino Sans CNS", "Heiti TC", system-ui, sans-serif;
+  --ds-typography-font-display: Lexend, "Noto Sans TC", "PingFang TC", "Hiragino Sans CNS", "Heiti TC", system-ui, sans-serif;
   --ds-typography-font-sans: "Noto Sans TC", "PingFang TC", "Hiragino Sans CNS", "Heiti TC", system-ui, sans-serif;
   --ds-typography-heading-1-letter-spacing: -1.5px;
   --ds-typography-heading-1-line-height: 56px;

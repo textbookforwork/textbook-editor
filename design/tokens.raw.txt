@@ -1,11 +1,11 @@
---ds-action-accent-bg|COLOR|#F0FF62
 --ds-action-accent-bg-active|COLOR|#C5D154
 --ds-action-accent-bg-hover|COLOR|#D6E459
+--ds-action-accent-bg|COLOR|#F0FF62
 --ds-action-accent-focus-ring|COLOR|#1A1A1A
 --ds-action-accent-text|COLOR|#1A1A1A
---ds-action-danger-bg|COLOR|#D63020
 --ds-action-danger-bg-active|COLOR|#AE2417
 --ds-action-danger-bg-hover|COLOR|#AE2417
+--ds-action-danger-bg|COLOR|#D63020
 --ds-action-danger-focus-ring|COLOR|#1A1A1A
 --ds-action-danger-text|COLOR|#FFFFFF
 --ds-action-disabled-bg|COLOR|#F5F5F5
@@ -14,19 +14,19 @@
 --ds-action-ghost-bg-hover|COLOR|#F5F5F5
 --ds-action-ghost-focus-ring|COLOR|#5A6E00
 --ds-action-ghost-text|COLOR|#1A1A1A
---ds-action-inverse-bg|COLOR|#FFFFFF
 --ds-action-inverse-bg-active|COLOR|#F5F5F5
 --ds-action-inverse-bg-hover|COLOR|#F5F5F5
+--ds-action-inverse-bg|COLOR|#FFFFFF
 --ds-action-inverse-text|COLOR|#1A1A1A
 --ds-action-outline-border|COLOR|#CDCDCD
---ds-action-primary-bg|COLOR|#1A1A1A
 --ds-action-primary-bg-active|COLOR|#525252
 --ds-action-primary-bg-hover|COLOR|#3B3B3B
+--ds-action-primary-bg|COLOR|#1A1A1A
 --ds-action-primary-focus-ring|COLOR|#5A6E00
 --ds-action-primary-text|COLOR|#FAFAFA
---ds-action-secondary-bg|COLOR|#FFFFFF
 --ds-action-secondary-bg-active|COLOR|#F5F5F5
 --ds-action-secondary-bg-hover|COLOR|#F5F5F5
+--ds-action-secondary-bg|COLOR|#FFFFFF
 --ds-action-secondary-border|COLOR|#CDCDCD
 --ds-action-secondary-focus-ring|COLOR|#5A6E00
 --ds-action-secondary-text|COLOR|#1A1A1A
@@ -45,14 +45,14 @@
 --ds-border-width-icon|FLOAT|1.5
 --ds-border-width-selected|FLOAT|2
 --ds-brand-accent-on-light|COLOR|#5A6E00
---ds-brand-primary|COLOR|#F0FF62
 --ds-brand-primary-active|COLOR|#C5D154
 --ds-brand-primary-hover|COLOR|#D6E459
---ds-brand-primary-tint|COLOR|#F6FF99
 --ds-brand-primary-tint-subtle|COLOR|#FBFFD0
---ds-brand-secondary|COLOR|#1A1A1A
+--ds-brand-primary-tint|COLOR|#F6FF99
+--ds-brand-primary|COLOR|#F0FF62
 --ds-brand-secondary-active|COLOR|#525252
 --ds-brand-secondary-hover|COLOR|#3B3B3B
+--ds-brand-secondary|COLOR|#1A1A1A
 --ds-control-circle-inline-lg|FLOAT|40
 --ds-control-circle-inline-md|FLOAT|32
 --ds-control-counter-md|FLOAT|20
@@ -88,6 +88,8 @@
 --ds-radius-none|FLOAT|0
 --ds-radius-panel|FLOAT|20
 --ds-radius-tile|FLOAT|12
+--ds-score-badge-bg|COLOR|#1A1A1A
+--ds-score-badge-text|COLOR|#F0FF62
 --ds-shadow-card|STRING|0 4px 20px rgba(26, 25, 23, 0.07)
 --ds-shadow-float|STRING|0 28px 80px rgba(26, 25, 23, 0.22)
 --ds-shadow-popover|STRING|0 0 0 1px #E5E5E5, 0 2px 6px rgba(26, 25, 23, 0.06), 0 12px 32px rgba(26, 25, 23, 0.14)
@@ -105,6 +107,16 @@
 --ds-space-inset-xs|FLOAT|8
 --ds-space-stack-lg|FLOAT|24
 --ds-space-stack-md|FLOAT|16
+--ds-subject-chinese-soft|COLOR|#FFC2A5
+--ds-subject-chinese-strong|COLOR|#FF854A
+--ds-subject-english-soft|COLOR|#FCDD9D
+--ds-subject-english-strong|COLOR|#F3C11B
+--ds-subject-math-soft|COLOR|#82E6F8
+--ds-subject-math-strong|COLOR|#03C5E9
+--ds-subject-science-soft|COLOR|#66E497
+--ds-subject-science-strong|COLOR|#00A36E
+--ds-subject-social-soft|COLOR|#CEA8FF
+--ds-subject-social-strong|COLOR|#7F6CDF
 --ds-surface-accent-strong|COLOR|#3F4D00
 --ds-surface-backdrop|COLOR|#F2F2F2
 --ds-surface-brand|COLOR|#F0FF62
@@ -124,13 +136,14 @@
 --ds-text-primary|COLOR|#1A1A1A
 --ds-text-secondary|COLOR|#6A6A6A
 --ds-text-tertiary|COLOR|#757575
---ds-tool-accent|COLOR|#1A66C2
+--ds-timer-urgent|COLOR|#D63020
 --ds-tool-accent-hover|COLOR|#14539E
---ds-tool-border|COLOR|#1A66C2
+--ds-tool-accent|COLOR|#1A66C2
 --ds-tool-border-subtle|COLOR|#8CB2E0
+--ds-tool-border|COLOR|#1A66C2
 --ds-tool-on-accent|COLOR|#FFFFFF
---ds-tool-surface|COLOR|#E8F1FC
 --ds-tool-surface-subtle|COLOR|#F4F8FD
+--ds-tool-surface|COLOR|#E8F1FC
 --ds-typography-body-lg-line-height|FLOAT|28
 --ds-typography-body-lg-size|FLOAT|18
 --ds-typography-body-lg-weight|FLOAT|400
@@ -147,7 +160,7 @@
 --ds-typography-display-number-line-height|FLOAT|56
 --ds-typography-display-number-size|FLOAT|48
 --ds-typography-display-number-weight|FLOAT|700
---ds-typography-font-display|STRING|Space Grotesk
+--ds-typography-font-display|STRING|Lexend
 --ds-typography-font-sans|STRING|Noto Sans TC
 --ds-typography-heading-1-letter-spacing|FLOAT|-1.5
 --ds-typography-heading-1-line-height|FLOAT|56

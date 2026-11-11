@@ -60,6 +60,9 @@ design/       token 與圖示的唯一來源（從 Figma 匯出）
 
 ## 六、真的、假的
 
+（課堂部分：學生除了 12 號都是程式模擬加入、作答；聲音題的錄音是模擬的；科目亮點只有星際巡航有網址。）
+
+
 | 項目 | 現況 |
 |---|---|
 | 上傳的圖片／影片／聲音／PDF | 存成瀏覽器的 object URL，重新整理就沒了；媒體庫列的是這次分頁的上傳 |
@@ -67,6 +70,17 @@ design/       token 與圖示的唯一來源（從 Figma 匯出）
 | 共享、封面 | 狀態存 localStorage，沒有真的書櫃 |
 | AI 搜尋、AI 生成圖片 | 介面有、模型沒有，按下去會說明原型未接 |
 | 網頁能否頁內嵌入 | `embeddable` 恆為 false（要看對方 X-Frame-Options，是伺服器端的事），所以一律提示「不支援預覽」 |
+
+## 六之一、併入師生同步（2026-11-11）
+
+原本另一個網站「師生同步」（textbookforwork/classroom-sync，課堂模式 demo）併進這裡，現在是同一個網站：
+
+- **三種身分**：右上角頭像切換老師、學生（12 號陳小宇）、系統管理員，每個瀏覽器分頁各記各的（`shelf/role.ts`）。同一台電腦開兩個分頁，一個老師、一個學生，就能試上課同步。
+- **閱讀畫面**改用課堂模組的左欄、上課膠囊、派任務、計時器、加分、白板、便利貼、貼紙、分組、抽籤、數學小工具、科目亮點；課本那一頁是這裡真的頁（`classroom/ClassReader.tsx` 的 BookPage），點課文、補充資源、目次、閱讀設定也是這裡的。
+- **書櫃**多了班級星艦、補給站（老師）、帳號管理（管理員）；學生只有數位教科書、右下角形狀夥伴。編輯器頂部列多一顆「找補充」（補給站接進真的編輯器）。
+- **課堂模組的程式**在 `src/classroom/legacy.js`：原 demo 的 Preact＋htm 模板，靠 `classroom/h.js` 轉給 React，樣式在 `classroom/classroom.css`（全部收在 `.cr` 底下、顏色走 token）。它要用到這邊的東西時經過 `classroom/bridgeSlot.js`。
+- **同步**：課堂狀態是一份共用的 S，用 BroadcastChannel 在同一台電腦的分頁間互傳、存在 localStorage。跨裝置要等後端（Ben/Ethan），要傳哪些欄位看 S.cls、S.t.page、S.focus、S.task、S.timer、S.session。
+- **畫面切換不要靠 S 裡的 screen**：S 是全班共用的，另一個分頁會把它改掉。換畫面一律走網址（`shelf/nav.ts`）。
 
 ## 七、加一種新元件
 

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -36,6 +37,8 @@ type Ctx = {
    * 預覽與學生端沒有人註冊，那顆按鈕就不會出現。
    */
   registerEdit: (fn: ((blockId: string) => void) | null) => void;
+  /** 從外面關掉（上課時老師關了，學生跟著關） */
+  close: () => void;
 };
 
 const ViewerCtx = createContext<Ctx | null>(null);
@@ -65,12 +68,17 @@ type Opened = { block: Block; anchor: Anchor | null; lead: Lead | null };
 export function PopupViewerProvider({
   children,
   onJump,
+  onOpened,
 }: {
   children: ReactNode;
+  /** 開了哪一個元件的補充、或關掉（null）。上課鎖定螢幕時用來讓學生跟著老師開 */
+  onOpened?: (block: Block | null) => void;
   /** 「跳到某一段」要由外層決定怎麼跳：預覽是換頁，編輯是捲動。 */
   onJump?: (rowId: string) => void;
 }) {
   const [opened, setOpened] = useState<Opened | null>(null);
+  const openedCb = useRef(onOpened);
+  openedCb.current = onOpened;
   const [onEdit, setOnEdit] = useState<((blockId: string) => void) | null>(null);
   /** 「看大圖」：整個彈窗換成那一張圖，不在清單裡展開——清單裡塞一張大圖會把其他項擠出畫面。 */
   const [zoom, setZoom] = useState<Extract<PopupItem, { kind: 'image' }> | null>(null);
@@ -89,6 +97,7 @@ export function PopupViewerProvider({
     setPicked(null);
     setDetail(solo?.kind === 'web' || solo?.kind === 'video' ? solo : null);
     setOpened({ block: b, anchor: anchor ?? null, lead: lead ?? null });
+    openedCb.current?.(b);
   }, []);
   const close = useCallback(() => {
     setZoom(null);
@@ -96,13 +105,14 @@ export function PopupViewerProvider({
     setDetail(null);
     setPicked(null);
     setOpened(null);
+    openedCb.current?.(null);
   }, []);
   // 包一層函式，否則 setState 會把傳進來的函式當成 updater 執行掉
   const registerEdit = useCallback(
     (fn: ((blockId: string) => void) | null) => setOnEdit(() => fn),
     []
   );
-  const ctx = useMemo(() => ({ open, registerEdit }), [open, registerEdit]);
+  const ctx = useMemo(() => ({ open, registerEdit, close }), [open, registerEdit, close]);
 
   const block = opened?.block ?? null;
   const single =

@@ -17,7 +17,8 @@ import { blockFor, blockFromAsset } from './components/RowView';
 import type { Asset } from './editor/assets';
 import { newId } from './model/ids';
 import { PopupViewerProvider } from './viewer/PopupViewer';
-import { ReaderMode } from './reader/ReaderMode';
+import { ClassReader, type Side } from './classroom/ClassReader';
+import { EditorStation } from './classroom/EditorStation';
 import { TopBar } from './editor/TopBar';
 import { setActiveBook } from './editor/persist';
 import { findBook } from './shelf/library';
@@ -69,13 +70,18 @@ type Props = {
   readOnly?: boolean;
   /** 唯讀時左欄的「進入自編」（只有管理員讀數位教科書時有） */
   onEnterEdit?: () => void;
+  /** 這一本的代號（textbook:<id>、mine:<id>）：上課時用來讓學生打開同一本 */
+  bookKey: string;
+  /** 閱讀畫面是老師端還是學生端（右上角頭像切換的身分；管理員用老師端，但不能開課） */
+  side: Side;
 };
 
-export function App({ bookId, initialDoc, startReading = false, readOnly = false, onEnterEdit }: Props) {
+export function App({ bookId, initialDoc, startReading = false, readOnly = false, onEnterEdit, bookKey, side }: Props) {
   const [preview, setPreview] = useState(startReading || readOnly);
   const [current, setCurrent] = useState(0);
   const [importing, setImporting] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [stationOpen, setStationOpen] = useState(false);
 
   // 存檔寫到這一本（見 persist.ts）。在第一次 render 前就設定，自動存才不會寫到上一本
   const [initial] = useState(() => {
@@ -90,7 +96,7 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
   );
   // 流式排版的閱讀畫面：頁面大小跟著螢幕走，字不縮放（見 useReflowSize）
   const stageRef = useRef<HTMLDivElement>(null);
-  const reflow = useReflowSize(stageRef, preview && doc.settings.layout === 'flow');
+  const reflow = useReaderFlowSize(preview && doc.settings.layout === 'flow');
   const { pages } = usePages(doc, reflow?.size);
   // 管理員從空白本建立的數位教科書（原本）；老師的自編是副本
   const isOriginalBook = !!bookId && findBook(bookId)?.kind === 'original';
@@ -231,6 +237,8 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
         importing={importing}
         settingsOpen={settingsOpen}
         onSettings={() => setSettingsOpen((v) => !v)}
+        stationOpen={stationOpen}
+        onStation={() => setStationOpen((v) => !v)}
         reading={preview}
         onReading={() => setPreview((p) => !p)}
       />
@@ -253,17 +261,14 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
         )}
       {preview ? (
         /* 閱讀模式照 Figma 做在 src/reader/；翻頁仍沿用這裡的 go／current */
-        <ReaderMode
+        <ClassReader
           doc={doc}
           pages={pages}
-          current={current}
-          go={go}
-          scale={reflow ? reflow.zoom : scale}
-          pageSize={reflow?.size}
-          stageRef={stageRef}
+          size={reflow?.size}
+          side={side}
+          bookKey={bookKey}
           onExit={readOnly ? onEnterEdit : () => setPreview(false)}
           exitLabel={readOnly ? '進入自編' : undefined}
-          onGoRow={jumpToRow}
         />
       ) : (
         <EditorProvider editor={editor}>
@@ -306,6 +311,7 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
           />
           {/* 新增表格與表格樣式的浮動彈窗。要放在 EditorProvider 裡面，拿不到編輯器它就什麼都不畫 */}
           <TablePanel />
+          <EditorStation open={stationOpen} onClose={() => setStationOpen(false)} />
         </EditorProvider>
       )}
       </Main>
@@ -542,34 +548,27 @@ const PageSlot = styled.div`
  *   依視角算，86 吋、最後一排 6–7 公尺至少要 1.3–1.5 倍，螢幕小或教室深要更大）
  * 畫布四周各留 24，頁邊再裁掉 READER_CROP（跟固定頁一樣），所以頁座標要把裁掉的加回去。
  */
-const REFLOW_MARGIN = 24;
-function useReflowSize(ref: React.RefObject<HTMLElement | null>, active: boolean): { size: PageDims; zoom: number } | null {
+const RAIL_W = 104;
+function useReaderFlowSize(active: boolean): { size: PageDims; zoom: number } | null {
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
   useEffect(() => {
     if (!active) {
       setBox(null);
       return;
     }
-    const el = ref.current;
-    if (!el) return;
-    const read = () => {
-      const w = el.clientWidth;
-      const h = el.clientHeight;
-      if (w > 0 && h > 0) setBox((b) => (b && b.w === w && b.h === h ? b : { w, h }));
-    };
+    const read = () => setBox((b) => (b && b.w === window.innerWidth && b.h === window.innerHeight ? b : { w: window.innerWidth, h: window.innerHeight }));
     read();
-    const ro = new ResizeObserver(read);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [ref, active]);
+    window.addEventListener('resize', read);
+    return () => window.removeEventListener('resize', read);
+  }, [active]);
   if (!active || !box) return null;
+  // 教室大螢幕（寬 1700 以上）整體放大 1.5 倍（乙練 2026-10-22 定）
   const zoom = box.w >= 1700 ? 1.5 : 1;
   return {
     zoom,
     size: {
-      width: Math.round((box.w - REFLOW_MARGIN * 2) / zoom + READER_CROP * 2),
-      height: Math.round((box.h - REFLOW_MARGIN * 2) / zoom + READER_CROP * 2),
+      width: Math.round((box.w - RAIL_W - 16) / zoom + READER_CROP * 2),
+      height: Math.round((box.h - 94) / zoom + READER_CROP * 2),
     },
   };
 }
-

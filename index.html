@@ -33,7 +33,9 @@
       Tinos 是 Times New Roman 的替身：字寬相同，沒裝 Times 的 Android 平板排版不會跑掉。
       Google 沒有的自己架在 public/fonts/（源泉圓體、Lesson One、品牌字繁 Think 黑），
       中文切成小塊，畫面用到哪些字才下載哪幾塊（scripts/build-webfonts.py）。
-      標楷體不架：教育部授權不允許改字型檔，只用裝置本來就有的。
+      標楷體：要放字型檔（乙練 2026-11-10 定，字型檔由乙練提供）。檔案放進 public/fonts/ 後，
+      在 public/fonts/kai.css 補上 @font-face（名字固定叫 "DS Kai"），閱讀設定的楷體就會先用它；
+      還沒放之前退回裝置本來有的標楷體。
     -->
     <link
       rel="stylesheet"
@@ -42,6 +44,7 @@
     <link rel="stylesheet" href="/fonts/gensen-rounded.css" />
     <link rel="stylesheet" href="/fonts/lesson-one.css" />
     <link rel="stylesheet" href="/fonts/fanthink.css" />
+    <link rel="stylesheet" href="/fonts/kai.css" />
 
     <title>數位教科書 · 自編編輯器</title>
   </head>

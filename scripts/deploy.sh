@@ -21,8 +21,13 @@ cd "$CLONE"
 git fetch -q origin
 git reset -q --hard origin/main
 
+# 師生同步搬來的真實出版社封面沒有用到，線上 repo 是公開的，不上傳（2026-11-11）
 rsync -a --delete --exclude=node_modules --exclude=dist --exclude=.git --exclude=.github \
-  --exclude=.gitignore --exclude=.DS_Store "$SRC/" "$CLONE/"
+  --exclude=.gitignore --exclude=.DS_Store \
+  --exclude='public/assets/covers/english-6.jpg' --exclude='public/assets/covers/guowen-2b.jpg' \
+  --exclude='public/assets/covers/guoyu-6b.jpg' --exclude='public/assets/covers/math-2b.jpg' \
+  --exclude='public/assets/covers/science-5b.jpg' --exclude='public/assets/covers/social-5b.jpg' \
+  "$SRC/" "$CLONE/"
 git add -A
 if git diff --cached --quiet; then
   echo "線上版已經是最新，沒有東西要推"

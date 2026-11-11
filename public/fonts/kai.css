@@ -1,0 +1,14 @@
+/*
+ * 標楷體字型檔（乙練 2026-11-10 定：要放字型檔，檔案由乙練提供）。
+ * 拿到檔案後放在這個資料夾，把下面這段的檔名改成實際的、拿掉註解：
+ *
+ * @font-face {
+ *   font-family: "DS Kai";
+ *   src: url("./kai.woff2") format("woff2");
+ *   font-weight: 400;
+ *   font-display: swap;
+ * }
+ *
+ * styles/roles.ts 的標楷體與課堂模組的楷體都把 "DS Kai" 排在第一個，放了就生效；
+ * 沒放之前退回裝置本來有的標楷體。
+ */

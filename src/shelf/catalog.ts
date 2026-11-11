@@ -1,10 +1,5 @@
 import mulanMd from '../../design/sample-mulan.md?raw';
 import demoMd from '../../design/sample-demo.md?raw';
-import guowenCover from './covers/guowen-2b.jpg';
-import scienceCover from './covers/science-5b.jpg';
-import socialCover from './covers/social-5b.jpg';
-import englishCover from './covers/english-6.jpg';
-import mathCover from './covers/math-2b.jpg';
 // 去掉出版社字的封面圖（書櫃新封面用，2026-10-27）
 import guowenArt from './covers/guowen-2b-art.jpg';
 import scienceArt from './covers/science-5b-art.jpg';
@@ -40,12 +35,13 @@ export type Textbook = {
   md?: string;
 };
 
+/* 網站是公開的：出版社用假的名字、封面用去掉出版社字的那張（2026-11-10，比照師生同步網站） */
 export const TEXTBOOKS: Textbook[] = [
-  { id: 'mulan', subject: '國語文', edition: '115 南一 國中', publisher: '南一', title: '國文 2下', cover: guowenCover, art: guowenArt, md: mulanMd },
-  { id: 'social-5b', subject: '社會', edition: '115 翰林 國小', publisher: '翰林', title: '社會 5下', cover: socialCover, art: socialArt },
-  { id: 'english-6', subject: '英語文', edition: '114 康軒 國小', publisher: '康軒', title: 'Wonder World 6', cover: englishCover, art: englishArt },
-  { id: 'demo', subject: '自然科學', edition: '114 南一 國小', publisher: '南一', title: '自然科學 5下', cover: scienceCover, art: scienceArt, md: demoMd },
-  { id: 'math-2b', subject: '數學', edition: '114 翰林 國中', publisher: '翰林', title: '數學 2下', cover: mathCover, art: mathArt },
+  { id: 'mulan', subject: '國語文', edition: '115 星光 國中', publisher: '星光出版', title: '國文 2下', cover: guowenArt, art: guowenArt, md: mulanMd },
+  { id: 'social-5b', subject: '社會', edition: '115 月光 國小', publisher: '月光出版', title: '社會 5下', cover: socialArt, art: socialArt },
+  { id: 'english-6', subject: '英語文', edition: '114 晨星 國小', publisher: '晨星出版', title: 'Wonder World 6', cover: englishArt, art: englishArt },
+  { id: 'demo', subject: '自然科學', edition: '114 星光 國小', publisher: '星光出版', title: '自然科學 5下', cover: scienceArt, art: scienceArt, md: demoMd },
+  { id: 'math-2b', subject: '數學', edition: '114 月光 國中', publisher: '月光出版', title: '數學 2下', cover: mathArt, art: mathArt },
 ];
 
 export const findTextbook = (id: string) => TEXTBOOKS.find((t) => t.id === id) ?? null;

@@ -8,9 +8,9 @@ await p.getByRole('menuitemradio', { name: '系統管理員' }).click(); await p
 await p.getByRole('button', { name: '建立教材' }).click(); await p.waitForTimeout(500);
 const dlg = p.getByRole('dialog', { name: '建立教材' });
 await dlg.getByPlaceholder('請輸入教材名稱').fill('自然');
-await dlg.getByRole('radio', { name: '自然科學' }).click().catch(e => console.log('no 國語文 chip'));
 await dlg.getByPlaceholder('請輸入出版社名稱').fill('範例');
 await dlg.getByRole('radio', { name: '國小' }).click(); // 學制（2026-11-03 新增）留預設「國小」；點一下讓出版社欄失焦，跟直排那張一樣
+await dlg.getByRole('radio', { name: '自然' }).click(); // 科目跟著學制換，國小科目：國語、英語、數學、自然、社會
 await ring(p, [dlg]); await shot(p, 'fa1h.png'); await unring(p);
 await dlg.getByRole('button', { name: '建立', exact: true }).click(); await p.waitForTimeout(2500);
 // fa2

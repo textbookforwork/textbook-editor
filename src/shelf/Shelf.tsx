@@ -10,12 +10,15 @@ import { Toaster, toast } from '../editor/Toast';
 import { CreateDialog } from './CreateDialog';
 import { TEXTBOOKS } from './catalog';
 import { findSource, sourceDoc, type Source } from './sources';
-import { ROLE_NAME, setRole, useRole, type Role } from './role';
+import { ROLE_AVATAR, ROLE_LABEL, ROLE_NAME, setRole, useRole, type Role } from './role';
 import { BlankDialog, SUBJECTS } from './BlankDialog';
 import { areaOf } from '../model/subjects';
 import { emptyDoc } from '../model/document';
 import { adoptedFrom, adoptTextbook, createBook, deleteBook, findBook, hiddenTextbooks, hideTextbook, isOriginal, listBooks, nextFrame, subscribeLibrary, updateBook, type MyBook } from './library';
-import { goEdit, goRead, goReadTextbook, goShelf, type ShelfTab } from './nav';
+import { goArea, goEdit, goRead, goReadTextbook, goShelf, type Area, type ShelfTab } from './nav';
+import { ShelfArea, ShelfOverlay, Sprite } from '../classroom/ShelfParts';
+import { useClassroom } from '../classroom/ClassReader';
+import * as CL from '../classroom/legacy.js';
 import { signOut } from './session';
 
 const TABS: { key: ShelfTab; label: string }[] = [
@@ -37,10 +40,14 @@ const TABS: { key: ShelfTab; label: string }[] = [
  *              只有已發布的數位教科書能建立自編，老師和管理員都可以（管理員自己建的，從「更多」選單建）；
  *              已發布的原本不能刪（老師可能已經在用，由後端刪，避免手殘）；未發布的草稿可以刪
  */
-export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?: string }) {
+export function Shelf({ tab: tabProp = 'textbook', subject, area }: { tab?: ShelfTab; subject?: string; area?: Area }) {
   const books = useSyncExternalStore(subscribeLibrary, listBooks);
   const role = useRole();
+  useClassroom();
   const admin = role === 'admin';
+  const student = role === 'student';
+  // 學生只有數位教科書
+  const tab: ShelfTab = student ? 'textbook' : tabProp;
   const [creating, setCreating] = useState<Source | null>(null);
   // 從共享教材建立自編：內容複製那一份共享教材，不是原本
   const [copyFrom, setCopyFrom] = useState<string | null>(null);
@@ -103,21 +110,35 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
         <UserMenu role={role} />
       </Top>
 
-      {/* 地球大廳、班級星艦是平台的兩個主要區域；這次只做書櫃（地球大廳），另一個先不能點（啟航探索留給 V2） */}
+      {/* 地球大廳是書櫃；老師多「班級星艦」「補給站」，管理員多「帳號管理」（2026-11-10 併入課堂模組）。學生只有書櫃 */}
       <Nav>
-        <NavPill $on aria-current="page">
+        <NavPill $on={!area} aria-current={!area ? 'page' : undefined} type="button" onClick={() => goShelf('textbook')}>
           <Icon name="book" size={20} />
           地球大廳
         </NavPill>
-        <NavPill as="span" title="還沒開放">
-          <Icon name="users" size={20} />
-          班級星艦
-        </NavPill>
+        {role === 'teacher' && (
+          <>
+            <NavPill $on={area === 'classes'} aria-current={area === 'classes' ? 'page' : undefined} type="button" onClick={() => { const S = CL.getS(); S.t.classView = null; CL.act(() => {})(); goArea('classes'); }}>
+              <Icon name="users" size={20} />
+              班級星艦
+            </NavPill>
+            <NavPill $on={area === 'space'} aria-current={area === 'space' ? 'page' : undefined} type="button" onClick={() => goArea('space')}>
+              <Icon name="rocket" size={20} />
+              補給站
+            </NavPill>
+          </>
+        )}
+        {admin && (
+          <NavPill $on={area === 'accounts'} aria-current={area === 'accounts' ? 'page' : undefined} type="button" onClick={() => goArea('accounts')}>
+            <Icon name="shield" size={20} />
+            帳號管理
+          </NavPill>
+        )}
       </Nav>
 
-      <Panel>
+      {area ? <Panel><ShelfArea area={area} /></Panel> : <Panel>
         {/* 子頁（查看全部）照設計稿：不放分頁列，只有左上的返回鈕 */}
-        {!subject && <TabRow>
+        {!subject && !student && <TabRow>
           <Tabs role="tablist" aria-label="教材種類">
             {TABS.map((t) => (
               <TabBtn key={t.key} role="tab" aria-selected={tab === t.key} $on={tab === t.key} onClick={() => goShelf(t.key)}>
@@ -135,9 +156,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
 
         {sections.length === 0 && (
           <Empty>
-            <EmptyIcon>
-              <Icon name="ghost" size={24} />
-            </EmptyIcon>
+            <Sprite size={96} />
             <EmptyTitle>
               這裡還沒有{tab === 'shared' ? '共享教材' : '自編教材'}
             </EmptyTitle>
@@ -197,6 +216,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
                         key={t.id}
                         source={t}
                         published={admin}
+                        student={student}
                         onCreate={() => setCreating(t)}
                         admin={admin ? {
                           edit: () => goEdit(adopt(t).id),
@@ -209,7 +229,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
             </Grid>
           </Section>
         ))}
-      </Panel>
+      </Panel>}
 
       {creating && (
         <CreateDialog
@@ -279,6 +299,7 @@ export function Shelf({ tab = 'textbook', subject }: { tab?: ShelfTab; subject?:
         />
       )}
       <Toaster />
+      <ShelfOverlay side={role} />
     </Page>
   );
 }
@@ -297,16 +318,43 @@ function UserMenu({ role }: { role: Role }) {
     return () => window.removeEventListener('pointerdown', close, true);
   }, [open]);
   const name = ROLE_NAME[role];
+  const S = CL.getS();
+  const item = (label: string, icon: string, run: () => void) => (
+    <MenuItem role="menuitem" type="button" onClick={() => { setOpen(false); run(); }}>
+      {label}
+      <Icon name={icon as never} size={16} />
+    </MenuItem>
+  );
   return (
     <UserWrap ref={ref}>
-      <User type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="切換身分、登出">
+      <User type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} title="切換身分、個人資料、登出">
         {name}
-        <Avatar aria-hidden="true">{role === 'admin' ? '管' : name.slice(0, 1)}</Avatar>
+        <Avatar aria-hidden="true">{ROLE_AVATAR[role]}</Avatar>
       </User>
       {open && (
         <Menu role="menu" style={{ insetBlockStart: 52 }}>
-          <MenuHint>切換身分（原型用）</MenuHint>
-          {(['teacher', 'admin'] as Role[]).map((r) => (
+          <MenuHint>{role === 'student' ? `${CL.SCHOOL} 501` : role === 'teacher' ? CL.SCHOOL : '教科書團隊'}</MenuHint>
+          {role === 'student' && S.s.avatar && (
+            <PalCard className="cr cr-inline">
+              <CL.Companion shape={S.s.avatar.shape} eye={S.s.avatar.eye} box={44} cls="" />
+              <b>{CL.SH[S.s.avatar.shape]?.name}</b>
+            </PalCard>
+          )}
+          {role === 'student' && item('換學習夥伴', 'sparkles', () => {
+            S.s.screen = 'pick';
+            S.s.pickStep = 1;
+            S.s.draft = { ...(S.s.avatar || { shape: null, eye: 'big' }) };
+            S.flags.palSeen = true;
+            CL.act(() => {})();
+          })}
+          {item('個人資料', 'user', () => {
+            S.profile = { side: role, show: false, pw: null };
+            if (role === 'student') S.flags.profileSeen = true;
+            CL.act(() => {})();
+          })}
+          <MenuDivider />
+          <MenuHint>切換身分</MenuHint>
+          {(['teacher', 'student', 'admin'] as Role[]).map((r) => (
             <MenuItem
               key={r}
               role="menuitemradio"
@@ -315,9 +363,11 @@ function UserMenu({ role }: { role: Role }) {
               onClick={() => {
                 setRole(r);
                 setOpen(false);
+                // 換成學生：照學生登入的流程走（第一次先選夥伴、老師在上課就加入）
+                if (r === 'student' && S.s.screen === 'login') CL.act(() => CL.studentLogin())();
               }}
             >
-              {r === 'teacher' ? '老師' : '系統管理員'}
+              {ROLE_LABEL[r]}
               {role === r && <Icon name="check" size={16} />}
             </MenuItem>
           ))}
@@ -332,12 +382,24 @@ function UserMenu({ role }: { role: Role }) {
             }}
           >
             登出
+            <Icon name="log-out" size={16} />
           </MenuItem>
         </Menu>
       )}
     </UserWrap>
   );
 }
+
+const PalCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 8px 8px;
+  padding: 8px 12px;
+  border-radius: ${(p) => p.theme.radius.tile};
+  background: ${(p) => p.theme.surface.sunken};
+  font-size: ${(p) => p.theme.typography.bodySmSize};
+`;
 
 /** 「⋯」：滑過封面才出現；點開是這一本能做的事 */
 function MoreMenu({ items }: { items: { label: string; icon: string; danger?: boolean; run: () => void }[] }) {
@@ -375,7 +437,7 @@ function MoreMenu({ items }: { items: { label: string; icon: string; danger?: bo
  * 數位教科書（原本）：出版社封面去字＋白字課名；沒有封面的範例書用科目色平塗＋課名。數位教科書一律不套形狀框。
  * 點封面閱讀；「⋯」裡是建立自編。管理員多「進入編輯」「更換封面」「刪除」，下方標「已發布」。
  */
-function SourceCard({ source, published, onCreate, admin }: { source: Source; published?: boolean; onCreate: () => void; admin?: { edit: () => void; cover: () => void; remove: () => void } }) {
+function SourceCard({ source, published, onCreate, admin, student }: { source: Source; published?: boolean; onCreate: () => void; admin?: { edit: () => void; cover: () => void; remove: () => void }; student?: boolean }) {
   const art = source.art ?? source.cover;
   return (
     <Card>
@@ -390,7 +452,7 @@ function SourceCard({ source, published, onCreate, admin }: { source: Source; pu
           { label: '更換封面', icon: 'image', run: admin.cover },
           { label: '建立自編', icon: 'copy', run: onCreate },
           { label: '刪除', icon: 'trash', danger: true, run: admin.remove },
-        ] : [{ label: '建立自編', icon: 'copy', run: onCreate }]} />
+        ] : student ? [] : [{ label: '建立自編', icon: 'copy', run: onCreate }]} />
       </Cover>
       <Below>{published && <Status>已發布</Status>}</Below>
     </Card>
@@ -630,7 +692,8 @@ const NavPill = styled.button<{ $on?: boolean }>`
   font: inherit;
   font-size: ${(p) => p.theme.typography.bodySmSize};
   font-weight: ${(p) => (p.$on ? 500 : 400)};
-  cursor: ${(p) => (p.$on ? 'default' : 'not-allowed')};
+  cursor: ${(p) => (p.$on ? 'default' : 'pointer')};
+  &:hover { color: ${(p) => p.theme.text.primary}; }
 `;
 
 const Panel = styled.main`
@@ -683,17 +746,6 @@ const Empty = styled.div`
   text-align: center;
 `;
 
-const EmptyIcon = styled.span`
-  display: grid;
-  place-items: center;
-  width: 96px;
-  height: 96px;
-  margin-block-end: 8px;
-  border-radius: 50%;
-  background: ${(p) => p.theme.surface.sunken};
-  color: ${(p) => p.theme.text.tertiary};
-  svg { width: 40px; height: 40px; }
-`;
 
 const EmptyTitle = styled.p`
   margin: 0;

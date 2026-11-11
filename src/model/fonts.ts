@@ -10,7 +10,10 @@ import type { Doc } from './types';
 const RENAMED: Record<string, string> = {
   // 2026-10-22 之前的「楷體」→ 標楷體
   '"Kaiti TC", "BiauKai", "TW-MOE-Std-Kai", "DFKai-SB", "TW-Kai", "Noto Serif TC", serif':
-    '"BiauKai", "DFKai-SB", "TW-MOE-Std-Kai", "TW-Kai", "Kaiti TC", "Noto Serif TC", serif',
+    '"DS Kai", "BiauKai", "DFKai-SB", "TW-MOE-Std-Kai", "TW-Kai", "Kaiti TC", "Noto Serif TC", serif',
+  // 2026-11-10 前的標楷體（還沒放字型檔）→ 先用自己放的 "DS Kai"
+  '"BiauKai", "DFKai-SB", "TW-MOE-Std-Kai", "TW-Kai", "Kaiti TC", "Noto Serif TC", serif':
+    '"DS Kai", "BiauKai", "DFKai-SB", "TW-MOE-Std-Kai", "TW-Kai", "Kaiti TC", "Noto Serif TC", serif',
   // 2026-10-22 之前的「圓體」→ 源泉圓體
   '"GenSenRounded TW", "Yuanti TC", "YuanTi TC", "Hiragino Maru Gothic ProN", "jf-openhuninn", "Noto Sans TC", sans-serif':
     '"GenSenRounded TW", "Noto Sans TC", sans-serif',

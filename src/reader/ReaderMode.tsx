@@ -408,7 +408,7 @@ export function ReaderMode({ doc, pages, current, go, scale, stageRef, onExit, e
  * 段裡聚焦到標成句子的字時，同一條換成那一句的旨修句問與補充，位置不變。
  * 按下去泡泡對準段落（或那一句）彈出（用的是補充同一個泡泡，直排時一樣往左長、字是直的）。
  */
-function ParaRail({ doc, focus, sentenceId }: { doc: Doc; focus: { id: string; el: HTMLElement }; sentenceId: string | null }) {
+export function ParaRail({ doc, focus, sentenceId }: { doc: Doc; focus: { id: string; el: HTMLElement }; sentenceId: string | null }) {
   const viewer = usePopupViewer();
   const hit = findBlock(doc, focus.id);
   const block = hit?.block.type === 'text' ? hit.block : null;
@@ -672,7 +672,7 @@ const Sheet = styled.div`
  * 省下來的全部給頁面。掛在 :root 上，因為工具箱、目次、補充資源面板（portal 到 body）
  * 都要貼著左欄右緣，同一個變數才不會對不齊。字保留——小朋友靠字認工具。
  */
-const ReaderVars = createGlobalStyle`
+export const ReaderVars = createGlobalStyle`
   :root {
     --reader-rail: 104px;
     /* 工具格一律正方形 */

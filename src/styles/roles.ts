@@ -152,7 +152,8 @@ export const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 56, 64, 72, 9
  * null 代表整本預設的思源黑體（Noto Sans TC，不存欄位）。順序照乙練 2026-10-22 定的：中文在前、英文在後。
  *
  * 載入方式見 index.html：Google Fonts 有的直接掛，沒有的自架在 public/fonts/。
- * 標楷體只用裝置本來就有的（授權不允許改字型檔），沒有就退回思源宋體，不會變成空白。
+ * 標楷體：先用自己放的字型檔 "DS Kai"（public/fonts/kai.css，檔案由乙練提供，2026-11-10 定），
+ * 沒放之前用裝置本來就有的，都沒有就退回思源宋體，不會變成空白。
  */
 export const INLINE_FONTS: { label: string; value: string | null }[] = [
   { label: '思源黑體', value: null },
@@ -160,7 +161,7 @@ export const INLINE_FONTS: { label: string; value: string | null }[] = [
   { label: '源泉圓體', value: '"GenSenRounded TW", "Noto Sans TC", sans-serif' },
   {
     label: '標楷體',
-    value: '"BiauKai", "DFKai-SB", "TW-MOE-Std-Kai", "TW-Kai", "Kaiti TC", "Noto Serif TC", serif',
+    value: '"DS Kai", "BiauKai", "DFKai-SB", "TW-MOE-Std-Kai", "TW-Kai", "Kaiti TC", "Noto Serif TC", serif',
   },
   { label: 'Lesson One', value: '"Lesson One", "Noto Sans TC", sans-serif' },
   { label: 'Lexend', value: 'Lexend, "Noto Sans TC", sans-serif' },

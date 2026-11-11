@@ -1,3 +1,5 @@
+// 頂部列：儲存、網頁元件、當頁背景、共享。對應 Figma：s06a(171:22) s06b(171:25) s08(171:41)
+// 共享三張（2026-11-05 對齊說明文字）：08-share(86:69)＝共享彈窗、s09a(171:44)＝頂部按鈕「已共享」、s09b(171:47)＝彈窗的「關閉」「前往上傳」
 import { start, login, makeCopy, ring, unring, shot } from './common.mjs';
 const { b, p } = await start(); p.setDefaultTimeout(8000);
 await p.route('**/api.microlink.io/**', r => r.abort());
@@ -48,8 +50,9 @@ await p.keyboard.press('Escape'); await p.mouse.click(5, 600); await p.waitForTi
 const shareBtn = p.locator('button[title="共享教材"]');
 await shareBtn.click(); await p.waitForTimeout(700);
 const dlg = p.getByRole('dialog', { name: '自編教材已共享' });
-await ring(p, [dlg, p.locator('button[aria-pressed="true"]', { hasText: '已共享' })]); await shot(p, 's09-cover-dialog.png'); await unring(p);
-await dlg.getByRole('button', { name: '取消' }).click(); await p.waitForTimeout(500);
+await ring(p, [dlg]); await shot(p, '08-share.png'); await unring(p);
+await ring(p, [dlg.getByRole('button', { name: '關閉' }), dlg.getByRole('button', { name: '前往上傳' })]); await shot(p, 's09-cover-dialog.png'); await unring(p);
+await dlg.getByRole('button', { name: '關閉' }).click(); await p.waitForTimeout(500);
 const sh = p.locator('button[aria-pressed="true"]', { hasText: '已共享' });
 await ring(p, [sh]); await shot(p, 's09-shared.png');
 await b.close();

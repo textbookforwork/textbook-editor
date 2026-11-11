@@ -10,20 +10,26 @@ import { useSyncExternalStore } from 'react';
  *   #/edit/<自編 id>       編輯器
  *   #/read/<自編 id>       閱讀自編
  *   #/read/book/<課本 id>  閱讀數位教科書（原本，唯讀）
+ *   #/classes #/space #/accounts  班級星艦、補給站、帳號管理
  */
 export type Route =
   | { page: 'shelf'; tab?: ShelfTab; subject?: string }
+  | { page: 'area'; area: Area }
   | { page: 'edit'; id: string }
   | { page: 'read'; id: string }
   | { page: 'readTextbook'; id: string };
 
 export type ShelfTab = 'textbook' | 'shared' | 'mine';
+/** 書櫃上方導覽的其他區域：班級星艦（老師）、補給站（老師）、帳號管理（管理員） */
+export type Area = 'classes' | 'space' | 'accounts';
+const AREAS: Area[] = ['classes', 'space', 'accounts'];
 
 export function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
   if (parts[0] === 'edit' && parts[1]) return { page: 'edit', id: parts[1] };
   if (parts[0] === 'read' && parts[1] === 'book' && parts[2]) return { page: 'readTextbook', id: parts[2] };
   if (parts[0] === 'read' && parts[1]) return { page: 'read', id: parts[1] };
+  if (AREAS.includes(parts[0] as Area)) return { page: 'area', area: parts[0] as Area };
   const tab = parts[0] === 'shelf' ? (parts[1] as ShelfTab | undefined) : undefined;
   if (!tab || !['textbook', 'shared', 'mine'].includes(tab)) return { page: 'shelf', tab: undefined };
   return parts[2] ? { page: 'shelf', tab, subject: parts[2] } : { page: 'shelf', tab };
@@ -47,5 +53,6 @@ const go = (hash: string) => {
 export const goShelf = (tab: ShelfTab = 'mine', subject?: string) =>
   go(`#/shelf/${tab}${subject ? `/${encodeURIComponent(subject)}` : ''}`);
 export const goEdit = (id: string) => go(`#/edit/${encodeURIComponent(id)}`);
+export const goArea = (area: Area) => go(`#/${area}`);
 export const goRead = (id: string) => go(`#/read/${encodeURIComponent(id)}`);
 export const goReadTextbook = (id: string) => go(`#/read/book/${encodeURIComponent(id)}`);

@@ -1,4 +1,4 @@
-// 流程 A（直排・國文）：管理員建立教材 → 匯入 md → 匯入完成 → 編輯 → 發布。對應 Figma：flowA-1～5（94:6、94:10、94:14、94:18、94:22）
+// 流程 A（直排・國文）：管理員建立教材 → 匯入 md → 匯入完成 → 編輯 → 發布。對應 Figma：flowA-1～5（94:6、94:10、94:14、94:18、94:22）；最後再開一次匯入視窗＝設定區 09-import(86:66)
 import { start, login, ring, unring, shot, cardMore } from './common.mjs';
 const { b, p } = await start(); p.setDefaultTimeout(8000);
 await p.route('**/api.microlink.io/**', r => r.abort());
@@ -8,9 +8,9 @@ await p.getByRole('menuitemradio', { name: '系統管理員' }).click(); await p
 await p.getByRole('button', { name: '建立教材' }).click(); await p.waitForTimeout(500);
 const dlg = p.getByRole('dialog', { name: '建立教材' });
 await dlg.getByPlaceholder('請輸入教材名稱').fill('木蘭詩');
-await dlg.getByRole('radio', { name: '國語文' }).click().catch(e => console.log('no 國語文 chip'));
 await dlg.getByPlaceholder('請輸入出版社名稱').fill('範例');
 await dlg.getByRole('radio', { name: '國中' }).click(); // 學制（2026-11-03 新增）：木蘭詩是國中課文
+await dlg.getByRole('radio', { name: '國文' }).click(); // 科目跟著學制換（國中：國文、英語、數學、理化⋯），要先選學制再選科目
 await ring(p, [dlg]); await shot(p, 'fa1.png'); await unring(p);
 await dlg.getByRole('button', { name: '建立', exact: true }).click(); await p.waitForTimeout(2500);
 // fa2
@@ -36,5 +36,10 @@ await ring(p, [blk, cap]); await shot(p, 'fa4.png'); await unring(p);
 await p.keyboard.press('Escape'); await p.mouse.click(1430, 880); await p.waitForTimeout(300);
 await p.locator('button[title^="發布到書櫃"]').click(); await p.waitForTimeout(700);
 const dlg5 = p.getByRole('dialog', { name: '教材已發布' });
-await ring(p, [dlg5, p.locator('button[aria-pressed="true"]', { hasText: '已發布' })]); await shot(p, 'fa5.png');
+await ring(p, [dlg5, p.locator('button[aria-pressed="true"]', { hasText: '已發布' })]); await shot(p, 'fa5.png'); await unring(p);
+// 09-import：匯入完的木蘭詩上再開匯入視窗
+await dlg5.getByRole('button', { name: '關閉' }).click(); await p.waitForTimeout(400);
+await p.locator('button[title="教材設定、匯入"]').click(); await p.waitForTimeout(500);
+await p.getByRole('button', { name: '匯入 .md 檔' }).click(); await p.waitForTimeout(600);
+await p.mouse.move(1430, 890); await shot(p, '09-import.png');
 await b.close();

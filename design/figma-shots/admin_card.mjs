@@ -10,7 +10,7 @@ const dlg = p.getByRole('dialog', { name: '建立教材' });
 await dlg.getByPlaceholder('請輸入出版社名稱').fill('南一');
 await dlg.getByPlaceholder('請輸入教材名稱').fill('國文 3上');
 await dlg.getByRole('radio', { name: '國中' }).click();
-await dlg.getByRole('radio', { name: '國語文' }).click();
+await dlg.getByRole('radio', { name: '國文' }).click();
 await dlg.getByRole('button', { name: '建立', exact: true }).click(); await p.waitForTimeout(2500);
 await p.locator('button[title^="發布到書櫃"]').click(); await p.waitForTimeout(700);
 await p.keyboard.press('Escape'); await p.waitForTimeout(300);

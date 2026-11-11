@@ -2,7 +2,7 @@ import { useEffect, useRef, type RefObject } from 'react';
 import { locate, offsetOf, textNodes } from '../editor/caret';
 
 /**
- * 逐句聚焦：閱讀模式下點一句，那一句留黑、其餘調暗；雙擊標黃；
+ * 逐句聚焦：閱讀模式下點一句，那一句留黑、其餘調暗（雙擊標黃 2026-11-04 拿掉）；
  * 方向鍵換上一句／下一句；Esc 或點空白處取消。
  *
  * 點到課文時要不要聚焦、聚焦哪幾個字，由外層的 decide 決定：
@@ -314,18 +314,6 @@ export function SentenceFocus({ active, root, decide, onBlank, onMove }: Props) 
       focusAt(hit.rich, index);
     };
 
-    const onDblClick = (e: MouseEvent) => {
-      if (isInteractive(e)) return;
-      const hit = hitTest(el, e.clientX, e.clientY);
-      if (!hit || !current || hit.rich !== current.rich) return;
-      // 雙擊落在目前聚焦的範圍裡才切換標黃（第二下 click 已經把焦點移過去了）
-      if (hit.offset < current.span.start || hit.offset > current.span.end) return;
-      marked = !marked;
-      paint();
-      // 雙擊預設會選取一個詞，蓋在高亮上面
-      document.getSelection()?.removeAllRanges();
-    };
-
     const step = (delta: 1 | -1) => {
       if (!current) return;
       const riches = richElements(el);
@@ -364,14 +352,12 @@ export function SentenceFocus({ active, root, decide, onBlank, onMove }: Props) 
     observer.observe(el, { childList: true, subtree: true });
 
     el.addEventListener('click', onClick);
-    el.addEventListener('dblclick', onDblClick);
     // 用 capture 掛在 document，才能搶在 window 上的翻頁監聽之前處理
     document.addEventListener('keydown', onKey, true);
 
     return () => {
       observer.disconnect();
       el.removeEventListener('click', onClick);
-      el.removeEventListener('dblclick', onDblClick);
       document.removeEventListener('keydown', onKey, true);
       clear();
     };

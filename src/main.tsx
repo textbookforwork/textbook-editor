@@ -5,6 +5,7 @@ import { theme } from './styles/theme';
 import { GlobalStyle } from './styles/GlobalStyle';
 import './styles/tokens.css';
 import { Root } from './Root';
+import { Specimen } from './classroom/Specimen';
 import { installScrollReveal } from './styles/scrollReveal';
 
 installScrollReveal();
@@ -27,7 +28,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider theme={theme}>
       <GlobalStyle />
-      <Root />
+      {import.meta.env.DEV && new URLSearchParams(location.search).has('specimen') ? <Specimen /> : <Root />}
     </ThemeProvider>
   </StrictMode>
 );

@@ -19,6 +19,9 @@ export type TopBarProps = {
   importing: boolean;
   settingsOpen: boolean;
   onSettings: () => void;
+  /** 找補充（補給站）面板 */
+  stationOpen?: boolean;
+  onStation?: () => void;
   /** 閱讀模式＝目前 App 的 preview */
   reading: boolean;
   onReading: () => void;
@@ -47,6 +50,8 @@ export function TopBar({
   importing,
   settingsOpen,
   onSettings,
+  stationOpen,
+  onStation,
   reading,
   onReading,
 }: TopBarProps) {
@@ -102,6 +107,7 @@ export function TopBar({
         <Divider />
         <Group>
           {/* 匯入 md 是「換掉這本的內容」，也是設定這本的事，所以放在教材設定裡 */}
+          {onStation && <Tile icon="package-open" label="找補充" title="看其他老師分享的補充資源，掛到課文上" $focus={stationOpen} onClick={onStation} />}
           <Tile icon="settings" label="設定" title="教材設定、匯入" $focus={settingsOpen || importing} onClick={onSettings} />
           <Tile
             icon="save"

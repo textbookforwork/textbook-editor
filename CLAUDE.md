@@ -196,6 +196,15 @@ design/icons/*.svg  →  npm run icons  →  src/assets/icons.generated.ts
 建置、測試、推上去、等到線上發佈完成才結束。推不上去要當場講，不能只 commit 就說做完。
 打開網址先到登入頁（`shelf/Login.tsx`，原型不驗證帳密，填什麼都放行；登入狀態存在瀏覽器，書櫃右上角頭像選「登出」回登入頁），登入後到書櫃（`src/shelf/`）。數位教科書（原本）每次都從 `design/sample-*.md` 重新解析，換範例內容不用動存檔；老師建立的自編各存一份（`shelf/library.ts`），換範例不會蓋掉。書櫃三種教材的規則在 Notion PRD「書櫃｜三種教材的關係與版本管理」。
 
+## 課堂模組（2026-11-11 併入）
+
+師生同步 demo 併進這個網站，程式在 `src/classroom/`，交接看 HANDOVER〈六之一〉。改它時：
+
+- **legacy.js 是 htm 模板**，不是 JSX：`class=` 照寫（`h.js` 會轉成 className），style 可以是字串或物件
+- **樣式只寫在 classroom.css、一律 `.cr` 開頭**，色值用 `var(--ds-*)`，不要再寫十六進位
+- **換畫面走網址，不靠 S.t.screen／S.s.screen**：S 在分頁間同步，另一個分頁會改到你的畫面
+- 課堂模組要用編輯器的東西（真的頁、補充、目次、找補充），放進 `bridgeSlot.js` 的 BRIDGE，由 ClassReader、EditorStation 填
+
 ## 目前進度
 
 Mika 的 MVP（D8）之後，依 Notion「V1+ Prd」的需求逐項補齊：拖外框調尺寸、空白處插入、當頁背景、

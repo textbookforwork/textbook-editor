@@ -19,7 +19,7 @@ const FONT_FALLBACK = {
     '"Noto Sans TC", "PingFang TC", "Hiragino Sans CNS", "Heiti TC", system-ui, sans-serif',
   /* 英數顯示字（Label/Upper、Display/Number）。中文字落回 sans 的同一組 fallback。 */
   '--ds-typography-font-display':
-    '"Space Grotesk", "Noto Sans TC", "PingFang TC", "Hiragino Sans CNS", "Heiti TC", system-ui, sans-serif',
+    'Lexend, "Noto Sans TC", "PingFang TC", "Hiragino Sans CNS", "Heiti TC", system-ui, sans-serif',
 };
 
 const tokens = raw
