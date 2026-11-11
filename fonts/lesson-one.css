@@ -1,0 +1,8 @@
+/* Lesson One：以 Andika 改造、符合台灣課本寫法的英文字型（a、g、t、I、J 照課本）。SIL OFL 1.1，來源 https://github.com/ButTaiwan/LessonOne */
+@font-face {
+  font-family: "Lesson One";
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+  src: url("./lesson-one/LessonOneVF.woff2") format("woff2");
+}
