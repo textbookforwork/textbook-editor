@@ -1551,7 +1551,7 @@ function MyClasses() {
       : html`<div class="class-cards">${cs.map((x, i) => html`<div class=${'class-card ' + (x.c === '501' ? hint('t-classcard') : '')} role="button" tabindex="0" onClick=${act(() => openClass(x.c, x.subj))}>
           <svg class="cc-shape" viewBox="0 0 32 32" aria-hidden="true"><g transform=${fitShape(subjDef(x.subj)) || undefined}><path d=${subjDef(x.subj).d} fill=${subjDef(x.subj).light} /></g></svg>
           <span class="cn">${x.c}</span><${SubjChip} subj=${x.subj} />
-          <div class="meta2">${x.c === '501' && html`<span class="faces">${roster().slice(0, 5).map((s) => html`<span class="av-circle" style="width:28px;height:28px;background:var(--raised);box-shadow:0 0 0 2px var(--raised)"><${Kid} seat=${s.seat} box=${22} cls="" /></span>`)}</span>`}${classSize(x.c)} 位學生</div>
+          <div class="meta2">${classSize(x.c)} 位學生</div>
           <button class="dots" aria-label="更多" onClick=${act((e) => { e.stopPropagation(); S.t.cardMenu = S.t.cardMenu === i ? null : i; })}>⋯</button>
           ${S.t.cardMenu === i && html`<div class="mini-menu" style="top:46px" onClick=${(e) => e.stopPropagation()}><button class="danger" onClick=${act(() => { S.t.classes.splice(i, 1); S.t.cardMenu = null; toast('teacher', `已退出 ${x.c} · ${x.subj}`); })}>退出班級</button></div>`}
         </div>`)}</div>`}
