@@ -2506,3 +2506,6 @@
 
 /* 「開始上課」hover 時底被一般格子的淺色 hover 蓋掉，字還是白的、看不到；改成黑字（乙練 2026-11-16） */
 .cr .tile.sync-tile:not(.live):hover:not(:disabled) { color: var(--ink); }
+
+/* 空狀態：灰圓裡一個小幽靈（跟書櫃空分頁同一個樣子，乙練 2026-11-16） */
+.cr .empty-ghost { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 50%; background: var(--sunken); color: var(--text-3); }

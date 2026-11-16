@@ -77,9 +77,9 @@ const ph = (p) => 1000 / ((PAGES[p] || PAGES[0]).r);
 /* 一頁一份的清單（筆跡、便利貼、貼紙），用到才建 */
 const pgl = (o, id) => (o[id] || (o[id] = [])); // 筆跡座標：頁寬固定 1000
 const SCHOOL = '星光示範國小';
-const SUBJECTS = ['國語', '英文', '數學', '自然', '社會'];
+const SUBJECTS = ['國語文', '英語文', '數學', '自然', '社會'];
 /* 學制決定能任教的科目；測試推廣單位不限學制，國小國中的科目都能選（2026-11-03） */
-const SUBJ_BY_STAGE = { 國小: ['國語', '英語', '數學', '自然', '社會'], 國中: ['國文', '英語', '數學', '理化', '生物', '地科', '歷史', '地理', '公民'] };
+const SUBJ_BY_STAGE = { 國小: ['國語文', '英語文', '數學', '自然', '社會'], 國中: ['國語文', '英語文', '數學', '理化', '生物', '地科', '歷史', '地理', '公民'] };
 const subjectsOf = (school) => { const sc = S.admin.schools.find((x) => x.name === school); if (!sc || sc.type !== '學校') return [...new Set([...SUBJ_BY_STAGE.國小, ...SUBJ_BY_STAGE.國中])]; return SUBJ_BY_STAGE[sc.stage] || SUBJ_BY_STAGE.國小; };
 const NAMES = ['王大明','陳怡君','林品妤','張家豪','李宜庭','黃柏翰','吳承恩','劉子晴','蔡佳穎','楊宗翰','許雅婷','陳小宇','鄭宇軒','謝欣妤','郭冠廷','洪詩涵','曾柏宇','邱若瑜','廖品睿','賴芷涵','周彥廷','徐巧芸','蘇俊宏','葉思妤','呂承翰','江語彤','何宥辰','羅以晴','高子豪','潘語涵'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -1547,7 +1547,7 @@ function MyClasses() {
   return html`<div>
     <div class="page-h"><h2>班級星艦</h2><span class="spacer"></span>
       <button class=${'btn sm ' + hint('t-join')} onClick=${act(() => { S.t.modal = 'join'; S.t.joinDraft = { c: availableClasses()[0], subj: '自然' }; })}><${Icon} n="plus" s=${16} />新增班級</button></div>
-    ${!cs.length ? html`<div class="empty-state"><${Companion} shape="lime" eye="big" box=${96} cls="bob" /><div>還沒有班級，按「新增班級」開始吧。</div></div>`
+    ${!cs.length ? html`<div class="empty-state"><span class="empty-ghost"><${Icon} n="ghost" s=${40} /></span><div>還沒有班級，按「新增班級」開始吧。</div></div>`
       : html`<div class="class-cards">${cs.map((x, i) => html`<div class=${'class-card ' + (x.c === '501' ? hint('t-classcard') : '')} role="button" tabindex="0" onClick=${act(() => openClass(x.c, x.subj))}>
           <svg class="cc-shape" viewBox="0 0 32 32" aria-hidden="true"><g transform=${fitShape(subjDef(x.subj)) || undefined}><path d=${subjDef(x.subj).d} fill=${subjDef(x.subj).light} /></g></svg>
           <span class="cn">${x.c}</span><${SubjChip} subj=${x.subj} />
