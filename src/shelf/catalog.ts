@@ -35,13 +35,13 @@ export type Textbook = {
   md?: string;
 };
 
-/* 網站是公開的：出版社用假的名字、封面用去掉出版社字的那張（2026-11-10，比照師生同步網站） */
+/* 出版社用真名（乙練 2026-11-16 改，原本 11-10 用假名）；封面仍用去掉出版社字的那張，真實出版社封面不上傳 */
 export const TEXTBOOKS: Textbook[] = [
-  { id: 'mulan', subject: '國語文', edition: '115 星光 國中', publisher: '星光出版', title: '國文 2下', cover: guowenArt, art: guowenArt, md: mulanMd },
-  { id: 'social-5b', subject: '社會', edition: '115 月光 國小', publisher: '月光出版', title: '社會 5下', cover: socialArt, art: socialArt },
-  { id: 'english-6', subject: '英語文', edition: '114 晨星 國小', publisher: '晨星出版', title: 'Wonder World 6', cover: englishArt, art: englishArt },
-  { id: 'demo', subject: '自然科學', edition: '114 星光 國小', publisher: '星光出版', title: '自然科學 5下', cover: scienceArt, art: scienceArt, md: demoMd },
-  { id: 'math-2b', subject: '數學', edition: '114 月光 國中', publisher: '月光出版', title: '數學 2下', cover: mathArt, art: mathArt },
+  { id: 'mulan', subject: '國語文', edition: '115 南一 國中', publisher: '南一', title: '國文 2下', cover: guowenArt, art: guowenArt, md: mulanMd },
+  { id: 'social-5b', subject: '社會', edition: '115 翰林 國小', publisher: '翰林', title: '社會 5下', cover: socialArt, art: socialArt },
+  { id: 'english-6', subject: '英語文', edition: '114 康軒 國小', publisher: '康軒', title: 'Wonder World 6', cover: englishArt, art: englishArt },
+  { id: 'demo', subject: '自然科學', edition: '114 南一 國小', publisher: '南一', title: '自然科學 5下', cover: scienceArt, art: scienceArt, md: demoMd },
+  { id: 'math-2b', subject: '數學', edition: '114 翰林 國中', publisher: '翰林', title: '數學 2下', cover: mathArt, art: mathArt },
 ];
 
 export const findTextbook = (id: string) => TEXTBOOKS.find((t) => t.id === id) ?? null;
