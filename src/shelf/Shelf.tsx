@@ -939,6 +939,9 @@ const MoreBtn = styled.button`
   background: none;
   color: ${(p) => p.theme.icon.default};
   cursor: pointer;
+  /* 按得到的範圍是 52 方塊，但鍵盤選到的框畫在圓鈕上，不畫成方框 */
+  &:focus-visible { outline: none; }
+  &:focus-visible > span { outline: 2px solid ${(p) => p.theme.action.ghostFocusRing}; outline-offset: 2px; }
   & > span {
     display: grid;
     place-items: center;

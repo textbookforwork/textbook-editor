@@ -652,7 +652,7 @@
 .cr .ctabs button { border: 0; background: transparent; padding: 12px 0; font-size: 15px; color: var(--text-3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; gap: 6px; align-items: center; }
 .cr .ctabs button b { font-weight: 500; font-variant-numeric: tabular-nums; }
 .cr .ctabs button.on { color: var(--olive); border-color: var(--olive); font-weight: 600; }
-.cr .ctabs button { position: relative; border-radius: 0; border-bottom: 0; }
+.cr .ctabs button { position: relative; border-radius: 8px; border-bottom: 0; } /* 選到、提示的框都要圓角（2026-11-16 乙練） */
 .cr .ctabs button::before { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: 2px; background: var(--olive); transform: scaleX(0); transition: transform .2s var(--ease); }
 .cr .ctabs button.on::before { transform: scaleX(1); }
 .cr .ctabs button.hint::after { border-radius: 10px; inset: 2px -10px; }
@@ -2515,8 +2515,8 @@
 .cr .tb-student .pop-b { padding-top: 12px; padding-bottom: 20px; }
 
 /* 班級卡片：固定四欄在大螢幕會被拉得又寬又扁。改成每張約 240–280 寬、比例 5:4（乙練 2026-11-16） */
-.cr .class-cards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-.cr .class-card { aspect-ratio: 5 / 4; min-height: 0; max-width: 300px; }
+.cr .class-cards, .cr .rec-cards { grid-template-columns: repeat(auto-fill, minmax(240px, 300px)); gap: 20px; }
+.cr .class-card { aspect-ratio: 5 / 4; min-height: 0; }
 
 /* 浮層在整頁 zoom 外面（遮罩才蓋得滿），對話框本身跟書櫃同一個縮放，大小才一致 */
 .cr.cr-overlay .dialog { zoom: var(--z, 1); }

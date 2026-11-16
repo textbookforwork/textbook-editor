@@ -114,6 +114,7 @@ const Percent = styled.button`
   min-inline-size: 34px;
   padding: 0;
   border: none;
+  border-radius: 6px; /* 鍵盤選到的框要圓角 */
   background: none;
   cursor: pointer;
   text-align: end;

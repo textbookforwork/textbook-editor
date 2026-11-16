@@ -86,6 +86,7 @@ const Zone = styled.div<{ $open: boolean; $vertical: boolean; $where: 'start' | 
 const Hit = styled.button<{ $vertical: boolean }>`
   all: unset;
   cursor: pointer;
+  border-radius: 8px; /* 鍵盤選到的框要圓角 */
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.space.gapXs};
