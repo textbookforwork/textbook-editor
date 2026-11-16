@@ -341,7 +341,7 @@ function UserMenu({ role }: { role: Role }) {
               <b>{CL.SH[S.s.avatar.shape]?.name}</b>
             </PalCard>
           )}
-          {role === 'student' && item('換學習夥伴', 'sparkles', () => {
+          {role === 'student' && item('學習夥伴', 'sparkles', () => {
             S.s.screen = 'pick';
             S.s.pickStep = 1;
             S.s.draft = { ...(S.s.avatar || { shape: null, eye: 'big' }) };
@@ -705,6 +705,8 @@ const NavPill = styled.button<{ $on?: boolean }>`
 
 const Panel = styled.main`
   flex: 1;
+  display: flex;
+  flex-direction: column; /* 空畫面要能撐到白框剩下的高度、置中 */
   position: relative;
   z-index: 1; /* 學生夥伴在白框後面探頭 */
   background: ${(p) => p.theme.surface.raised};
@@ -746,13 +748,16 @@ const TabBtn = styled.button<{ $on: boolean }>`
   &:focus-visible { outline: none; background: ${(p) => p.theme.surface.sunken}; }
 `;
 
-/** 書櫃分頁沒有教材時：灰圓裡一個小幽靈、一句主句、一行提示。 */
+/** 書櫃分頁沒有教材時：灰圓裡一個小幽靈、一句主句、一行提示。
+ * 放在白框剩下空間的中間、略偏上（下方多留 6vh），螢幕高矮都平衡（2026-11-16 乙練定）。 */
 const Empty = styled.div`
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  margin: 80px 0;
+  padding: 40px 0 calc(40px + 6vh);
   text-align: center;
 `;
 

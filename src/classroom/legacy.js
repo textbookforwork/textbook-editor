@@ -1466,7 +1466,7 @@ function AvatarMenu({ side }) {
     ${P.menu && html`<div class="menu" onClick=${(e) => e.stopPropagation()}>
       <div class="mh"><b>${name}</b>${admin ? '' : teacher ? SCHOOL : `${SCHOOL} 501`}</div>
       ${side === 'student' && S.s.avatar && html`<div class="pal-card"><${Companion} shape=${S.s.avatar.shape} eye=${S.s.avatar.eye} box=${52} cls="" /><div><b>${SH[S.s.avatar.shape].name}</b></div></div>`}
-      ${side === 'student' && html`<button onClick=${act(() => { P.menu = false; S.s.screen = 'pick'; S.s.pickStep = 1; S.s.draft = { ...(S.s.avatar || { shape: null, eye: 'big' }) }; })}><${Icon} n="sparkles" s=${18} />換學習夥伴</button>`}
+      ${side === 'student' && html`<button onClick=${act(() => { P.menu = false; S.s.screen = 'pick'; S.s.pickStep = 1; S.s.draft = { ...(S.s.avatar || { shape: null, eye: 'big' }) }; })}><${Icon} n="sparkles" s=${18} />學習夥伴</button>`}
       <button onClick=${act(() => { P.menu = false; if (side === 'student') S.flags.profileSeen = true; S.profile = { side, show: false, pw: null }; })}><${Icon} n="user" s=${18} />個人資料</button>
       <button onClick=${act(() => { P.menu = false; toast(side, '示範不登出'); })}><${Icon} n="log-out" s=${18} />登出</button>
     </div>`}
@@ -1552,7 +1552,7 @@ function ProfileDialog() {
 function MyClasses() {
   const hint = useHint();
   const cs = S.t.classes;
-  return html`<div>
+  return html`<div class="classes-home">
     <div class="page-h"><h2>班級星艦</h2><span class="spacer"></span>
       <button class=${'btn sm ' + hint('t-join')} onClick=${act(() => { S.t.modal = 'join'; S.t.joinDraft = { c: availableClasses()[0], subj: '自然' }; })}><${Icon} n="plus" s=${16} />新增班級</button></div>
     ${!cs.length ? html`<div class="empty-state"><span class="empty-ghost"><${Icon} n="ghost" s=${40} /></span><div>還沒有班級，按「新增班級」開始吧。</div></div>`
@@ -3422,7 +3422,7 @@ const STEPS = {
     { side: 'student', hint: 's-buddy', text: '學生的書櫃右側，夥伴躲在書櫃後面探出頭，點一下才整個跳出來。點它輪流說話，會提到今天老師加了幾分', done: () => !!S.flags.shelfPoked, run: () => { S.s.screen = 'shelf'; pokeShelf(); } },
     { side: 'student', hint: null, text: '書櫃上有新書時，夥伴開心地提示', done: () => !!S.flags.newBook, run: () => { S.s.screen = 'shelf'; S.s.shelfMood = 'new'; S.flags.newBook = true; say(TALK[S.s.avatar.shape].newBook, 'celebrating', 3600); } },
     { side: 'student', hint: () => (S.s.shelfMood === 'away' ? 's-buddy' : null), text: '很久沒登入時，夥伴在書櫃睡著了，點一下叫醒它', done: () => !!S.flags.woke, run: () => { S.s.screen = 'shelf'; if (S.s.shelfMood !== 'away') { S.s.shelfMood = 'away'; S.s.rx = null; } else pokeShelf(); } },
-    { side: 'student', hint: 's-avatar', text: '右上角座號頭像的選單看自己的學習夥伴；按「換學習夥伴」可以重選', done: () => !!S.flags.palSeen, run: () => { S.s.screen = 'shelf'; S.s.menu = true; S.flags.palSeen = true; } },
+    { side: 'student', hint: 's-avatar', text: '右上角座號頭像的選單看自己的學習夥伴；按「學習夥伴」可以重選', done: () => !!S.flags.palSeen, run: () => { S.s.screen = 'shelf'; S.s.menu = true; S.flags.palSeen = true; } },
     { side: 'student', hint: null, text: '頭像選單的「個人資料」看自己的帳號和密碼（學生不能改密碼，忘了請老師重設）', done: () => !!S.flags.profileSeen, run: () => { S.s.screen = 'shelf'; S.s.menu = false; S.profile = { side: 'student', show: false, pw: null }; S.flags.profileSeen = true; } },
   ],
   9: [

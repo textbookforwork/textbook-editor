@@ -9,7 +9,7 @@ export function ShelfArea({ area }: { area: Area }) {
   useClassroom();
   const S = L.getS();
   return (
-    <div className="cr cr-inline">
+    <div className="cr cr-inline cr-fill">
       <div className="shelf-panel cr-area">
         {area === 'classes' ? S.t.classView ? <L.ClassPage /> : <L.MyClasses /> : area === 'space' ? <L.Space /> : <L.Accounts />}
       </div>
