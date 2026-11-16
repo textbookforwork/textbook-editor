@@ -2211,7 +2211,7 @@ function TaskPanel() {
     if (!c) return html`<div class="pop task-pop narrow">
       ${head(`派任務給 ${S.cls.cid} · ${S.cls.subj}（${present().length} 人）`)}
       <div class="pop-b"><div class="type-cards">
-        ${[['choice', '選擇題', 'A–D 選項', 'list'], ['tf', '是非題', 'O／X', 'check'], ['text', '文字題', '打字回答', 'type'], ['shot', '手寫題', '寫在課本或紙上', 'pencil'], ['voice', '聲音題', '錄音回答', 'mic']].map(([k, n, d, ic]) => html`<button class=${'type-card ' + hint('t-type-' + k)} onClick=${act(() => { S.compose = k; S.draft = { q: '', showQ: false, showOpt: false, n: 4, opts: ['', '', '', '', '', ''], bg: 'page' }; })}><span class="ti"><${Icon} n=${ic} s=${24} /></span>${n}<small>${d}</small></button>`)}
+        ${[['choice', '選擇題', 'A–E 選項', 'list'], ['tf', '是非題', 'O／X', 'check'], ['text', '文字題', '打字回答', 'type'], ['shot', '手寫題', '寫在課本或紙上', 'pencil'], ['voice', '聲音題', '錄音回答', 'mic']].map(([k, n, d, ic]) => html`<button class=${'type-card ' + hint('t-type-' + k)} onClick=${act(() => { S.compose = k; S.draft = { q: '', showQ: false, showOpt: false, n: 4, opts: ['', '', '', '', '', ''], bg: 'page' }; })}><span class="ti"><${Icon} n=${ic} s=${24} /></span>${n}<small>${d}</small></button>`)}
       </div></div></div>`;
     const d = S.draft;
     const back = html`<button class="back" style="font-size:18px;font-weight:600" onClick=${act(() => { S.compose = null; })}><${Icon} n="chevron-left" s=${18} />${c === 'tf' ? '是非題' : TYPE_NAME[c]}</button>`;
@@ -3393,7 +3393,7 @@ const STEPS = {
   ],
   5: [
     { side: 'teacher', hint: () => (S.t.pop !== 'task' ? 't-task' : !S.compose ? 't-type-choice' : 't-send'), text: '口頭出題「北極星在哪一個星座裡？」，點「派任務 → 選擇題 → 派出」', done: () => !!S.flags.choiceSent, run: () => { goTeacherReaderLive(); sendTask('choice', { n: 4 }); } },
-    { side: 'student', hint: () => (S.s.modal === 'choice' ? 's-pickB' : 's-choice-open'), text: '學生跳出 A–D 大按鈕，選一個送出；送出後不能改', done: () => !!S.flags.choiceAnswered || !!S.flags.revealed, run: () => { if (!S.task || S.task.type !== 'choice') { goTeacherReaderLive(); sendTask('choice', { n: 4 }); } S.s.modal = 'choice'; later(1600, () => answerChoice('B')); } },
+    { side: 'student', hint: () => (S.s.modal === 'choice' ? 's-pickB' : 's-choice-open'), text: '學生跳出選項大按鈕（依老師設的 2–5 個），選一個送出；送出後不能改', done: () => !!S.flags.choiceAnswered || !!S.flags.revealed, run: () => { if (!S.task || S.task.type !== 'choice') { goTeacherReaderLive(); sendTask('choice', { n: 4 }); } S.s.modal = 'choice'; later(1600, () => answerChoice('B')); } },
     { side: 'teacher', hint: 't-close', text: '作答中只看到幾人答完。大家都答了，按「結束作答」', done: () => !!S.flags.choiceClosed || !!S.flags.revealed, run: () => { if (S.task && S.task.type === 'choice') { S.t.pop = 'task'; closeAnswer(); } } },
     { side: 'teacher', hint: 't-correct', text: '點選正確選項 B：直接公布答案，每個選項的人數長出來', done: () => !!S.flags.revealed, run: () => { if (S.task && S.task.type === 'choice') { S.t.pop = 'task'; closeAnswer(); reveal('B'); } } },
     { side: 'teacher', hint: 't-plusright', text: '名單分答對、答錯、沒作答。在「答對」這組按「答對 +1」一鍵加分；旁邊的「抽籤」可以請一位發表', done: () => !!S.flags.plusRight, run: () => { if (S.task && S.task.type === 'choice') { S.t.pop = 'task'; plusRight(); } } },

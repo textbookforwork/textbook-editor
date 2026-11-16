@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>平板實際大小模擬</title>
+<style>
+  :root { --ink: #1a1a1a; --sub: #666; --line: #ddd; --lime: #F0FF62; --bg: #F2F2F2; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "PingFang TC", "Noto Sans TC", sans-serif; }
+  header { padding: 16px 24px; background: #fff; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .step { font-size: 14px; color: var(--sub); line-height: 1.6; max-width: 420px; }
+  .step b { color: var(--ink); }
+  .card { width: calc(85.6 * var(--mm)); height: calc(53.98 * var(--mm)); border: 2px solid var(--ink); border-radius: calc(3 * var(--mm)); background: var(--lime); display: grid; place-items: center; font-size: 13px; }
+  input[type=range] { width: 260px; }
+  select, button { font: inherit; font-size: 14px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: #fff; cursor: pointer; }
+  .stage { padding: 24px; overflow: auto; }
+  .device { background: #111; padding: calc(10 * var(--mm)); border-radius: calc(8 * var(--mm)); display: inline-block; }
+  .screen { overflow: hidden; background: #fff; }
+  iframe { border: 0; transform-origin: 0 0; display: block; }
+  .info { font-size: 13px; color: var(--sub); margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>平板實際大小模擬</h1>
+    <div class="step"><b>第一步：校正。</b>拿一張信用卡或悠遊卡貼在螢幕上，拉動下面的拉桿，讓萊姆色的卡片跟實體卡一樣大。校正一次就好，會記在這台電腦。</div>
+    <p><input id="cal" type="range" min="2" max="8" step="0.01"> <span id="calv"></span></p>
+  </div>
+  <div class="card">卡片 85.6 × 54 公釐</div>
+  <div>
+    <div class="step"><b>第二步：選平板。</b>下面的畫面會照那台平板的實際尺寸顯示，裡面就是線上網站，可以直接操作。看字的時候，眼睛離螢幕大約跟拿平板時一樣遠（30–40 公分）。</div>
+    <p>
+      <select id="dev">
+        <option value="1080,810,207">iPad 10.2 吋（4:3）</option>
+        <option value="1024,768,197">iPad 9.7 吋（4:3）</option>
+        <option value="1280,800,217">Android 10.1 吋（16:10）</option>
+        <option value="1366,768,256">Chromebook 11.6 吋</option>
+      </select>
+      <button id="reload">重新載入網站</button>
+    </p>
+  </div>
+</header>
+<div class="stage">
+  <div class="device"><div class="screen" id="screen"><iframe id="f" src="https://textbookforwork.github.io/textbook-editor/"></iframe></div></div>
+  <div class="info" id="info"></div>
+</div>
+<script>
+  // 每公釐幾個螢幕像素。預設用一般螢幕的 96 像素／英吋（約 3.78），實際要靠卡片校正
+  const cal = document.getElementById('cal'), calv = document.getElementById('calv');
+  let mm = 3.78;
+  try { mm = parseFloat(localStorage.getItem('px-per-mm')) || 3.78; } catch (e) {}
+  const f = document.getElementById('f'), screen = document.getElementById('screen'), dev = document.getElementById('dev'), info = document.getElementById('info');
+  function apply() {
+    document.documentElement.style.setProperty('--mm', mm + 'px');
+    cal.value = mm; calv.textContent = '每公釐 ' + mm.toFixed(2) + ' 像素';
+    const [w, h, widthMm] = dev.value.split(',').map(Number);
+    const scale = (widthMm * mm) / w;
+    f.style.width = w + 'px'; f.style.height = h + 'px'; f.style.transform = 'scale(' + scale + ')';
+    screen.style.width = w * scale + 'px'; screen.style.height = h * scale + 'px';
+    const px = (n) => (n * widthMm / w).toFixed(1);
+    info.textContent = '這台平板網頁上的 1 像素 ≈ ' + (widthMm / w).toFixed(3) + ' 公釐。內文 20 ≈ ' + px(20) + ' 公釐高，直排內文 24 ≈ ' + px(24) + ' 公釐，大標 36 ≈ ' + px(36) + ' 公釐，課名 48 ≈ ' + px(48) + ' 公釐。';
+  }
+  cal.addEventListener('input', () => { mm = parseFloat(cal.value); try { localStorage.setItem('px-per-mm', mm); } catch (e) {} apply(); });
+  dev.addEventListener('change', apply);
+  document.getElementById('reload').addEventListener('click', () => { f.src = f.src; });
+  apply();
+</script>
+</body>
+</html>
