@@ -16,7 +16,7 @@ import { areaOf } from '../model/subjects';
 import { emptyDoc } from '../model/document';
 import { adoptedFrom, adoptTextbook, createBook, deleteBook, findBook, hiddenTextbooks, hideTextbook, isOriginal, listBooks, nextFrame, subscribeLibrary, updateBook, type MyBook } from './library';
 import { goArea, goEdit, goRead, goReadTextbook, goShelf, type Area, type ShelfTab } from './nav';
-import { ShelfArea, ShelfOverlay, Sprite } from '../classroom/ShelfParts';
+import { ShelfArea, ShelfBuddyHost, ShelfOverlay, Sprite } from '../classroom/ShelfParts';
 import { useClassroom } from '../classroom/ClassReader';
 import * as CL from '../classroom/legacy.js';
 import { signOut } from './session';
@@ -134,6 +134,7 @@ export function Shelf({ tab: tabProp = 'textbook', subject, area }: { tab?: Shel
         )}
       </Nav>
 
+      {role === 'student' && <ShelfBuddyHost />}
       {area ? <Panel><ShelfArea area={area} /></Panel> : <Panel>
         {/* 子頁（查看全部）照設計稿：不放分頁列，只有左上的返回鈕 */}
         {!subject && !student && <TabRow>
@@ -568,6 +569,7 @@ const Page = styled.div`
   min-block-size: calc(100vh / var(--z, 1));
   background: ${(p) => p.theme.surface.backdrop};
   padding: 24px 32px 32px;
+  position: relative;
   /* 白色面板延伸到視窗底部，底下留一段灰色間距（乙練 2026-11-16） */
   display: flex;
   flex-direction: column;
@@ -703,6 +705,8 @@ const NavPill = styled.button<{ $on?: boolean }>`
 
 const Panel = styled.main`
   flex: 1;
+  position: relative;
+  z-index: 1; /* 學生夥伴在白框後面探頭 */
   background: ${(p) => p.theme.surface.raised};
   border-radius: 24px;
   padding: 20px 64px 48px;

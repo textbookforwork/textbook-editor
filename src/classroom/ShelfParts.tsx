@@ -33,10 +33,21 @@ export function ShelfOverlay({ side, zoom = 1 }: { side: Role; zoom?: number }) 
         {side === 'teacher' && t.modal === 'apply' && <L.ApplyDialog />}
         {side === 'admin' && <L.AdminModals />}
         {S.profile && S.profile.side === side && <L.ProfileDialog />}
-        {side === 'student' && S.s.avatar && <div className="cr-buddy"><L.ShelfBuddy /></div>}
         {side === 'student' && S.s.invite && S.cls.live && <L.Invite />}
         <L.Toasts side={side} />
       </div>
+    </div>
+  );
+}
+
+/** 書櫃上從白框後面探頭的學生夥伴：放在書櫃頁裡（跟著整頁縮放、在白框後面），不放浮層，才不會蓋住右上角頭像（2026-11-16） */
+export function ShelfBuddyHost() {
+  useClassroom();
+  const S = L.getS();
+  if (!S.s.avatar) return null;
+  return (
+    <div className="cr cr-inline cr-buddy-host">
+      <L.ShelfBuddy />
     </div>
   );
 }

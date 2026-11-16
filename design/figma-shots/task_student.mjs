@@ -123,8 +123,8 @@ await s.locator('.taskbar button').click(); await W(s, 700);
 await ring(s, ['.submit-dlg .dialog-foot']); await shot(s, 's8.png');
 await clickTxt(s, '送出'); await W(s, 700);
 await ring(s, ['.taskbar', 'txt=' + await bubble(s)]); await shot(s, 's-sub.png'); await quiet(s);
-// 學生自己翻到別頁（先解除跟隨）
-await s.getByRole('button', { name: '上一頁' }).first().click(); await W(s, 900);
+// 學生不在作答那一頁（老師翻回上一頁，學生跟著翻）
+await t.evaluate(() => { const x = [...document.querySelectorAll('button[aria-label="上一頁"]')].find((e) => e.offsetParent && !e.disabled); if (x) x.click(); }); await W(s, 1200);
 await ring(s, ['.taskbar']); await shot(s, 's-away.png');
 await s.locator('.taskbar button').click(); await W(s, 800);
 

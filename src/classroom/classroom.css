@@ -2455,10 +2455,10 @@
 /* ───────── 併進編輯器後加的 ───────── */
 /* 閱讀畫面、選夥伴、下課畫面：撐滿整個視窗 */
 .cr.cr-fixed { position: fixed; inset: 0; z-index: 10; }
-.cr.cr-fixed > .stage { position: absolute; inset: 0; transform: none; }
+.cr.cr-fixed > .stage { position: absolute; inset: 0; width: auto; height: auto; transform: none; }
 /* 書櫃上的課堂浮層（對話框、邀請、夥伴、提示）：只有裡面的東西接得到滑鼠，書櫃照常能點 */
 .cr.cr-overlay { position: fixed; inset: 0; z-index: 30; pointer-events: none; background: transparent; }
-.cr.cr-overlay > .stage { position: absolute; inset: 0; background: transparent; overflow: visible; }
+.cr.cr-overlay > .stage { position: absolute; inset: 0; width: auto; height: auto; background: transparent; overflow: visible; } /* 舊 demo 的 .stage 固定 1440×900，不改成 auto 的話螢幕比它大時遮罩只蓋左上一塊（2026-11-16） */
 .cr.cr-overlay > .stage > * { pointer-events: auto; }
 .cr.cr-overlay > .stage > .toasts { pointer-events: none; }
 /* 放在書櫃白色面板裡的區域（班級星艦、補給站、帳號管理）：沿用書櫃的面板，不再自己鋪底 */
@@ -2520,3 +2520,7 @@
 
 /* 浮層在整頁 zoom 外面（遮罩才蓋得滿），對話框本身跟書櫃同一個縮放，大小才一致 */
 .cr.cr-overlay .dialog { zoom: var(--z, 1); }
+
+/* 書櫃上的學生夥伴：在頁面右上、頭像左邊，從白框後面探頭（乙練 2026-11-16：再靠右、不能蓋到頭像） */
+.cr.cr-buddy-host { position: absolute; top: 0; right: 0; width: 0; height: 0; z-index: 0; }
+.cr.cr-buddy-host .shelf-buddy { right: 150px; top: 64px; }
