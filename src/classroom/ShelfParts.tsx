@@ -31,6 +31,7 @@ export function ShelfOverlay({ side, zoom = 1 }: { side: Role; zoom?: number }) 
         {side === 'teacher' && t.modal && t.modal.remove && <L.RemoveConfirm />}
         {side === 'teacher' && t.modal && t.modal.cards && <L.AccountCards />}
         {side === 'teacher' && t.modal === 'apply' && <L.ApplyDialog />}
+        {side === 'teacher' && <L.PersonScores />}
         {side === 'admin' && <L.AdminModals />}
         {S.profile && S.profile.side === side && <L.ProfileDialog />}
         {side === 'student' && S.s.invite && S.cls.live && <L.Invite />}

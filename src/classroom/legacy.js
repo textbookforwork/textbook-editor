@@ -1528,6 +1528,7 @@ function Shelf({ side }) {
     ${teacher && S.t.modal && S.t.modal.remove && html`<${RemoveConfirm} />`}
     ${teacher && S.t.modal && S.t.modal.cards && html`<${AccountCards} />`}
     ${teacher && S.t.modal === 'apply' && html`<${ApplyDialog} />`}
+    ${teacher && html`<${PersonScores} />`}
   </div>`;
 }
 
@@ -1546,6 +1547,22 @@ function ProfileDialog() {
       <div class="fld"><label for="pf-p">密碼</label><input class="inp" id="pf-p" autocomplete="off" value=${cur} readonly=${side === 'student'} onInput=${act((e) => { pr.pw = e.target.value; })} /></div>
     </div>
     <div class="dialog-foot">${changed && html`<button class="btn sm" disabled=${!pr.pw.trim()} onClick=${act(() => { me.pw = pr.pw.trim(); close(); toast(side, '密碼已更新', 'check'); })}>儲存</button>`}</div></div>`, act(close));
+}
+
+/* 累計總分：一位學生每次上課的加分，大彈窗、一頁 PER 筆，多的用點點翻頁（2026-11-16 乙練：原本右側小面板改成大彈窗） */
+function PersonScores() {
+  const v = S.t.classView, r = v && v.rec;
+  if (!r || r.view !== 'total' || !r.person) return null;
+  const person = r.person, PER = 8;
+  const list = S.sessions, pages = Math.max(1, Math.ceil(list.length / PER)), pg = Math.min(r.pg || 0, pages - 1);
+  const close = () => { r.person = null; };
+  const go = (i) => act(() => { r.pg = Math.max(0, Math.min(pages - 1, i)); });
+  const fmtN = (n) => (n > 0 ? '+' + n : String(n));
+  return dlg(`${nameOf(person)}的加分紀錄`, html`<div class="pop-h ps-h"><span class="av-circle"><${Kid} seat=${person} box=${40} /></span><h4><span class="seat">${pad(person)}</span>${nameOf(person)}<small>累計 ${totalOf(person)} 分</small></h4><button class="x-btn" aria-label="關閉" onClick=${act(close)}><${Icon} n="x" /></button></div>
+    <ul class="ps-list">${list.slice(pg * PER, pg * PER + PER).map((s) => { const n = s.scores[person] || 0; return html`<li><small>${s.date}</small><span>${s.name || s.time}</span><b class=${n === 0 ? 'zero' : ''}>${fmtN(n)}</b></li>`; })}</ul>
+    ${pages > 1 && html`<div class="ps-pager"><button class="x-btn" aria-label="上一頁" disabled=${pg === 0} onClick=${go(pg - 1)}><${Icon} n="chevron-left" /></button>
+      <div class="ps-dots">${Array.from({ length: pages }, (_, i) => html`<button class=${i === pg ? 'on' : ''} aria-label=${`第 ${i + 1} 頁`} aria-current=${i === pg ? 'page' : undefined} onClick=${go(i)}></button>`)}</div>
+      <button class="x-btn" aria-label="下一頁" disabled=${pg === pages - 1} onClick=${go(pg + 1)}><${Icon} n="chevron-right" /></button></div>`}`, act(close), 'ps-dialog');
 }
 
 /* 班級星艦 */
@@ -1592,12 +1609,12 @@ function ClassPage() {
     <div class="ctabs">${tab('students', '學生', classSize(v.c))}${tab('teachers', '老師', 2)}${tab('toolbar', '學生工具列')}${tab('records', '學習紀錄')}
       ${v.tab === 'students' && html`<button class="ghost end" onClick=${act(() => { S.t.modal = { cards: v.c }; S.flags.cardsSeen = true; })}><${Icon} n="download" s=${16} />帳號小卡</button>`}</div>
     ${v.tab === 'students' && (is501 ? html`<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:70px">座號</th><th>姓名</th><th>帳號</th><th></th></tr></thead><tbody>
-        ${classRoster(v.c).map((s) => html`<tr><td class="num">${pad(s.seat)}</td><td><span class="namecell"><span class="av-circle" style="width:34px;height:34px"><${Kid} seat=${s.seat} box=${26} cls="" /></span>${s.name}</span></td><td class="num">${s.acct}</td>
+        ${classRoster(v.c).map((s) => html`<tr><td class="num"><span class="seat">${pad(s.seat)}</span></td><td><span class="namecell"><span class="av-circle" style="width:34px;height:34px"><${Kid} seat=${s.seat} box=${26} cls="" /></span>${s.name}</span></td><td class="num">${s.acct}</td>
           <td class="r"><button class="dots" aria-label="更多" onClick=${act(() => { v.menu = v.menu === s.seat ? null : s.seat; })}>⋯</button>
             ${v.menu === s.seat && html`<div class="mini-menu"><button onClick=${act(() => { v.menu = null; S.t.modal = { edit: s.seat, d: { ...s } }; })}>學生資料</button><button onClick=${act(() => { v.menu = null; v.tab = 'records'; v.rec = { view: 'total', person: s.seat }; })}>學習紀錄</button><button class="danger" onClick=${act(() => { v.menu = null; S.t.modal = { remove: s.seat }; })}>移出班級</button></div>`}</td></tr>`)}
       </tbody></table></div>`
       : html`<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:70px">座號</th><th>姓名</th><th>帳號</th><th></th></tr></thead><tbody>
-        ${classRoster(v.c).map((s) => html`<tr><td class="num">${pad(s.seat)}</td><td><span class="namecell"><span class="av-circle" style="width:34px;height:34px"><${Companion} shape=${ORDER[(s.seat * 3 + +v.c) % 8]} eye=${EYES[(s.seat * 7 + +v.c) % 10].id} box=${26} cls="" /></span>${s.name}</span></td><td class="num">${s.acct}</td>
+        ${classRoster(v.c).map((s) => html`<tr><td class="num"><span class="seat">${pad(s.seat)}</span></td><td><span class="namecell"><span class="av-circle" style="width:34px;height:34px"><${Companion} shape=${ORDER[(s.seat * 3 + +v.c) % 8]} eye=${EYES[(s.seat * 7 + +v.c) % 10].id} box=${26} cls="" /></span>${s.name}</span></td><td class="num">${s.acct}</td>
           <td class="r"><button class="dots" aria-label="更多" onClick=${act(() => { v.menu = v.menu === s.seat ? null : s.seat; })}>⋯</button>
             ${v.menu === s.seat && html`<div class="mini-menu"><button onClick=${act(() => { v.menu = null; S.t.modal = { cards: v.c, only: s.seat }; })}>帳號小卡</button><button class="danger" onClick=${act(() => { v.menu = null; if (s.other) s.other.removed = true; else { const list = OTHER_ROSTER[v.c]; const i = list.findIndex((x) => x.seat === s.seat); if (i >= 0) list.splice(i, 1); } toast('teacher', `已將 ${s.name} 移出 ${v.c}`); })}>移出班級</button></div>`}</td></tr>`)}
       </tbody></table></div>`)}
@@ -1739,7 +1756,7 @@ function Records() {
     </div></div>`;
   /* 2026-11-03 乙練：30 格一樣重、看不出重點 → 上方一行先講重點；0 分變淡、有分的才有分數膠囊；排序改成兩顆切換 */
   const scoreRow = (x, n, top, extra = {}) => html`<${extra.onClick ? 'button' : 'div'} class=${'pt2' + (n === 0 ? ' zero' : '') + (extra.sel ? ' sel' : '') + (extra.cls ? ' ' + extra.cls : '')} onClick=${extra.onClick}>
-    <span class="sn">${pad(x.seat)}</span><span class="nm">${x.name}</span>
+    <span class="seat">${pad(x.seat)}</span><span class="nm">${x.name}</span>
     ${n !== 0 && html`<b class=${'sc' + (n < 0 ? ' neg' : '')}>${fmt(n)}</b>`}</${extra.onClick ? 'button' : 'div'}>`;
   const sortSeg = html`<div class="seg" role="radiogroup" aria-label="排序">${[['seat', '座號'], ['score', '分數']].map(([k, l]) => html`<button role="radio" aria-pressed=${(r.sort || 'seat') === k} onClick=${act(() => { r.sort = k; })}>${l}</button>`)}</div>`;
   const exportBtn = html`<button class="ghost" onClick=${act(() => toast('teacher', '已匯出 Excel'))}><${Icon} n="download" s=${15} />匯出 Excel</button>`;
@@ -1760,11 +1777,7 @@ function Records() {
     const never = roster().filter((x) => !S.sessions.some((ss) => (ss.scores[x.seat] || 0) > 0)).length;
     return html`<div class="rec-wrap">
       <div class="rec-h">${back({ view: 'sessions' })}<b style="font-size:18px">累計總分（本學期）</b><span class="spacer"></span>${sortSeg}${exportBtn}</div>
-      <div class="pts2" style=${{ paddingRight: person ? '340px' : 0 }}>${sorted(totalOf).map((x) => scoreRow(x, totalOf(x.seat), top, { onClick: act(() => { r.person = r.person === x.seat ? null : x.seat; S.flags.personSeen = true; }), sel: person === x.seat, cls: x.seat === ME ? hint('t-rec-person') : '' }))}</div>
-      ${person && html`<aside class="side-panel"><div style="display:flex;align-items:center;gap:10px"><span class="av-circle" style="width:44px;height:44px"><${Kid} seat=${person} box=${34} /></span><h4>${pad(person)} ${nameOf(person)}<small>累計 ${totalOf(person)} 分</small></h4>
-          <button class="x-btn" style="margin-left:auto" aria-label="收起" onClick=${act(() => { r.person = null; })}><${Icon} n="x" /></button></div>
-        <ul>${S.sessions.map((s) => { const n = s.scores[person] || 0; return html`<li><small>${s.date}</small>${s.name || s.time}<b class=${n === 0 ? 'zero' : ''}>${fmt(n)}</b></li>`; })}</ul>
-</aside>`}
+      <div class="pts2">${sorted(totalOf).map((x) => scoreRow(x, totalOf(x.seat), top, { onClick: act(() => { r.person = x.seat; r.pg = 0; S.flags.personSeen = true; }), sel: person === x.seat, cls: x.seat === ME ? hint('t-rec-person') : '' }))}</div>
     </div>`;
   }
   if (r.view === 'tasks') return html`<div>
@@ -3565,7 +3578,7 @@ export function Toasts({ side }) {
 
 export {
   S as _S, act, toast, later, fresh, pad, ME, TEACHER, TS, SCHOOL, STUDENTS, nameOf,
-  TeacherApp, StudentApp, Shelf, AvatarMenu, ProfileDialog, MyClasses, ClassPage, JoinDialog, StudentEdit, RemoveConfirm, AccountCards, ApplyDialog,
+  TeacherApp, StudentApp, Shelf, AvatarMenu, ProfileDialog, PersonScores, MyClasses, ClassPage, JoinDialog, StudentEdit, RemoveConfirm, AccountCards, ApplyDialog,
   Space, StnDetail, StnEditor, StnStation, ALL_RES, insertHere, isAdded, Accounts, AdminModals, Login, Pick, EndScreen, Invite, ShelfBuddy, Cheer, Companion, Pebble, Icon, ICONS,
   SH, ORDER, EYES, studentLogin, finishPick, ensureSetup, openBook, joinStudent, endToShelf, turn, following, locked, sPage, focusOn, setFollow,
   openSupp, closeSupp, Layer, Toc, ReadSettings, DEFAULT_RS, Rail, Sheet, PAGES as _PAGES_INITIAL, roster, present, scoreOf, timeLeft, TALK, say,

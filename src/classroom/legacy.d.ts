@@ -38,6 +38,7 @@ export const StudentApp: FC<Any>;
 export const Shelf: FC<Any>;
 export const AvatarMenu: FC<Any>;
 export const ProfileDialog: FC<Any>;
+export const PersonScores: FC<Any>;
 export const MyClasses: FC<Any>;
 export const ClassPage: FC<Any>;
 export const JoinDialog: FC<Any>;

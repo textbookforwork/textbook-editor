@@ -2555,3 +2555,28 @@
 /* 學生側欄要在 16:9（1280×720）平板上整條放得下，含「自己翻頁」時的跟老師鈕＋翻頁膠囊（2026-11-16 乙練：預覽下面被切掉） */
 .cr .rail { gap: 2px; padding: 8px 0; }
 .cr .rail .spill-wrap { gap: 6px; margin-top: 4px; }
+
+/* 累計總分：學生加分紀錄大彈窗（2026-11-16） */
+.cr .dialog.ps-dialog { width: min(880px, calc(100vw - 96px)); height: min(720px, calc(100vh - 96px)); display: flex; flex-direction: column; padding: 32px 40px 28px; }
+.cr .ps-h { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+.cr .ps-h .av-circle { width: 56px; height: 56px; }
+.cr .ps-h h4 { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 700; }
+.cr .ps-h h4 .seat { min-width: 32px; height: 32px; font-size: 15px; }
+.cr .ps-h h4 small { font-size: 16px; font-weight: 400; color: var(--text-3); margin-left: 4px; }
+.cr .ps-h .x-btn { margin-left: auto; }
+.cr .ps-list { flex: 1; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.cr .ps-list li { display: flex; align-items: center; gap: 24px; min-height: 64px; border-bottom: 1px solid var(--line-subtle); font-size: 18px; }
+.cr .ps-list li small { width: 120px; flex: none; font-size: 16px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.cr .ps-list li b { margin-left: auto; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--olive); }
+.cr .ps-list li b.zero { color: var(--disabled); }
+.cr .ps-pager { display: flex; align-items: center; justify-content: center; gap: 16px; padding-top: 20px; }
+.cr .ps-pager .x-btn:disabled { opacity: .3; cursor: default; }
+.cr .ps-dots { display: flex; align-items: center; gap: 4px; }
+.cr .ps-dots button { min-width: 24px; height: 24px; border: 0; padding: 0 4px; background: transparent; border-radius: 999px; cursor: pointer; display: grid; place-items: center; }
+.cr .ps-dots button::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--line); transition: width .2s var(--ease), background .2s; }
+.cr .ps-dots button.on::before { width: 22px; background: var(--ink); }
+/* 班級頁學生、老師表格：字放大、座號黑圈（2026-11-16 乙練） */
+.cr.cr-fill .tbl { font-size: 16px; }
+.cr.cr-fill .tbl th { font-size: 14px; }
+.cr.cr-fill .tbl td.num .seat, .cr.cr-fill .pt2 .seat { min-width: 26px; height: 26px; font-size: 13px; }
+.cr.cr-fill .pt2 .nm { font-size: 16px; }
