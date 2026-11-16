@@ -713,8 +713,8 @@
 .cr .rail-drag.dragging { opacity: .35; }
 .cr .rail-slot { position: relative; flex: none; }
 .cr .tb-reader .rail { z-index: 5; overflow: visible; }
-.cr .add-slot { border: 1.5px dashed var(--line) !important; background: transparent; color: var(--text-2); }
-.cr .add-slot:hover, .cr .add-slot.on { border-color: var(--olive-selected) !important; background: var(--lime-subtle); color: var(--olive); }
+/* 刪掉工具露出的「＋」平常就是綠色虛線框，不用等 hover（乙練 2026-11-16） */
+.cr .add-slot, .cr .add-slot:hover, .cr .add-slot.on { border: 1.5px dashed var(--olive-selected) !important; background: var(--lime-subtle); color: var(--olive); }
 .cr .slot-box { position: absolute; z-index: 20; left: 116px; bottom: 16px; top: auto; width: 360px; }
 .cr .slot-menu { position: absolute; z-index: 30; left: calc(100% + 10px); top: 0; width: 200px; padding: 6px; border-radius: 16px; background: var(--page); box-shadow: var(--popover); display: flex; flex-direction: column; }
 .cr .slot-menu button { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; font-size: 15px; cursor: pointer; text-align: left; }
