@@ -1653,13 +1653,18 @@ const railCap = (r) => Math.floor((DEVICE[r][1] - RAIL_FIXED) / TILE_STEP);
 const slotsOf = (list) => list.length;
 /* 學生工具列：預覽就是編輯器（2026-11-03 乙練）。左欄長什麼樣學生就看到什麼樣；× 拿掉、拖曳排序、最後一格空位按＋加入，滿 6 個就沒有空位 */
 /* 按左欄的＋：打開跟閱讀時一樣的工具箱面板，工具分類排；點了就放進左欄，面板不關，可以連續加（2026-11-03 乙練） */
-const TOOL_GROUPS = [['編輯工具', ['pen', 'highlighter', 'laser', 'eraser', 'undo', 'redo', 'clear', 'sticky']], ['學習工具', ['board']], ['科目工具', ['compass', 'protractor']]];
-function SlotBox({ sel, add, close }) {
+const TOOL_GROUPS = [['編輯工具', ['pen', 'highlighter', 'laser', 'eraser', 'undo', 'redo', 'clear', 'sticky']], ['學習工具', ['board']]];
+/* 學生工具列的「科目工具」跟著這個班級的科目走（乙練 2026-11-16）：數學是圓規、量角器；國語文、社會規劃中，放停用的佔位；其他科沒有就整組不出現 */
+const SUBJ_TOOLS = { math: ['compass', 'protractor'] };
+const SUBJ_PLANNED = { chinese: 'book', social: 'globe' };
+function SlotBox({ sel, add, close, subj }) {
   const full = sel.length >= TOOL_CAP;
+  const sk = SUBJECT_SHAPE[subj] || 'other', planned = SUBJ_PLANNED[sk];
+  const groups = SUBJ_TOOLS[sk] ? [...TOOL_GROUPS, ['科目工具', SUBJ_TOOLS[sk]]] : TOOL_GROUPS;
   return html`<div class="pop tb-pop slot-box">
     <div class="pop-h"><h4>工具箱</h4><button class="x-btn" aria-label="關閉" onClick=${act(close)}><${Icon} n="x" /></button></div>
-    <div class="pop-b">${TOOL_GROUPS.map(([g, ks], gi) => html`<p class="grp-label">${g}</p><div class="toolgrid" style=${gi === TOOL_GROUPS.length - 1 ? { marginBottom: 0 } : null}>${ks.map((k) => { const t = toolOf(k), on = sel.includes(k);
-      return html`<span class="tb-cell"><button class="tile" disabled=${on || full} title=${on ? '已經在左欄' : full ? '左欄滿了' : '放進左欄'} onClick=${act(() => add(k))}><${Icon} n=${t.icon} /><span>${t.label.length > 4 ? t.label.slice(0, 2) : t.label}</span></button>${!on && !full && html`<span class="add-x" aria-hidden="true"><${Icon} n="plus" s=${12} /></span>`}</span>`; })}</div>`)}</div>
+    <div class="pop-b">${groups.map(([g, ks], gi) => html`<p class="grp-label">${g}</p><div class="toolgrid" style=${gi === groups.length - 1 && !planned ? { marginBottom: 0 } : null}>${ks.map((k) => { const t = toolOf(k), on = sel.includes(k);
+      return html`<span class="tb-cell"><button class="tile" disabled=${on || full} title=${on ? '已經在左欄' : full ? '左欄滿了' : '放進左欄'} onClick=${act(() => add(k))}><${Icon} n=${t.icon} /><span>${t.label.length > 4 ? t.label.slice(0, 2) : t.label}</span></button>${!on && !full && html`<span class="add-x" aria-hidden="true"><${Icon} n="plus" s=${12} /></span>`}</span>`; })}</div>`)}${planned && html`<p class="grp-label">科目工具</p><div class="toolgrid" style="margin-bottom:0"><span class="tb-cell"><button class="tile" disabled title="科目工具規劃中"><${Icon} n=${planned} /><span>規劃中</span></button></span></div>`}</div>
   </div>`;
 }
 function ToolbarSettings() {
@@ -1684,7 +1689,7 @@ function ToolbarSettings() {
     <p class="tb2-note">在這裡設定學生側欄的預設工具列，最多可以放 6 個；其他工具，學生可以在工具箱中自行選取。</p>
     <div class="tb2-screen" style=${{ width: Math.round(VW * sc) + 'px', height: Math.round(VH * sc) + 'px' }}><div class="tb-preview" style=${{ width: VW + 'px', height: VH + 'px', transform: `scale(${sc})` }}>
       <div class="reader tb-reader"><${Rail} side="student" preview=${[...sel, 'supp', 'settings']} edit=${edit} />
-        ${open && html`<${SlotBox} sel=${sel} add=${edit.add} close=${() => setOpen(false)} />`}
+        ${open && html`<${SlotBox} sel=${sel} add=${edit.add} subj=${v.subj} close=${() => setOpen(false)} />`}
         <div class="pageframe" inert><${Sheet} page=${sPage()} w=${Math.min(VW - 104 - 24, (VH - 94) * pr(sPage(), S.s.rs))} rs=${S.s.rs} /></div></div></div></div>
   </div></div>`;
 }
