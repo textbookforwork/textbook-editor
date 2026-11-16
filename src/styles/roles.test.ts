@@ -8,9 +8,9 @@ describe('roleStyle 的字級覆寫', () => {
     expect(s.lineHeight).toBe('var(--ds-typography-body-line-height)');
   });
 
-  it('預設字級跟 token 不同的角色：章 48、節 32、內文 20，乘上整本檔位', () => {
+  it('標題照 token（章 48、節 36），內文覆寫成 20，乘上整本檔位', () => {
     expect(roleStyle('lessonTitle').fontSize).toBe('var(--ds-typography-heading-1-size)');
-    expect(roleStyle('sectionTitle').fontSize).toBe('32px');
+    expect(roleStyle('sectionTitle').fontSize).toBe('var(--ds-typography-heading-2-size)');
     expect(roleStyle('body').fontSize).toBe('20px');
     expect(roleStyle('body', 1.125).fontSize).toBe('22.5px');
   });

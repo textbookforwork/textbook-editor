@@ -62,7 +62,7 @@ function roleBaseStyle(role: TextRole, scale: number, fontSize?: number, vertica
       ? `var(--ds-typography-${t}-${name})`
       : `calc(var(--ds-typography-${t}-${name}) * ${scale})`;
   const weight = `var(--ds-typography-${t}-weight)`;
-  // 預設字級跟 token 不同的角色（節 32、內文 20）：字級用指定值乘檔位，行高照角色比例
+  // 預設字級跟 token 不同的角色（內文 20）：字級用指定值乘檔位，行高照角色比例
   const own = (vertical && ROLE_SIZE_VERTICAL[role]) || ROLE_SIZE[role];
   if (!(fontSize && fontSize > 0) && own) {
     return {
@@ -110,11 +110,11 @@ function lineRatio(token: string): number {
 }
 
 /**
- * 預設字級跟設計 token 不一樣的角色（課本上的實際需求）：節 32、內文 20。
- * 字重與行高比例仍照原本的 token，層級關係不變。章維持 token 的 48。
+ * 預設字級跟設計 token 不一樣的角色：內文 20（token 是 18）。
+ * 標題照 token：課名 48、大標 36、中標 28、小標 24（乙練 2026-11-16 定；
+ * 之前節被改成 32，查不到依據，改回 token）。字重與行高比例照 token。
  */
 const ROLE_SIZE: Partial<Record<TextRole, number>> = {
-  sectionTitle: 32,
   body: 20,
 };
 
@@ -134,7 +134,7 @@ export const defaultSizeOf = (role: TextRole, vertical = false): number =>
 /** 各內容角色的預設字級（px），橫排。字級選單的「預設」用 defaultSizeOf，直排的內文另外算。 */
 export const ROLE_DEFAULT_SIZE: Record<TextRole, number> = {
   lessonTitle: 48,
-  sectionTitle: 32,
+  sectionTitle: 36,
   itemTitle: 28,
   subItemTitle: 24,
   lead: 20,
