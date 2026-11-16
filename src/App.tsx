@@ -81,6 +81,7 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
   const [current, setCurrent] = useState(0);
   const [importing, setImporting] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // 「找補充」＝補給站，未來要做，先不放上方列的按鈕（乙練 2026-11-16）；面板程式留著
   const [stationOpen, setStationOpen] = useState(false);
 
   // 存檔寫到這一本（見 persist.ts）。在第一次 render 前就設定，自動存才不會寫到上一本
@@ -237,8 +238,6 @@ export function App({ bookId, initialDoc, startReading = false, readOnly = false
         importing={importing}
         settingsOpen={settingsOpen}
         onSettings={() => setSettingsOpen((v) => !v)}
-        stationOpen={stationOpen}
-        onStation={() => setStationOpen((v) => !v)}
         reading={preview}
         onReading={() => setPreview((p) => !p)}
       />

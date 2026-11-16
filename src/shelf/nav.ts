@@ -22,7 +22,8 @@ export type Route =
 export type ShelfTab = 'textbook' | 'shared' | 'mine';
 /** 書櫃上方導覽的其他區域：班級星艦（老師）、補給站（老師）、帳號管理（管理員） */
 export type Area = 'classes' | 'space' | 'accounts';
-const AREAS: Area[] = ['classes', 'space', 'accounts'];
+/** 補給站（space）是未來要做的，先不開網址；#/space 會回書櫃（乙練 2026-11-16） */
+const AREAS: Area[] = ['classes', 'accounts'];
 
 export function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);

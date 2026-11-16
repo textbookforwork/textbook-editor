@@ -2498,3 +2498,8 @@
 
 /* 編輯器的「找補充」面板：貼在右側，頂部列下面（2026-11-11） */
 .cr.cr-station > .stage > .drawer { position: absolute; top: 88px; right: 16px; bottom: 16px; width: 360px; }
+
+/* 元件 hover 一律導圓角（乙練 2026-11-16）：分頁列裡的「帳號小卡」被分頁樣式蓋成直角，名單列、紀錄列、點名格原本也是直角 */
+.cr .ctabs .ghost.end { border-radius: 999px; padding: 7px 14px; }
+.cr .ctabs .ghost.end::before { display: none; }
+.cr .rec-row, .cr button.pt2, .cr .who-chose .nm-chip, .cr .review .who-chose.names-big .nm-chip, .cr .ch-pop .who-chose .nm-chip { border-radius: 10px; }

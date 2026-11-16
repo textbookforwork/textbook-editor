@@ -110,7 +110,7 @@ export function Shelf({ tab: tabProp = 'textbook', subject, area }: { tab?: Shel
         <UserMenu role={role} />
       </Top>
 
-      {/* 地球大廳是書櫃；老師多「班級星艦」「補給站」，管理員多「帳號管理」（2026-11-10 併入課堂模組）。學生只有書櫃 */}
+      {/* 地球大廳是書櫃；老師多「班級星艦」，管理員多「帳號管理」（2026-11-10 併入課堂模組）。學生只有書櫃 */}
       <Nav>
         <NavPill $on={!area} aria-current={!area ? 'page' : undefined} type="button" onClick={() => goShelf('textbook')}>
           <Icon name="book" size={20} />
@@ -122,10 +122,7 @@ export function Shelf({ tab: tabProp = 'textbook', subject, area }: { tab?: Shel
               <Icon name="users" size={20} />
               班級星艦
             </NavPill>
-            <NavPill $on={area === 'space'} aria-current={area === 'space' ? 'page' : undefined} type="button" onClick={() => goArea('space')}>
-              <Icon name="rocket" size={20} />
-              補給站
-            </NavPill>
+            {/* 補給站是未來要做的，先拿掉入口（乙練 2026-11-16）；程式留著 */}
           </>
         )}
         {admin && (
