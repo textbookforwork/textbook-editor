@@ -2513,3 +2513,7 @@
 /* 學生工具箱：組與組之間收一點，768 高的平板也能一次看完整個工具箱，不用捲（乙練 2026-11-16） */
 .cr .tb-student .toolgrid { margin-bottom: 12px; }
 .cr .tb-student .pop-b { padding-top: 12px; padding-bottom: 20px; }
+
+/* 班級卡片：固定四欄在大螢幕會被拉得又寬又扁。改成每張約 240–280 寬、比例 5:4（乙練 2026-11-16） */
+.cr .class-cards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.cr .class-card { aspect-ratio: 5 / 4; min-height: 0; max-width: 300px; }

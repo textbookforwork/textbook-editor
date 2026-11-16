@@ -70,7 +70,7 @@ export function Shelf({ tab: tabProp = 'textbook', subject, area }: { tab?: Shel
   // 示範教材進過編輯就換成那份真的自編，不再重複列（共享分頁照列，那是別的老師的）
   const copies = [...books.filter((b) => !isOriginal(b)), ...SAMPLE_BOOKS.filter((b) => tab === 'shared' || !openedSample(b.id))]
     .sort((a, b) => Number(a.shared) - Number(b.shared) || b.updatedAt - a.updatedAt);
-  const [measureRef, columns] = useGridColumns();
+  const [measureRef, columns] = useGridColumns(area);
   const shown = tab === 'textbook' ? null : tab === 'shared' ? copies.filter((b) => b.shared) : copies;
 
   const published = (t: Source) => t.builtIn || !!findBook(t.id)?.shared;
@@ -96,6 +96,7 @@ export function Shelf({ tab: tabProp = 'textbook', subject, area }: { tab?: Shel
   const zoom = usePageZoom();
 
   return (
+    <>
     <Page style={{ '--z': zoom } as React.CSSProperties}>
       <Top>
         <Brand>
@@ -295,9 +296,11 @@ export function Shelf({ tab: tabProp = 'textbook', subject, area }: { tab?: Shel
           }}
         />
       )}
-      <Toaster />
-      <ShelfOverlay side={role} />
     </Page>
+    {/* 浮層放在整頁 zoom 外面：放在裡面時 fixed 的遮罩會跟著縮，只蓋到左上一塊（2026-11-16 乙練抓到） */}
+    <Toaster />
+    <ShelfOverlay side={role} />
+    </>
   );
 }
 
@@ -562,7 +565,10 @@ const Page = styled.div`
   zoom: var(--z, 1);
   min-block-size: calc(100vh / var(--z, 1));
   background: ${(p) => p.theme.surface.backdrop};
-  padding: 24px 32px 48px;
+  padding: 24px 32px 32px;
+  /* 白色面板延伸到視窗底部，底下留一段灰色間距（乙練 2026-11-16） */
+  display: flex;
+  flex-direction: column;
   /* 一排最少要放得下的書寬：筆電視窗沒開滿（約 1200）也能一排 6 本（2026-10-27 乙練） */
   --card-w: 176px;
   box-sizing: border-box;
@@ -694,6 +700,7 @@ const NavPill = styled.button<{ $on?: boolean }>`
 `;
 
 const Panel = styled.main`
+  flex: 1;
   background: ${(p) => p.theme.surface.raised};
   border-radius: 24px;
   padding: 20px 64px 48px;
@@ -779,9 +786,10 @@ const SectionHead = styled.div`
  * 一列放得下幾張卡：直接讀格線算出來的欄數（auto-fill 沒放東西也會保留空欄），
  * 卡片寬度跟著視窗高度縮放，所以視窗大小一變就重讀。
  */
-function useGridColumns() {
+function useGridColumns(area?: Area) {
   const ref = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(5);
+  // 從班級星艦、帳號管理切回書櫃時量測格線才出現，要重新量；只在打開時量一次的話會卡在預設 5 本（2026-11-16 乙練抓到）
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -795,7 +803,7 @@ function useGridColumns() {
       ro.disconnect();
       window.removeEventListener('resize', read);
     };
-  }, []);
+  }, [area]);
   return [ref, columns] as const;
 }
 
