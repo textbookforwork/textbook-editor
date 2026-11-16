@@ -543,8 +543,9 @@ const PageSlot = styled.div`
  * 流式排版的閱讀畫面用滿螢幕：頁面大小＝畫布大小換算回頁座標，字的大小固定（不整頁縮放）。
  * 流式只在換頁線與章、節換頁，頁數不受螢幕影響；變的只是一頁裡的內容怎麼排、要捲多少。
  *   學生平板（1024×768、1280×800）：zoom 1，內文 24px，高於 20px 的下限
- *   大螢幕不再自動放大（乙練 2026-11-16 定）：螢幕寬度分不出是桌上的大螢幕還是教室電視，
- *   自動放大會讓老師在自己電腦上看到 1.5 倍的字。投影時由老師用閱讀設定的字級或瀏覽器縮放調大。
+ *   教室觸控大屏（畫布寬 1700 以上而且是觸控螢幕）：zoom 1.5，圖和字一起放大給遠處的學生看。
+ *   只看寬度分不出桌上的外接螢幕和教室大屏（乙練的外接螢幕被放大成 1.5 倍），教室大屏多是觸控的，
+ *   所以加上觸控條件（乙練 2026-11-16 定）。筆電接投影機（沒有觸控）不會自動放大，老師用瀏覽器縮放。
  * 畫布四周各留 24，頁邊再裁掉 READER_CROP（跟固定頁一樣），所以頁座標要把裁掉的加回去。
  */
 const RAIL_W = 104;
@@ -561,8 +562,9 @@ function useReaderFlowSize(active: boolean): { size: PageDims; zoom: number } | 
     return () => window.removeEventListener('resize', read);
   }, [active]);
   if (!active || !box) return null;
-  // 不依螢幕寬度自動放大（2026-11-16 拿掉 1700 以上 1.5 倍）；保留 zoom 欄位，日後要加手動放大再用
-  const zoom = 1;
+  // 寬 1700 以上而且是觸控螢幕（教室大屏）才放大 1.5 倍；外接螢幕、桌機不放大（乙練 2026-11-16）
+  const touch = typeof window !== 'undefined' && window.matchMedia('(any-pointer: coarse)').matches;
+  const zoom = box.w >= 1700 && touch ? 1.5 : 1;
   return {
     zoom,
     size: {

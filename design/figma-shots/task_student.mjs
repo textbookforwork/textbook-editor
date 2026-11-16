@@ -124,7 +124,7 @@ await ring(s, ['.submit-dlg .dialog-foot']); await shot(s, 's8.png');
 await clickTxt(s, '送出'); await W(s, 700);
 await ring(s, ['.taskbar', 'txt=' + await bubble(s)]); await shot(s, 's-sub.png'); await quiet(s);
 // 學生自己翻到別頁（先解除跟隨）
-await s.getByRole('button', { name: '下一頁' }).first().click(); await W(s, 900);
+await s.getByRole('button', { name: '上一頁' }).first().click(); await W(s, 900);
 await ring(s, ['.taskbar']); await shot(s, 's-away.png');
 await s.locator('.taskbar button').click(); await W(s, 800);
 
