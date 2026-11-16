@@ -1426,7 +1426,10 @@ function Toolbox({ side }) {
       <p class="grp-label">編輯工具</p><div class="toolgrid">${t('pencil', '畫筆', 'pen')}${t('highlighter', '螢光筆', 'highlighter')}${t('eraser', '橡皮擦', 'eraser')}${t('trash', '清除', 'clear')}${t('sun', '雷射筆', 'laser')}${t('sticky-note', '便利貼', 'note')}${t('corner-up-left', '復原', 'undo')}${t('corner-up-right', '取消復原', 'redo')}</div>
       <p class="grp-label">${side === 'teacher' ? '教學工具' : '學習工具'}</p><div class="toolgrid">${side === 'teacher' ? t('send', '派任務', 'task') : ''}${t('whiteboard', '電子白板', 'board')}${side === 'teacher' ? t('sticker2', '貼紙', 'sticker') : ''}${side === 'teacher' ? t('users-round', '分組', 'group') : ''}${side === 'teacher' ? t('n123', '隨機抽籤', 'lottery') : ''}${side === 'teacher' ? t('timer', '計時器', 'timer') : ''}</div>
       ${(() => { const sk = SUBJECT_SHAPE[BRIDGE.subject()] || 'other'; const hl = HIGHLIGHTS[sk];
-        const cells = [hl && t(hl.icon, hl.name, 'hl'), sk === 'math' && t('plus-minus', '數學小工具', 'math')].filter(Boolean);
+        /* 國語文、社會的科目工具規劃中：先放一格停用的佔位，點不了（乙練 2026-11-16） */
+        const planned = { chinese: 'book', social: 'globe' }[sk];
+        const cells = [hl && t(hl.icon, hl.name, 'hl'), sk === 'math' && t('plus-minus', '數學小工具', 'math'),
+          planned && html`<span class="tb-cell"><button class="tile" disabled title="科目工具規劃中"><${Icon} n=${planned} /><span>規劃中</span></button></span>`].filter(Boolean);
         /* 這一科沒有科目工具就整組不出現，不放空狀態（乙練 2026-11-16） */
         return cells.length ? html`<p class="grp-label">科目工具</p><div class="toolgrid" style="margin-bottom:0">${cells}</div>` : ''; })()}
     </div>
