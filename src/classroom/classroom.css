@@ -2509,3 +2509,11 @@
 
 /* 空狀態：灰圓裡一個小幽靈（跟書櫃空分頁同一個樣子，乙練 2026-11-16） */
 .cr .empty-ghost { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 50%; background: var(--sunken); color: var(--text-3); }
+
+/* 工具箱 RWD（乙練 2026-11-16）：畫面不夠高（筆電、平板）時改成一排五格、間距收一點，整個工具箱一次看得完；
+   高的螢幕維持一排三格。真的還放不下，面板本身會捲動（.pop 的 max-height: 100%） */
+@media (max-height: 960px) {
+  .cr .tb-pop { width: 404px; }
+  .cr .tb-pop .toolgrid { margin-bottom: 12px; }
+  .cr .tb-pop .pop-b { padding-top: 8px; padding-bottom: 16px; }
+}
