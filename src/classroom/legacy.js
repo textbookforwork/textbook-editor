@@ -2429,7 +2429,7 @@ function StudentApp() {
   const lock = locked(), on = following();
   const w = fitW(page, s.rs);
   const left = timeLeft();
-  return html`<div class="reader">
+  return html`<div class=${'reader s-reader' + (live ? ' s-live' : '')}>
     <${Rail} side="student" />
     <div class="topbar">
       ${live ? ''

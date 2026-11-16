@@ -2509,3 +2509,6 @@
 
 /* 空狀態：灰圓裡一個小幽靈（跟書櫃空分頁同一個樣子，乙練 2026-11-16） */
 .cr .empty-ghost { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 50%; background: var(--sunken); color: var(--text-3); }
+
+/* 學生閱讀：頂端 78px 是留給上課時的任務列；沒上課時那條是空的，畫布貼齊上方，跟老師一樣留 24px（乙練 2026-11-16） */
+.cr .reader.s-reader:not(.s-live) .pageframe { top: 24px; }
