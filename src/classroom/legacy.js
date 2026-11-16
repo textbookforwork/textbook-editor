@@ -671,7 +671,7 @@ function sendTask(type, draft = {}) {
 function answerChoice(letter) {
   const t = S.task; if (!t || t.type !== 'choice' || t.status !== 'collecting') return;
   // 每種題型送出時夥伴都說一句（乙練 2026-11-16）；選擇題、是非題原本沒有
-  t.answers[ME] = letter; S.s.notice = null; S.flags.choiceAnswered = true; say(line('submit'), 'celebrating', 2600);
+  t.answers[ME] = letter; S.s.notice = null; S.s.modal = null; S.flags.choiceAnswered = true; say(line('submit'), 'celebrating', 2600);
   toast('teacher', '12 陳小宇已作答');
 }
 function closeAnswer() {
@@ -749,14 +749,14 @@ function plusRight() {
 function submitText(txt) {
   const t = S.task; if (!t || t.type !== 'text' || t.status !== 'collecting') return;
   const again = !!t.texts[ME];
-  t.texts[ME] = txt; S.s.notice = null; S.flags.textAnswered = true; say(line('submit'), 'celebrating', 2600);
+  t.texts[ME] = txt; S.s.notice = null; S.s.modal = null; S.flags.textAnswered = true; say(line('submit'), 'celebrating', 2600);
   toast('teacher', `12 陳小宇${again ? '重新' : '已'}回傳文字`);
 }
 /* 聲音題：示範不開麥克風，錄音是模擬的（只記秒數，播放用示範音檔） */
 function submitVoice(sec) {
   const t = S.task; if (!t || t.type !== 'voice' || t.status !== 'collecting') return;
   const again = !!t.voices[ME];
-  t.voices[ME] = { sec, at: Date.now(), mine: true }; S.s.notice = null; S.s.modal = null; S.flags.voiceAnswered = true;
+  t.voices[ME] = { sec, at: Date.now(), mine: true }; S.s.notice = null; S.s.modal = null; // 送出就關掉視窗 S.flags.voiceAnswered = true;
   toast('teacher', `12 陳小宇${again ? '重新' : '已'}送出錄音`);
   say(line('submit'), 'celebrating', 2600);
 }
@@ -777,7 +777,7 @@ function submit() {
   const pageInk = onPaper(t) ? [] : pgl(S.s.ink, PAGES[t.page].id);
   t.subs[ME] = { ink: JSON.parse(JSON.stringify([...pageInk, ...t.mine])), notes: prev?.notes || [], at: Date.now(), mine: true }; S.flags.shotSubmitted = true;
   S.s.modal = null; S.s.notice = null; say(line('submit'), 'celebrating', 2600);
-  toast('teacher', `12 陳小宇${prev ? '重新' : '已'}送出畫面`);
+  toast('teacher', `12 陳小宇${prev ? '重新' : '已'}送出答案`);
 }
 function stopTask() {
   const t = S.task; if (!t) return;
@@ -2494,14 +2494,13 @@ function Notice() {
   if (!task) return null;
   if (n.kind === 'feedback') return html`<div class="notice done"><span class="ic"><${Icon} n="pencil" /></span><div><h5>老師回饋了你的作答</h5><p>任務結束了。老師在你的答案上畫了批註，點開看看。</p>
     <div class="row"><button class=${'btn xs ' + hint('s-feedback')} onClick=${act(() => { s.modal = 'feedback'; s.notice = null; S.flags.feedbackSeen = true; })}>查看回饋</button></div></div>${x}</div>`;
-  if (n.kind === 'done') return html`<div class="notice done"><span class="ic"><${Icon} n="party" /></span><div><h5>已送出這一頁給老師！</h5><p>畫筆、便利貼的作答留在課本上。想改的話，再按一次「送出畫面」就會蓋掉前一次。</p></div>${x}</div>`;
   if (task.type !== 'shot') return null;
   const onTaskPage = onPaper(task) || sPage() === task.page;
   if (onPaper(task)) return html`<div class="notice"><span class="ic"><${Icon} n="send" /></span><div><h5>老師派了手寫題！</h5>
-    <p>這題畫在${paperName(task)}上，畫好按「送出畫面」。</p>
+    <p>這題畫在${paperName(task)}上，畫好按上方的「送出答案」。</p>
     <div class="row"><button class="btn xs" onClick=${act(() => { s.paperHidden = false; s.notice = null; })}>開始畫</button></div></div>${x}</div>`;
   return html`<div class="notice"><span class="ic"><${Icon} n="send" /></span><div><h5>老師派了手寫題！</h5>
-    <p>請在 p.${PAGES[task.page].nums[0]} 作答，完成後按上方的「送出畫面」。</p>
+    <p>請在 p.${PAGES[task.page].nums[0]} 作答，完成後按上方的「送出答案」。</p>
     <div class="row">${onTaskPage ? html`<button class=${'btn xs ' + hint('s-submit')} onClick=${act(() => { s.tool = 'pen'; s.notice = null; })}>拿起畫筆作答</button>`
       : html`<button class=${'btn xs ' + hint('s-goto')} onClick=${act(() => { if (following() && !locked()) setFollow(false); if (!locked()) s.page = task.page; s.tool = 'pen'; s.notice = null; })}>前往 p.${PAGES[task.page].nums[0]} 作答</button>`}</div></div>${x}</div>`;
 }
@@ -2511,18 +2510,18 @@ function TaskBar() {
   if (!task) return null;
   if (task.type === 'choice') {
     const mine = task.answers[ME];
-    if (task.status === 'collecting') return html`<span class="taskbar">${typeName(task)}<button class=${'btn xs ' + hint('s-choice-open')} onClick=${act(() => { s.modal = 'choice'; })}>${mine ? '查看' : '作答'}</button></span>`;
+    if (task.status === 'collecting') return html`<span class="taskbar">${typeName(task)}<button class=${'btn xs ' + hint('s-choice-open')} onClick=${act(() => { s.modal = 'choice'; })}>${mine ? '改答案' : '作答'}</button></span>`;
     if (task.status === 'closed') return html`<span class="taskbar done">作答結束</span>`;
     return html`<span class="taskbar done">已公布答案<button class="btn xs" onClick=${act(() => { s.modal = 'result'; })}>看結果</button></span>`;
   }
   if (task.type === 'text') {
     const mine = task.texts[ME];
-    if (task.status === 'collecting') return html`<span class="taskbar">文字題<button class="btn xs" onClick=${act(() => { s.modal = 'text'; })}>${mine ? '查看' : '作答'}</button></span>`;
+    if (task.status === 'collecting') return html`<span class="taskbar">文字題<button class="btn xs" onClick=${act(() => { s.modal = 'text'; })}>${mine ? '改答案' : '作答'}</button></span>`;
     return html`<span class="taskbar done">作答結束</span>`;
   }
   if (task.type === 'voice') {
     const mine = task.voices[ME];
-    if (task.status === 'collecting') return html`<span class="taskbar">聲音題<button class=${'btn xs ' + hint('s-rec-open')} onClick=${act(() => { s.modal = 'voice'; })}>${mine ? '查看' : '錄音'}</button></span>`;
+    if (task.status === 'collecting') return html`<span class="taskbar">聲音題<button class=${'btn xs ' + hint('s-rec-open')} onClick=${act(() => { s.modal = 'voice'; })}>${mine ? '重錄' : '錄音'}</button></span>`;
     return html`<span class="taskbar done">作答結束</span>`;
   }
   const tp = task.page, onPage = onPaper(task) || sPage() === tp, sub = task.subs[ME];
@@ -2531,8 +2530,8 @@ function TaskBar() {
     return html`<span class="taskbar done">作答結束${fb ? html`<button class=${'btn xs ' + hint('s-feedback')} onClick=${act(() => { s.modal = 'feedback'; s.notice = null; S.flags.feedbackSeen = true; })}>查看回饋</button>` : ''}</span>`;
   }
   return html`<span class="taskbar">手寫題${onPaper(task) ? '' : ` p.${PAGES[task.page].nums[0]}`}
-    ${onPage ? html`<button class=${'btn xs ' + hint('s-submit')} onClick=${act(() => { s.modal = 'submit'; s.tool = null; s.notice = null; })}>${sub ? '再送一次' : '送出畫面'}</button>`
-      : html`<button class=${'btn xs ' + hint('s-goto')} onClick=${act(() => { if (following() && !locked()) setFollow(false); if (!locked()) s.page = tp; s.tool = 'pen'; s.notice = null; })}>前往作答</button>`}</span>`;
+    ${onPage ? html`<button class=${'btn xs ' + hint('s-submit')} onClick=${act(() => { s.modal = 'submit'; s.tool = null; s.notice = null; })}>${sub ? '重新送出' : '送出答案'}</button>`
+      : html`<button class=${'btn xs sec ' + hint('s-goto')} onClick=${act(() => { if (following() && !locked()) setFollow(false); if (!locked()) s.page = tp; s.tool = 'pen'; s.notice = null; })}>回到 p.${PAGES[task.page].nums[0]}</button>`}</span>`;
 }
 /* 上課邀請：學生畫面正中央彈窗，只有「加入課堂」一個按鈕，不能關掉（2026-11-03） */
 function Invite() {
@@ -2550,29 +2549,26 @@ function ChoiceDialog() {
   if (!t) return null;
   const mine = t.answers[ME], open = t.status === 'collecting';
   const close = () => { s.modal = null; };
-  // 時間到（結束作答）之前都可以改，再按一次送出就換掉
+  // 送出就關掉視窗；結束作答前從任務列「改答案」再打開，原本選的先選好，選了別的才能「重新送出」（2026-11-16 乙練）
   return dlg(typeName(t), html`
     <div class="pop-h"><h4>${typeName(t)}</h4><button class="x-btn" aria-label="縮小" onClick=${act(close)}><${Icon} n="x" /></button></div>
     <div class="pop-b">
       ${t.q && html`<div class="qline">${t.q}</div>`}
-      <div class=${'abtns' + (t.tf ? ' tf' : '')}>${optLetters(t).map((L, i) => html`<button disabled=${!open} class=${'abtn' + (sel === L ? ' on' : '') + (mine === L ? ' sent' : '') + ' ' + (L === 'B' ? hint('s-pickB') : '')} onClick=${() => setSel(L)}>${L}${t.opts[i] && html`<span>${t.opts[i]}</span>`}</button>`)}</div>
-      ${open && html`<div class="dialog-foot"><button class=${'btn sm ' + hint('s-choice-send')} disabled=${!sel || sel === mine} onClick=${act(() => answerChoice(sel))}>${mine ? '改成這個' : '送出'}</button></div>`}
+      <div class=${'abtns' + (t.tf ? ' tf' : '')} style=${`--n:${optLetters(t).length}`}>${optLetters(t).map((L, i) => html`<button disabled=${!open} class=${'abtn' + (sel === L ? ' on' : '') + ' ' + (L === 'B' ? hint('s-pickB') : '')} onClick=${() => setSel(L)}>${L}${t.opts[i] && html`<span>${t.opts[i]}</span>`}</button>`)}</div>
+      ${open && html`<div class="dialog-foot"><button class=${'btn sm ' + hint('s-choice-send')} disabled=${!sel || sel === mine} onClick=${act(() => answerChoice(sel))}>${mine ? '重新送出' : '送出'}</button></div>`}
     </div>`, act(close), 'ans-dlg');
 }
 function TextDialog() {
   const s = S.s, t = S.task; const hint = useHint();
   const [txt, setTxt] = useState(t ? t.texts[ME] || '' : '');
-  const [editing, setEditing] = useState(!(t && t.texts[ME]));
   if (!t) return null;
   const close = () => { s.modal = null; };
   return dlg('文字題', html`
     <div class="pop-h"><h4>文字題</h4><button class="x-btn" aria-label="縮小" onClick=${act(close)}><${Icon} n="x" /></button></div>
     <div class="pop-b">
       ${t.q && html`<div class="qline">${t.q}</div>`}
-      ${editing ? html`<textarea class="inp" id="text-ans" placeholder="在這裡打字回答" value=${txt} onInput=${(e) => setTxt(e.target.value)}></textarea>
-        <div class="dialog-foot"><button class=${'btn sm ' + hint('s-text-send')} disabled=${!txt.trim()} onClick=${act(() => { submitText(txt.trim()); setEditing(false); })}>送出</button></div>`
-        : html`<div class="text-big" style="font-size:20px;min-height:120px;padding:20px 24px">${t.texts[ME]}</div>
-          ${t.status === 'collecting' && html`<div class="dialog-foot"><button class="btn sm sec" onClick=${() => setEditing(true)}>修改</button></div>`}`}
+      <textarea class="inp" id="text-ans" placeholder="在這裡打字回答" value=${txt} onInput=${(e) => setTxt(e.target.value)}></textarea>
+      <div class="dialog-foot"><button class=${'btn sm ' + hint('s-text-send')} disabled=${!txt.trim() || txt.trim() === t.texts[ME]} onClick=${act(() => submitText(txt.trim()))}>${t.texts[ME] ? '重新送出' : '送出'}</button></div>
     </div>`, act(close), 'ans-dlg');
 }
 /* 檢討時的名字膠囊（沒作答那一頁等）：點一下就 +1，右邊顯示 +N，跟選擇題同一款 */
@@ -2642,9 +2638,10 @@ function VoiceDialog() {
         ${ph === 'rec' && html`<button class="rec-btn on" aria-label="停止錄音" onClick=${() => setPh('done')}><${Icon} n="square" s=${24} /></button>`}
         ${(ph === 'done' || ph === 'sent') && html`<button class=${'rec-btn play' + (S.playingVoice === 'me' ? ' on' : '')} aria-label=${S.playingVoice === 'me' ? '暫停' : '播放'} onClick=${act(() => playVoice('me'))}><${Icon} n=${S.playingVoice === 'me' ? 'pause' : 'play'} s=${26} /></button>`}
       </div>
-      ${(ph === 'done' || (ph === 'sent' && t.status === 'collecting')) && html`<div class="dialog-foot">
+      ${ph === 'sent' && t.status === 'collecting' && html`<div class="dialog-foot"><button class="btn sm" onClick=${() => { setSec(0); setPh('idle'); }}>重錄</button></div>`}
+      ${ph === 'done' && html`<div class="dialog-foot">
         <button class="btn sm sec" onClick=${() => { setSec(0); setPh('idle'); }}>重錄</button>
-        ${ph === 'done' && html`<button class=${'btn sm ' + hint('s-rec-send')} onClick=${act(() => submitVoice(sec || 1))}>送出</button>`}
+        <button class=${'btn sm ' + hint('s-rec-send')} onClick=${act(() => submitVoice(sec || 1))}>${mine ? '重新送出' : '送出'}</button>
       </div>`}
     </div>`, act(close), 'ans-dlg');
 }
@@ -2680,8 +2677,8 @@ function SubmitDialog() {
   const s = S.s, task = S.task; const hint = useHint();
   if (!task) return null;
   const pageInk = onPaper(task) ? [] : pgl(s.ink, PAGES[task.page].id);
-  return dlg('送出畫面', html`
-    <div class="pop-h"><h4>送出畫面</h4></div>
+  return dlg('送出這一頁', html`
+    <div class="pop-h"><h4>送出這一頁？</h4></div>
     <div class="pop-b">
       <div class="big-work"><${Work} t=${task} w=${552} layers=${[pageInk, task.mine]} /></div>
       <div class="dialog-foot"><button class="btn sec sm" onClick=${act(() => { s.modal = null; s.tool = 'pen'; })}>再改一下</button><button class=${'btn sm ' + hint('s-confirm')} onClick=${act(submit)}>送出</button></div>
@@ -3393,7 +3390,7 @@ const STEPS = {
   ],
   5: [
     { side: 'teacher', hint: () => (S.t.pop !== 'task' ? 't-task' : !S.compose ? 't-type-choice' : 't-send'), text: '口頭出題「北極星在哪一個星座裡？」，點「派任務 → 選擇題 → 派出」', done: () => !!S.flags.choiceSent, run: () => { goTeacherReaderLive(); sendTask('choice', { n: 4 }); } },
-    { side: 'student', hint: () => (S.s.modal === 'choice' ? 's-pickB' : 's-choice-open'), text: '學生跳出選項大按鈕（依老師設的 2–5 個），選一個送出；送出後不能改', done: () => !!S.flags.choiceAnswered || !!S.flags.revealed, run: () => { if (!S.task || S.task.type !== 'choice') { goTeacherReaderLive(); sendTask('choice', { n: 4 }); } S.s.modal = 'choice'; later(1600, () => answerChoice('B')); } },
+    { side: 'student', hint: () => (S.s.modal === 'choice' ? 's-pickB' : 's-choice-open'), text: '學生跳出選項大按鈕（依老師設的 2–5 個），選一個送出；視窗關掉，結束作答前可以按上方「改答案」重新送出', done: () => !!S.flags.choiceAnswered || !!S.flags.revealed, run: () => { if (!S.task || S.task.type !== 'choice') { goTeacherReaderLive(); sendTask('choice', { n: 4 }); } S.s.modal = 'choice'; later(1600, () => answerChoice('B')); } },
     { side: 'teacher', hint: 't-close', text: '作答中只看到幾人答完。大家都答了，按「結束作答」', done: () => !!S.flags.choiceClosed || !!S.flags.revealed, run: () => { if (S.task && S.task.type === 'choice') { S.t.pop = 'task'; closeAnswer(); } } },
     { side: 'teacher', hint: 't-correct', text: '點選正確選項 B：直接公布答案，每個選項的人數長出來', done: () => !!S.flags.revealed, run: () => { if (S.task && S.task.type === 'choice') { S.t.pop = 'task'; closeAnswer(); reveal('B'); } } },
     { side: 'teacher', hint: 't-plusright', text: '名單分答對、答錯、沒作答。在「答對」這組按「答對 +1」一鍵加分；旁邊的「抽籤」可以請一位發表', done: () => !!S.flags.plusRight, run: () => { if (S.task && S.task.type === 'choice') { S.t.pop = 'task'; plusRight(); } } },
@@ -3402,7 +3399,7 @@ const STEPS = {
     { side: 'student', hint: 's-text-send', text: '學生在跳出的視窗打字回答、送出', done: () => !!S.flags.textAnswered, run: () => { if (!S.task || S.task.type !== 'text') { goTeacherReaderLive(); sendTask('text', {}); } submitText('先找到北斗七星，把勺口兩顆星連起來，往外延長五倍就是北極星。'); S.s.modal = null; } },
     { side: 'teacher', hint: () => (S.t.pop !== 'task' ? 't-task' : liveT() ? 't-stop-text' : 't-textcard'), text: '按「結束作答」，回收面板列出每個人寫的字。點一張卡放大，可以投影、加分', done: () => !!S.flags.textViewed, run: () => { if (S.task && S.task.type === 'text') { S.t.pop = 'task'; if (liveT()) stopTask(); later(1400, () => { S.task.view = ME; S.flags.textViewed = true; }); } } },
     { side: 'teacher', hint: () => (S.task && S.task.type !== 'shot' ? toNext() : !S.compose ? 't-type-shot' : 't-send'), text: '再派手寫題：「畫在」選課本這一頁（也可以選白紙、方格、四線格）', done: () => !!S.flags.shotSent, run: () => { goTeacherReaderLive(); sendTask('shot', {}); } },
-    { side: 'student', hint: () => (S.s.modal === 'submit' ? 's-confirm' : 's-submit'), text: '學生直接在課本上作答（畫在另一層），按「送出畫面」，夥伴說一句「交出去了」', done: () => !!S.flags.shotSubmitted, run: () => { if (!S.task || S.task.type !== 'shot') { goTeacherReaderLive(); sendTask('shot', {}); } if (!S.task.mine.length) autoAnswer(); submit(); } },
+    { side: 'student', hint: () => (S.s.modal === 'submit' ? 's-confirm' : 's-submit'), text: '學生直接在課本上作答（畫在另一層），按「送出答案」，夥伴說一句「交出去了」', done: () => !!S.flags.shotSubmitted, run: () => { if (!S.task || S.task.type !== 'shot') { goTeacherReaderLive(); sendTask('shot', {}); } if (!S.task.mine.length) autoAnswer(); submit(); } },
     { side: 'teacher', hint: () => (S.t.pop !== 'task' ? 't-task' : 't-stop'), text: '按「結束作答」：學生端不能再送出', done: () => !!S.flags.shotStopped, run: () => { if (S.task) { S.task.view = null; S.shared = null; S.t.pop = 'task'; stopTask(); } } },
     { side: 'teacher', hint: () => (S.t.pop !== 'task' ? 't-task' : S.task && S.task.view ? 't-share' : 't-detail'), text: '點一份作品放到整個畫面：直接用筆批註（旁邊有橡皮擦、清除），批註送回學生；按 +1 加分，「分享畫面」給全班看（顯示座號姓名）', done: () => !!S.flags.sharedOnce, run: () => { if (liveT()) stopTask(); const f = firstSub(); if (f) { S.t.pop = 'task'; openDetail(f); const sub = S.task.subs[f]; if (!sub.notes.length) sub.notes.push({ c: COLORS.note, w: 4, pts: [[600, 60], [700, 40], [790, 70]] }); share(f); } } },
     { side: 'teacher', hint: () => (S.task && S.task.type !== 'voice' ? toNext() : !S.compose ? 't-type-voice' : 't-send'), text: '再派聲音題：學生錄音回答，例如念一段課文、用英文回答', done: () => !!S.flags.voiceSent, run: () => { goTeacherReaderLive(); sendTask('voice', {}); } },
