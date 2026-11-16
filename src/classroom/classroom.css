@@ -2512,3 +2512,7 @@
 
 /* 學生閱讀：頂端 78px 是留給上課時的任務列；沒上課時那條是空的，畫布貼齊上方，跟老師一樣留 24px（乙練 2026-11-16） */
 .cr .reader.s-reader:not(.s-live) .pageframe { top: 24px; }
+
+/* 學生工具箱：組與組之間收一點，768 高的平板也能一次看完整個工具箱，不用捲（乙練 2026-11-16） */
+.cr .tb-student .toolgrid { margin-bottom: 12px; }
+.cr .tb-student .pop-b { padding-top: 12px; padding-bottom: 20px; }
