@@ -2503,3 +2503,6 @@
 .cr .ctabs .ghost.end { border-radius: 999px; padding: 7px 14px; }
 .cr .ctabs .ghost.end::before { display: none; }
 .cr .rec-row, .cr button.pt2, .cr .who-chose .nm-chip, .cr .review .who-chose.names-big .nm-chip, .cr .ch-pop .who-chose .nm-chip { border-radius: 10px; }
+
+/* 「開始上課」hover 時底被一般格子的淺色 hover 蓋掉，字還是白的、看不到；改成黑字（乙練 2026-11-16） */
+.cr .tile.sync-tile:not(.live):hover:not(:disabled) { color: var(--ink); }
