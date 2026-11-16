@@ -46,17 +46,22 @@ const newTask = async (type) => {
 await t.goto(BASE);
 await t.evaluate(() => sessionStorage.setItem('ds-editor:role', 'teacher'));
 await t.getByText('進入數位教科書').first().click(); await W(t, 1500);
+// 乾淨瀏覽器沒有班級：先建 501 自然（預設 30 位學生）
+await t.goto(BASE + '#/classes'); await W(t, 1500);
+await t.getByText('新增班級').first().click(); await W(t, 600); await clickTxt(t, '新增'); await W(t, 800);
 await t.goto(BASE + '#/read/book/demo'); await W(t, 2500);
 for (let i = 0; i < 6; i++) { if (await t.evaluate(() => document.body.innerText.includes('夜空裡的星座'))) break; await t.getByRole('button', { name: '下一頁' }).first().click(); await W(t, 800); }
 await t.getByRole('button', { name: '開始上課' }).first().click(); await W(t, 800);
 await t.evaluate(() => { const bs = [...document.querySelectorAll('button')].filter((x) => x.innerText.trim() === '開始上課'); bs[bs.length - 1].click(); });
 await W(t, 1500);
+log('teacher', (await t.evaluate(() => document.body.innerText.slice(0, 200))).replace(/\n/g, ' '));
 
 // 學生加入
 const s = await ctx.newPage();
 await s.addInitScript(() => sessionStorage.setItem('ds-editor:role', 'student'));
 await s.goto(BASE + '#/read/book/demo'); await W(s, 3000);
 const join = s.locator('.scrim button', { hasText: '加入課堂' }); if (await join.count()) { await join.click(); await W(s, 1500); }
+log('student', (await s.evaluate(() => document.body.innerText.slice(0, 160))).replace(/\n/g, ' ')); await s.screenshot({ path: OUT + '_student.png' });
 const openTask = async () => { if (!(await s.locator('.ans-dlg').count())) { await s.locator('.taskbar button').click(); await W(s, 500); } };
 
 // 選擇題

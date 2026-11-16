@@ -399,6 +399,8 @@ const PalCard = styled.div`
   border-radius: ${(p) => p.theme.radius.tile};
   background: ${(p) => p.theme.surface.sunken};
   font-size: ${(p) => p.theme.typography.bodySmSize};
+  /* 夥伴名字不換行：選單窄的時候「叮咚」會被擠成直的（2026-11-16 乙練抓到） */
+  & b { white-space: nowrap; }
 `;
 
 /** 「⋯」：滑過封面才出現；點開是這一本能做的事 */
