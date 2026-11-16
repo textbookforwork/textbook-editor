@@ -663,7 +663,8 @@ function sendTask(type, draft = {}) {
 }
 function answerChoice(letter) {
   const t = S.task; if (!t || t.type !== 'choice' || t.status !== 'collecting') return;
-  t.answers[ME] = letter; S.s.notice = null; S.flags.choiceAnswered = true;
+  // 每種題型送出時夥伴都說一句（乙練 2026-11-16）；選擇題、是非題原本沒有
+  t.answers[ME] = letter; S.s.notice = null; S.flags.choiceAnswered = true; say(line('submit'), 'celebrating', 2600);
   toast('teacher', '12 陳小宇已作答');
 }
 function closeAnswer() {
