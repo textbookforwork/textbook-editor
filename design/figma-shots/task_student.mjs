@@ -59,6 +59,10 @@ log('teacher', (await t.evaluate(() => document.body.innerText.slice(0, 200))).r
 // 學生加入
 const s = await ctx.newPage();
 await s.addInitScript(() => sessionStorage.setItem('ds-editor:role', 'student'));
+await s.goto(BASE); await W(s, 1500);
+const sl = s.getByText('進入數位教科書'); if (await sl.count()) { await sl.first().click(); await W(s, 1500); }
+// 第一次登入：挑火花、圓圓眼
+if (await s.locator('button', { hasText: '火花' }).count()) { await s.locator('button', { hasText: '火花' }).first().click(); await W(s, 400); await s.locator('button', { hasText: '一起出發' }).first().click(); await W(s, 700); await s.locator('button', { hasText: '圓圓眼' }).first().click(); await W(s, 300); await s.locator('button', { hasText: '完成' }).first().click(); await W(s, 1200); }
 await s.goto(BASE + '#/read/book/demo'); await W(s, 3000);
 const join = s.locator('.scrim button', { hasText: '加入課堂' }); if (await join.count()) { await join.click(); await W(s, 1500); }
 log('student', (await s.evaluate(() => document.body.innerText.slice(0, 160))).replace(/\n/g, ' ')); await s.screenshot({ path: OUT + '_student.png' });
