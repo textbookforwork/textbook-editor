@@ -2530,3 +2530,28 @@
 .cr.cr-fill > .shelf-panel.cr-area { flex: 1; display: flex; flex-direction: column; }
 .cr .classes-home { flex: 1; display: flex; flex-direction: column; }
 .cr .classes-home > .empty-state { flex: 1; justify-content: center; padding: 40px 0 calc(40px + 6vh); }
+
+/* 書櫃白框裡（班級頁、帳號管理）內容不限高、不另外捲，整頁一起往下捲，跟書櫃頁一樣（2026-11-16 乙練）。
+   限高只留給上課時的小彈窗 */
+.cr.cr-fill .subs, .cr.cr-fill .text-cards, .cr.cr-fill .voice-grid, .cr.cr-fill .voice-cards,
+.cr.cr-fill .ans-grid, .cr.cr-fill .tbl-wrap, .cr.cr-fill .acc-list, .cr.cr-fill .kid-grid,
+.cr.cr-fill .score-log, .cr.cr-fill .acards { max-height: none; overflow: visible; }
+
+/* 光學對齊：圓裡的座號、數字要看起來在正中間。中文字型的行高會讓數字往下掉，
+   行高設 1，再用 text-box 裁掉字型上下多留的空間，只留數字本身的高度來置中（2026-11-16 乙練抓到座號偏下） */
+.cr .seat, .cr .seat-dots i, .cr .kid .seat-dot, .cr .sk-seat, .cr .sk-dot { line-height: 1; text-box: trim-both cap alphabetic; }
+
+/* 班級頁學習紀錄的學生名單：座號黑圈、字放大（2026-11-16 乙練） */
+.cr .who-n { display: inline-flex; align-items: center; gap: 8px; }
+.cr.cr-fill .who-chose, .cr.cr-fill .v-none { font-size: 16px; color: var(--ink); }
+.cr.cr-fill .who-chose .who-n, .cr.cr-fill .v-none .who-n { line-height: 1.5; }
+.cr.cr-fill .miss-line { font-size: 16px; }
+.cr.cr-fill .miss-line .who-n { padding: 4px 12px 4px 4px; font-size: 15px; }
+.cr.cr-fill .who-n .seat { min-width: 26px; height: 26px; font-size: 13px; }
+.cr .miss-line .who-n .seat { padding: 0 5px; background: var(--ink); color: #FAFAFA; }
+.cr.cr-fill .sub .nm { font-size: 15px; gap: 8px; }
+.cr.cr-fill .sub .nm .seat { min-width: 26px; height: 26px; font-size: 13px; }
+
+/* 學生側欄要在 16:9（1280×720）平板上整條放得下，含「自己翻頁」時的跟老師鈕＋翻頁膠囊（2026-11-16 乙練：預覽下面被切掉） */
+.cr .rail { gap: 2px; padding: 8px 0; }
+.cr .rail .spill-wrap { gap: 6px; margin-top: 4px; }

@@ -1813,7 +1813,7 @@ function ChoiceResult({ t }) {
     <div class="bars">${letters.map((L, i) => html`<button class=${'cbar' + (L === t.correct ? ' ok' : '')} disabled><span>${counts[i]} 人</span><i style=${{ height: (counts[i] / max) * 180 + 'px' }}></i></button>`)}</div>
     <div class="bar-l">${letters.map((L, i) => html`<span class=${L === t.correct ? 'ok' : ''}>${L === t.correct ? '✓ ' : ''}${L}${t.opts[i] ? html`<small>${t.opts[i]}</small>` : ''}</span>`)}</div>
     <div class="grp">${[['right', '答對'], ['wrong', '答錯'], ['none', '沒作答']].map(([k, l]) => html`<button class=${grp === k ? 'on' : ''} onClick=${() => setGrp(k)}>${l} ${groups[k].length}</button>`)}</div>
-    <div class="who-chose">${groups[grp].map((x) => html`<span>${pad(x)} ${nameOf(x)}</span>`)}${!groups[grp].length && '沒有人'}</div>
+    <div class="who-chose">${groups[grp].map((x) => html`<span class="who-n"><span class="seat">${pad(x)}</span>${nameOf(x)}</span>`)}${!groups[grp].length && '沒有人'}</div>
   </div>`;
 }
 function ReturnResult({ t, records }) {
@@ -1822,9 +1822,9 @@ function ReturnResult({ t, records }) {
   if (big) return html`<${TextBig} t=${t} seat=${big} onBack=${() => setBig(null)} records=${records} />`;
   return html`<div>
     <div class="rec-sum"><span><b>${answeredCount(t)}</b>／${seats.length} 回傳</span></div>
-    ${t.type !== 'voice' && (() => { const miss = seats.filter((x) => !(t.type === 'text' ? t.texts[x] : t.subs[x])); return miss.length > 0 && html`<div class="miss-line">沒交 ${miss.length} 人：${miss.map((x) => html`<span>${pad(x)} ${nameOf(x)}</span>`)}</div>`; })()}
+    ${t.type !== 'voice' && (() => { const miss = seats.filter((x) => !(t.type === 'text' ? t.texts[x] : t.subs[x])); return miss.length > 0 && html`<div class="miss-line">沒交 ${miss.length} 人：${miss.map((x) => html`<span class="who-n"><span class="seat">${pad(x)}</span>${nameOf(x)}</span>`)}</div>`; })()}
     ${t.type === 'voice' ? html`<div class="vs-grid">${seats.filter((x) => (t.voices || {})[x]).map((seat) => html`<${VoiceSeat} t=${t} seat=${seat} readonly />`)}</div>
-      ${seats.some((x) => !(t.voices || {})[x]) && html`<div class="v-none"><b>未作答</b>${seats.filter((x) => !(t.voices || {})[x]).map((x) => html`<span>${pad(x)} ${nameOf(x)}</span>`)}</div>`}`
+      ${seats.some((x) => !(t.voices || {})[x]) && html`<div class="v-none"><b>未作答</b>${seats.filter((x) => !(t.voices || {})[x]).map((x) => html`<span class="who-n"><span class="seat">${pad(x)}</span>${nameOf(x)}</span>`)}</div>`}`
       : t.type === 'text'
       ? html`<div class="text-cards">${seats.map((seat) => t.texts[seat] ? html`<button class="tcard" onClick=${() => setBig(seat)}><span class="who2"><span class="seat">${pad(seat)}</span>${nameOf(seat)}</span>${t.texts[seat]}</button>` : '')}</div>`
       : html`<div class="subs">${seats.map((seat) => { const sub = t.subs[seat]; return sub ? html`<div class="sub"><div class="box"><${MiniWork} t=${t} layers=${[sub.ink, sub.notes]} /></div><div class="nm"><span class="seat">${pad(seat)}</span>${nameOf(seat)}</div></div>` : ''; })}</div>`}
