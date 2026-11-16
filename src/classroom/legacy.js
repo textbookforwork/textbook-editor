@@ -204,11 +204,18 @@ function eyeEls(type, k, ink, bodyCol) {
   return out;
 }
 /* 一顆夥伴：box 是外框邊長，形狀依長寬比縮進去 */
+/*
+ * 視覺置中（optical align）：形狀的外框長寬差很多（叮咚扁長、芽芽瘦高），照外框置中、照最長邊縮放，
+ * 排在一起時有的偏上、有的偏一邊，大小也看起來不一。改成一律畫在 box×box 的正方形裡，
+ * 形狀的重心放在正中央，並依面積縮放（每個形狀佔方框約 52%；叮咚最扁，左右會超出方框一點點，所以 overflow 開著），一排夥伴看起來一樣大、對得齊。
+ * [重心 x, 重心 y, 方框邊長]，由各形狀路徑算出（面積重心；邊長＝面積 ÷ 0.52 開根號）。
+ */
+const OPT = { lime: [89.5, 46.6, 161], purple: [80.7, 65.5, 180], pink: [68.8, 65.9, 170], brown: [64.9, 66.1, 149], orange: [104.9, 104.3, 250], amber: [91.6, 77.8, 213], cyan: [91, 92.8, 222], green: [52.6, 58.3, 133] };
 function Companion({ shape = 'pink', eye = 'big', box = 60, cls = 'bob', mood }) {
   const S = SH[shape];
-  const w = box * S.w / Math.max(S.w, S.h), hgt = w * S.h / S.w;
+  const [ox, oy, L] = OPT[shape] || [S.w / 2, S.h / 2, Math.max(S.w, S.h)];
   const k = Math.min(S.w, S.h) / 62, ink = S.dark ? '#FFFDF6' : '#1A1A1A';
-  return html`<svg class=${'comp ' + cls} width=${w} height=${hgt} viewBox=${`0 0 ${S.w} ${S.h}`} aria-hidden="true">
+  return html`<svg class=${'comp ' + cls} width=${box} height=${box} viewBox=${`${ox - L / 2} ${oy - L / 2} ${L} ${L}`} overflow="visible" aria-hidden="true">
     <path d=${S.d} fill=${S.color} />
     <g transform=${`translate(${S.fx} ${S.fy})`}>${eyeEls(mood || eye, k, ink, S.color)}</g>
   </svg>`;
