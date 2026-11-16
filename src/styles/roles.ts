@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import type { TextBlock, TextRole } from '../model/types';
 
 /**
- * 九種內容角色 → 設計系統的字級 token。
+ * 八種內容角色 → 設計系統的字級 token。
  *
  * 角色決定預設字級與字重，也是內容分類與無障礙的依據。
  * 老師可以用 TextBlock.fontSize 覆寫某一段的大小（見 roleStyle），
@@ -13,7 +13,6 @@ export const ROLE_TOKEN: Record<TextRole, string> = {
   sectionTitle: 'heading-2',
   itemTitle: 'heading-3',
   subItemTitle: 'heading-4',
-  lead: 'lead',
   body: 'body-lg',
   supplement: 'body',
   annotation: 'body-sm',
@@ -137,7 +136,6 @@ export const ROLE_DEFAULT_SIZE: Record<TextRole, number> = {
   sectionTitle: 36,
   itemTitle: 28,
   subItemTitle: 24,
-  lead: 20,
   body: 20,
   supplement: 16,
   annotation: 14,

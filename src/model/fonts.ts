@@ -19,7 +19,10 @@ const RENAMED: Record<string, string> = {
     '"GenSenRounded TW", "Noto Sans TC", sans-serif',
 };
 
-/** 走過整份教材（段落的字、圖形、彈窗裡的內容都在內），把舊的字型設定換成新的。沒有要換的就回傳原物件。 */
+/**
+ * 走過整份教材（段落的字、圖形、彈窗裡的內容都在內），把舊的字型設定換成新的；
+ * 已拿掉的文字角色也在這裡換掉：導言（lead）→ 內文（2026-11-16）。沒有要換的就回傳原物件。
+ */
 export function withCurrentFonts(doc: Doc): Doc {
   let changed = false;
   const walk = (v: unknown): unknown => {
@@ -31,7 +34,12 @@ export function withCurrentFonts(doc: Doc): Doc {
     const obj = v as Record<string, unknown>;
     let out: Record<string, unknown> | null = null;
     for (const [k, x] of Object.entries(obj)) {
-      const y = k === 'fontFamily' && typeof x === 'string' && RENAMED[x] ? RENAMED[x] : walk(x);
+      const y =
+        k === 'fontFamily' && typeof x === 'string' && RENAMED[x]
+          ? RENAMED[x]
+          : k === 'role' && x === 'lead'
+            ? 'body'
+            : walk(x);
       if (y !== x) {
         out ??= { ...obj };
         out[k] = y;

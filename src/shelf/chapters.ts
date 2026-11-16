@@ -7,7 +7,7 @@ import type { Doc } from '../model/types';
  * 一份教材是一條內容流，章節不是另外存的單位，而是由標題算出來的（見 model/outline）：
  * 課名（第一層標題）是一組，底下的第二層標題各是一節。勾選的是節；
  * 一節的範圍＝從它的標題到下一個同層或更上層標題之前。
- * 課名到第一節之間的內容（例如課名本身、導言）跟著這一課走，只要有一節留下就保留。
+ * 課名到第一節之間的內容（例如課名本身、課名下的開頭內文）跟著這一課走，只要有一節留下就保留。
  *
  * 這是 PRD「建立自編可選章節」的做法二：一整本是一份教材，複製部分章節＝依目次範圍複製。
  */
@@ -30,7 +30,7 @@ export function keepSections(doc: Doc, keep: Set<string>): Doc {
   const outline = outlineOf(doc).filter((i) => i.depth <= 1);
   const headingAt = new Map(outline.map((i) => [i.rowId, i]));
 
-  // 先算每一課有沒有留下任何一節，課名與導言才知道要不要留
+  // 先算每一課有沒有留下任何一節，課名與開頭內文才知道要不要留
   const lessonKept = new Map<string, boolean>();
   let lesson = '';
   for (const i of outline) {

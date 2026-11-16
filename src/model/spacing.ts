@@ -75,7 +75,7 @@ export function gapBefore(prev: Row | null, next: Row): number {
   // 換模組：盒狀模組一律用固定間距與前後隔開，不因內容多寡改變
   if (rowIsBoxLike(next) || rowIsBoxLike(prev)) return GAP.module;
 
-  // 緊貼：標題與它自己的內文或導言
+  // 緊貼：標題與它自己的內文
   if (prevRole && HEADING_ROLES.includes(prevRole)) return AFTER_HEADING[prevRole] ?? GAP.tight;
 
   // 連續：同一節內相鄰的段落

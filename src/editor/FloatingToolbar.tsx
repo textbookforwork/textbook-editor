@@ -128,9 +128,7 @@ function BlockCapsule() {
                   ? block.role
                   : block.role === 'itemTitle' || block.role === 'subItemTitle'
                     ? 'sectionTitle'
-                    : block.role === 'lead'
-                      ? 'body'
-                      : 'supplement'
+                    : 'supplement'
             }
             aria-label="內容層級"
             options={[

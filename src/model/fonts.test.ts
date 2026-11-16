@@ -20,6 +20,13 @@ describe('withCurrentFonts', () => {
     expect(s.fontFamily).toBe(valueOf('源泉圓體'));
   });
 
+  it('舊存檔的導言改成內文', () => {
+    const old = { ...makeText('抬頭看看夜空', 'body'), role: 'lead' } as unknown as ReturnType<typeof makeText>;
+    const doc = { ...emptyDoc(), rows: [makeRow([old])] };
+    const t = withCurrentFonts(doc).rows[0].columns[0].blocks[0];
+    expect(t.type === 'text' && t.role).toBe('body');
+  });
+
   it('沒有舊值就原物件奉還（不佔一次重繪）', () => {
     const doc = { ...emptyDoc(), rows: [makeRow([makeText('你好', 'body')])] };
     expect(withCurrentFonts(doc)).toBe(doc);

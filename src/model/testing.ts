@@ -12,7 +12,6 @@ const LINE_HEIGHT: Record<TextRole, number> = {
   sectionTitle: 44,
   itemTitle: 36,
   subItemTitle: 32,
-  lead: 30,
   body: 28,
   supplement: 26,
   annotation: 22,

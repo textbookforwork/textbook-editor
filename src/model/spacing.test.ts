@@ -19,9 +19,9 @@ describe('間距編碼歸屬', () => {
     expect(gapBefore(null, makeRow([makeText('內文')]))).toBe(0);
   });
 
-  it('課名接導言：依課名的字級留白', () => {
+  it('課名接內文：依課名的字級留白', () => {
     const prev = makeRow([makeText('星星的世界', 'lessonTitle')]);
-    const next = makeRow([makeText('抬頭看看夜空', 'lead')]);
+    const next = makeRow([makeText('抬頭看看夜空', 'body')]);
     expect(gapBefore(prev, next)).toBe(AFTER_HEADING.lessonTitle);
   });
 
@@ -82,8 +82,8 @@ describe('間距編碼歸屬', () => {
     expect(gapBefore(prev, next)).toBe(GAP.section);
   });
 
-  it('導言接大標是換節，不是緊貼', () => {
-    const prev = makeRow([makeText('導言', 'lead')]);
+  it('內文接大標是換節，不是緊貼', () => {
+    const prev = makeRow([makeText('內文', 'body')]);
     const next = makeRow([makeText('大標', 'sectionTitle')]);
     expect(gapBefore(prev, next)).toBe(GAP.section);
   });

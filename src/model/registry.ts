@@ -58,7 +58,6 @@ export const ROLE_LABEL: Record<TextRole, string> = {
   sectionTitle: '節',
   itemTitle: '標題',
   subItemTitle: '小標',
-  lead: '導言',
   body: '內文',
   supplement: '補充',
   annotation: '注釋',
