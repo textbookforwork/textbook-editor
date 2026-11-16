@@ -2517,3 +2517,6 @@
 /* 班級卡片：固定四欄在大螢幕會被拉得又寬又扁。改成每張約 240–280 寬、比例 5:4（乙練 2026-11-16） */
 .cr .class-cards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 .cr .class-card { aspect-ratio: 5 / 4; min-height: 0; max-width: 300px; }
+
+/* 浮層在整頁 zoom 外面（遮罩才蓋得滿），對話框本身跟書櫃同一個縮放，大小才一致 */
+.cr.cr-overlay .dialog { zoom: var(--z, 1); }

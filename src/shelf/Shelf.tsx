@@ -299,7 +299,7 @@ export function Shelf({ tab: tabProp = 'textbook', subject, area }: { tab?: Shel
     </Page>
     {/* 浮層放在整頁 zoom 外面：放在裡面時 fixed 的遮罩會跟著縮，只蓋到左上一塊（2026-11-16 乙練抓到） */}
     <Toaster />
-    <ShelfOverlay side={role} />
+    <ShelfOverlay side={role} zoom={zoom} />
     </>
   );
 }

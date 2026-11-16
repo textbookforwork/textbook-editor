@@ -1,3 +1,4 @@
+import type React from 'react';
 import type { Area } from '../shelf/nav';
 import type { Role } from '../shelf/role';
 import { CrStage, useClassroom } from './ClassReader';
@@ -17,12 +18,12 @@ export function ShelfArea({ area }: { area: Area }) {
 }
 
 /** 書櫃上的課堂浮層：班級、帳號的對話框，學生的上課邀請與形狀夥伴，課堂的提示 */
-export function ShelfOverlay({ side }: { side: Role }) {
+export function ShelfOverlay({ side, zoom = 1 }: { side: Role; zoom?: number }) {
   useClassroom();
   const S = L.getS();
   const t = S.t;
   return (
-    <div className="cr cr-overlay">
+    <div className="cr cr-overlay" style={{ '--z': zoom } as React.CSSProperties}>
       <div className="stage">
         {side === 'teacher' && S.stn.modal && S.stn.modal.detail && <L.StnDetail r={S.stn.modal.detail} />}
         {side === 'teacher' && t.modal === 'join' && <L.JoinDialog />}
