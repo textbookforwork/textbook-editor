@@ -1425,9 +1425,10 @@ function Toolbox({ side }) {
       <p class="grp-label">系統工具</p><div class="toolgrid">${t('menu', '目次', 'toc')}${side === 'teacher' ? t('arrow-left', '返回編輯', 'back') : ''}${side === 'teacher' && BAR === 'toolbox' ? t('presentation', '上課同步', 'sync') : ''}${t('blocks', '補充資源', 'supp')}${t('settings', '設定', 'settings')}</div>
       <p class="grp-label">編輯工具</p><div class="toolgrid">${t('pencil', '畫筆', 'pen')}${t('highlighter', '螢光筆', 'highlighter')}${t('eraser', '橡皮擦', 'eraser')}${t('trash', '清除', 'clear')}${t('sun', '雷射筆', 'laser')}${t('sticky-note', '便利貼', 'note')}${t('corner-up-left', '復原', 'undo')}${t('corner-up-right', '取消復原', 'redo')}</div>
       <p class="grp-label">${side === 'teacher' ? '教學工具' : '學習工具'}</p><div class="toolgrid">${side === 'teacher' ? t('send', '派任務', 'task') : ''}${t('whiteboard', '電子白板', 'board')}${side === 'teacher' ? t('sticker2', '貼紙', 'sticker') : ''}${side === 'teacher' ? t('users-round', '分組', 'group') : ''}${side === 'teacher' ? t('n123', '隨機抽籤', 'lottery') : ''}${side === 'teacher' ? t('timer', '計時器', 'timer') : ''}</div>
-      <p class="grp-label">科目工具</p>${(() => { const sk = SUBJECT_SHAPE[BRIDGE.subject()] || 'other'; const hl = HIGHLIGHTS[sk];
+      ${(() => { const sk = SUBJECT_SHAPE[BRIDGE.subject()] || 'other'; const hl = HIGHLIGHTS[sk];
         const cells = [hl && t(hl.icon, hl.name, 'hl'), sk === 'math' && t('plus-minus', '數學小工具', 'math')].filter(Boolean);
-        return cells.length ? html`<div class="toolgrid" style="margin-bottom:0">${cells}</div>` : html`<p class="note-line" style="margin:0">這一科還沒有科目工具</p>`; })()}
+        /* 這一科沒有科目工具就整組不出現，不放空狀態（乙練 2026-11-16） */
+        return cells.length ? html`<p class="grp-label">科目工具</p><div class="toolgrid" style="margin-bottom:0">${cells}</div>` : ''; })()}
     </div>
   </div>`;
 }
